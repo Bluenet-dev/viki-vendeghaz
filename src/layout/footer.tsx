@@ -1,4 +1,4 @@
-import { Link } from "@/components/catalyst/typescript/link";
+import { Link } from "@/components/catalyst/link";
 import { Copyright } from "@/components/copyright";
 
 const navigation = {

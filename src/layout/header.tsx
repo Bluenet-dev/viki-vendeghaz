@@ -1,14 +1,14 @@
 "use client"; // Fontos: Mivel useState-et használunk, ez már Kliens Komponens!
 
 import { useState } from "react";
-import { Button } from "@/components/catalyst/typescript/button";
+import { Button } from "@/components/catalyst/button";
 import {
   Navbar,
   NavbarItem,
   NavbarSection,
   NavbarSpacer,
-} from "@/components/catalyst/typescript/navbar";
-import { Link } from "@/components/catalyst/typescript/link";
+} from "@/components/catalyst/navbar";
+import { Link } from "@/components/catalyst/link";
 import { Dialog, DialogPanel } from "@headlessui/react"; // Standard Headless UI a mobil menühöz
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
