@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Lexend } from "next/font/google";
 import "./globals.css";
 import clsx from "clsx";
+import { Header } from "@/layout/header";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -50,7 +51,7 @@ export default function RootLayout({
       )}
     >
       <body className="font-sans bg-white text-slate-900 min-h-screen flex flex-col">
-        {/* Ide jön majd a Navbar */}
+        <Header />
         <main className="flex-grow">{children}</main>
         {/* Ide jön majd a Footer */}
       </body>
