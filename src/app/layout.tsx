@@ -16,8 +16,11 @@ const lexend = Lexend({
 });
 
 export const metadata: Metadata = {
-  title: "BlueNet Core",
-  description: "BlueNet Headquarters - Powered by Catalyst",
+  title: {
+    template: "%s | BlueNet Projekt",
+    default: "BlueNet Core Sablon",
+  },
+  description: "Next.js 16 + Catalyst UI alapú prémium webalkalmazás.",
 };
 
 export default function RootLayout({
