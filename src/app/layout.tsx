@@ -15,12 +15,24 @@ const lexend = Lexend({
   variable: "--font-lexend",
 });
 
+// ALAPVETŐ SEO KONFIGURÁCIÓ
 export const metadata: Metadata = {
+  // Ez kritikus az OG képekhez! (Később a .env-ből jön majd, most hardcode-oljuk a domaint)
+  metadataBase: new URL("https://bluenet.hu"),
   title: {
-    template: "%s | BlueNet Projekt",
-    default: "BlueNet Core Sablon",
+    template: "%s | BlueNet",
+    default: "BlueNet - Prémium Digitális Megoldások",
   },
-  description: "Next.js 16 + Catalyst UI alapú prémium webalkalmazás.",
+  description: "A jövő weboldalai, ma. Next.js 16 és Catalyst alapokon.",
+  openGraph: {
+    siteName: "BlueNet",
+    locale: "hu_HU",
+    type: "website",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -31,9 +43,17 @@ export default function RootLayout({
   return (
     <html
       lang="hu"
-      className={clsx(inter.variable, lexend.variable, "antialiased")}
+      className={clsx(
+        inter.variable,
+        lexend.variable,
+        "antialiased scroll-smooth"
+      )}
     >
-      <body className="font-sans bg-white text-slate-900">{children}</body>
+      <body className="font-sans bg-white text-slate-900 min-h-screen flex flex-col">
+        {/* Ide jön majd a Navbar */}
+        <main className="flex-grow">{children}</main>
+        {/* Ide jön majd a Footer */}
+      </body>
     </html>
   );
 }
