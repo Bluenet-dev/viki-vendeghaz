@@ -91,15 +91,50 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
     if (!wholeHouse) setGuests(Math.min(guests, MAX_GUESTS));
   }
 
+  // Egy blokkolt nap checkout-ként használható, ha nincs blokkolt nap
+  // a check-in és e közt (az előző vendég reggel elmegy, a következő délután jön)
+  function canBeCheckout(dateStr: string): boolean {
+    if (!checkIn || dateStr <= checkIn) return false;
+    const ci = new Date(checkIn);
+    const co = new Date(dateStr);
+    const cur = new Date(ci);
+    cur.setDate(cur.getDate() + 1);
+    while (cur < co) {
+      if (blockedSet.has(cur.toISOString().slice(0, 10))) return false;
+      cur.setDate(cur.getDate() + 1);
+    }
+    return true;
+  }
+
+  // Hétvégi érkezés: péntek (5) vagy szombat (6) → min. 2 éjszaka
+  function isWeekendArrival(dateStr: string): boolean {
+    const day = new Date(dateStr).getDay();
+    return day === 5 || day === 6;
+  }
+
+  const minNightsRequired = checkIn && isWeekendArrival(checkIn) ? 2 : 1;
+  const minNightsError = nights === 1 && minNightsRequired === 2;
+
   function handleDayClick(dateStr: string) {
     const d = new Date(dateStr);
-    if (d < today || blockedSet.has(dateStr)) return;
+    if (d < today) return;
+
+    const isBlocked = blockedSet.has(dateStr);
+
+    // Blokkolt nap: csak checkout-ként fogadható el (ha érvényes)
+    if (isBlocked) {
+      if (checkIn && !checkOut && canBeCheckout(dateStr)) {
+        setCheckOut(dateStr);
+      }
+      return;
+    }
 
     if (!checkIn || (checkIn && checkOut)) {
       setCheckIn(dateStr);
       setCheckOut(null);
     } else {
       if (dateStr <= checkIn) { setCheckIn(dateStr); setCheckOut(null); return; }
+      // Ellenőrzés: van-e blokkolt nap a tartományban (check-in+1 és checkout közt)?
       const ci = new Date(checkIn);
       const co = new Date(dateStr);
       const cur = new Date(ci);
@@ -114,10 +149,14 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
     }
   }
 
-  function dayState(dateStr: string): "past" | "blocked" | "checkin" | "checkout" | "inrange" | "available" {
+  function dayState(dateStr: string): "past" | "blocked" | "checkout-available" | "checkin" | "checkout" | "inrange" | "available" {
     const d = new Date(dateStr);
     if (d < today) return "past";
-    if (blockedSet.has(dateStr)) return "blocked";
+    if (blockedSet.has(dateStr)) {
+      // Blokkolt nap, de checkout-ként kattintható, ha check-in már ki van jelölve
+      if (checkIn && !checkOut && canBeCheckout(dateStr)) return "checkout-available";
+      return "blocked";
+    }
     if (dateStr === checkIn) return "checkin";
     if (dateStr === checkOut) return "checkout";
     if (checkIn && checkOut && dateStr > checkIn && dateStr < checkOut) return "inrange";
@@ -257,6 +296,7 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
               const cls: Record<string, string> = {
                 past: "text-bark/20 cursor-default",
                 blocked: "text-bark/20 cursor-not-allowed line-through bg-ink/5",
+                "checkout-available": "text-bark/50 cursor-pointer border border-dashed border-moss/40 hover:bg-moss/10",
                 checkin: "bg-moss text-white rounded-l-full font-semibold",
                 checkout: "bg-moss text-white rounded-r-full font-semibold",
                 inrange: "bg-moss/15 text-bark",
@@ -283,6 +323,11 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
             {nights > 0 && <span className="text-moss font-medium">{nights} éjszaka</span>}
             {estimatedPrice && <span className="text-bark/60">Becsült ár: <strong className="text-ink">{estimatedPrice.toLocaleString("hu")} Ft</strong></span>}
           </div>
+        )}
+        {minNightsError && (
+          <p className="mt-2 text-sm text-amber-700 bg-amber-50 px-4 py-2.5 rounded-lg">
+            Hétvégi érkezésnél (péntek / szombat) minimum 2 éjszakát kell foglalni.
+          </p>
         )}
       </div>
 
@@ -323,7 +368,7 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
 
       <button
         type="submit"
-        disabled={!checkIn || !checkOut || !name || !email || status === "sending"}
+        disabled={!checkIn || !checkOut || !name || !email || status === "sending" || minNightsError}
         className="w-full py-4 rounded-full bg-salt text-bark font-sans font-semibold text-base hover:bg-salt/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {status === "sending" ? "Küldés..." : "Foglalási kérés elküldése"}
