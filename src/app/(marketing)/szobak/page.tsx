@@ -1,5 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { db } from "@/db";
+import { rooms } from "@/db/schema";
+import { asc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 export const metadata: Metadata = {
   title: "Szobák & árak",
@@ -7,46 +11,13 @@ export const metadata: Metadata = {
     "3 külön bejáratú szoba saját fürdőszobával Szilvásváradon. 1-es szoba, 2-es szoba, Superior franciaágyas szoba. Összesen 12 fő részére.",
 };
 
-const rooms: Array<{
-  id: string;
-  name: string;
-  description: string;
-  bedType: string;
-  priceFrom: number | null;
-  features: string[];
-  badge?: string;
-}> = [
-  {
-    id: "szoba-1",
-    name: "1-es szoba",
-    description:
-      "Tágas, kényelmes szoba külön bejárattal és saját fürdőszobával. Ideális pároknak vagy kisebb családoknak.",
-    bedType: "Kérdezzen az ágyelrendezésről",
-    priceFrom: null,
-    features: ["Külön bejárat", "Saját fürdőszoba", "Klíma", "TV", "Wifi"],
-  },
-  {
-    id: "szoba-2",
-    name: "2-es szoba",
-    description:
-      "Tágas, kényelmes szoba külön bejárattal és saját fürdőszobával. Ideális pároknak vagy kisebb családoknak.",
-    bedType: "Kérdezzen az ágyelrendezésről",
-    priceFrom: null,
-    features: ["Külön bejárat", "Saját fürdőszoba", "Klíma", "TV", "Wifi"],
-  },
-  {
-    id: "superior",
-    name: "Superior szoba",
-    badge: "Legjobb szoba",
-    description:
-      "Franciaágyas luxusszoba, infraszaunával felszerelve. A legkomfortosabb választás romantikus hétvégékre és minőségi pihenésre.",
-    bedType: "Franciaágy",
-    priceFrom: null,
-    features: ["Külön bejárat", "Saját fürdőszoba", "Franciaágy", "Saját infraszauna", "Klíma", "TV", "Wifi"],
-  },
-];
+export default async function SzobakPage() {
+  const allRooms = await db
+    .select()
+    .from(rooms)
+    .where(eq(rooms.active, true))
+    .orderBy(asc(rooms.sortOrder));
 
-export default function SzobakPage() {
   return (
     <div className="pt-16 bg-stone min-h-screen">
       {/* Header */}
@@ -67,55 +38,62 @@ export default function SzobakPage() {
       {/* Szobák */}
       <section className="py-16 px-6">
         <div className="mx-auto max-w-4xl space-y-8">
-          {rooms.map((room) => (
-            <div
-              key={room.id}
-              id={room.id}
-              className="bg-white rounded-2xl border border-ink/10 p-8"
-            >
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  {room.badge && (
-                    <span className="inline-block font-mono text-xs uppercase tracking-widest text-salt mb-2">
-                      ★ {room.badge}
-                    </span>
-                  )}
-                  <h2 className="font-display text-3xl text-ink">{room.name}</h2>
-                  <p className="mt-1 font-mono text-xs uppercase tracking-widest text-moss">
-                    {room.bedType}
-                  </p>
-                </div>
-                <div className="text-right">
-                  {room.priceFrom != null ? (
-                    <>
-                      <p className="font-mono text-xs uppercase tracking-widest text-mist/50 mb-1">-tól</p>
-                      <p className="font-display text-3xl text-ink">
-                        {room.priceFrom.toLocaleString("hu-HU")} Ft
+          {allRooms.map((room) => {
+            const amenities = room.amenities
+              ? room.amenities.split(",").map((s) => s.trim()).filter(Boolean)
+              : [];
+
+            return (
+              <div
+                key={room.id}
+                id={room.slug ?? String(room.id)}
+                className="bg-white rounded-2xl border border-ink/10 p-8"
+              >
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div>
+                    <h2 className="font-display text-3xl text-ink">{room.name}</h2>
+                    {room.bedType && (
+                      <p className="mt-1 font-mono text-xs uppercase tracking-widest text-moss">
+                        {room.bedType}
                       </p>
-                      <p className="text-xs text-bark/40">/éjszaka</p>
-                    </>
-                  ) : (
-                    <p className="font-mono text-xs uppercase tracking-widest text-mist/40">
-                      Ár: hamarosan
-                    </p>
-                  )}
+                    )}
+                  </div>
+                  <div className="text-right">
+                    {room.priceFrom != null ? (
+                      <>
+                        <p className="font-mono text-xs uppercase tracking-widest text-mist/50 mb-1">-tól</p>
+                        <p className="font-display text-3xl text-ink">
+                          {room.priceFrom.toLocaleString("hu-HU")} Ft
+                        </p>
+                        <p className="text-xs text-bark/40">/éjszaka</p>
+                      </>
+                    ) : (
+                      <p className="font-mono text-xs uppercase tracking-widest text-mist/40">
+                        Ár: hamarosan
+                      </p>
+                    )}
+                  </div>
                 </div>
+
+                {room.description && (
+                  <p className="mt-4 text-bark/70 leading-relaxed">{room.description}</p>
+                )}
+
+                {amenities.length > 0 && (
+                  <ul className="mt-5 flex flex-wrap gap-2">
+                    {amenities.map((f) => (
+                      <li
+                        key={f}
+                        className="px-3 py-1 rounded-full bg-stone text-xs font-sans text-bark/70 border border-ink/8"
+                      >
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-
-              <p className="mt-4 text-bark/70 leading-relaxed">{room.description}</p>
-
-              <ul className="mt-5 flex flex-wrap gap-2">
-                {room.features.map((f) => (
-                  <li
-                    key={f}
-                    className="px-3 py-1 rounded-full bg-stone text-xs font-sans text-bark/70 border border-ink/8"
-                  >
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
