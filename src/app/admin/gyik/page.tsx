@@ -78,8 +78,7 @@ export default async function AdminGyikPage() {
                 </form>
                 <form action={deleteFaq}>
                   <input type="hidden" name="id" value={item.id} />
-                  <button type="submit" className="text-red-400 hover:text-red-300 text-xs px-2 py-0.5 rounded hover:bg-red-900/30 transition-colors"
-                    onClick={(e) => { if (!confirm("Törlöd ezt a kérdést?")) e.preventDefault(); }}>
+                  <button type="submit" className="text-red-400 hover:text-red-300 text-xs px-2 py-0.5 rounded hover:bg-red-900/30 transition-colors">
                     Törlés
                   </button>
                 </form>
