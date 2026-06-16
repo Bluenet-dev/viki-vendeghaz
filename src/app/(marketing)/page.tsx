@@ -1,4 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Viki Vendégház – Szilvásvárad | Sóbarlang, szauna, wellness",
+  description:
+    "Vendégház sóbarlanggal, finn szaunával, infraszaunával és dézsafürdővel Szilvásvárad szívében. 3 szoba, 12 fő, Szalajka-völgy és Bükki Nemzeti Park közelében. Booking.com 9,5 · Szállás.hu 9,9.",
+  openGraph: {
+    title: "Viki Vendégház – Szilvásvárad",
+    description:
+      "Sóbarlang, finn szauna, infraszauna, dézsafürdő – Szilvásvárad szívében. Foglaljon közvetlenül és spóroljon!",
+    type: "website",
+  },
+};
 
 const reviews = [
   {
