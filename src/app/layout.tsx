@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { Fraunces, Work_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import clsx from "clsx";
-import { Header } from "@/layout/header";
-import { Footer } from "@/layout/footer";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -31,7 +29,7 @@ export const metadata: Metadata = {
     default: "Viki Vendégház – Szilvásvárad",
   },
   description:
-    "Vendégház sóbarlanggal, szaunával és wellness lehetőségekkel Szilvásvárád szívében. Foglaljon szobát a Bükki Nemzeti Park kapujában.",
+    "Vendégház sóbarlanggal, szaunával és wellness lehetőségekkel Szilvásvárad szívében.",
   openGraph: {
     siteName: "Viki Vendégház",
     locale: "hu_HU",
@@ -53,11 +51,7 @@ export default function RootLayout({
         "antialiased scroll-smooth"
       )}
     >
-      <body className="font-sans bg-stone text-bark min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-grow">{children}</main>
-        <Footer />
-      </body>
+      <body className="font-sans">{children}</body>
     </html>
   );
 }
