@@ -21,6 +21,9 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // node-ical nem bundlelhető Turbopack-kel (BigInt compat)
+  serverExternalPackages: ["node-ical"],
+
   experimental: {},
 };
 
