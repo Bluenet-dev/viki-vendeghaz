@@ -10,7 +10,14 @@
       "Bash(git commit -m 'feat: Fázis 1 – design tokenek, layout, DB séma, admin auth *)",
       "Bash(git push *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(DATABASE_URL='postgresql://neondb_owner:npg_Ic6P5vanBsuG@ep-delicate-lab-aiv2n7y7-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require' node -e ' *)",
+      "Read(//c/Users/vona2/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/3cd80470-ea6f-4bae-9514-a0464cc7975a/faac3315-a053-4874-8c58-a2e425986a18/skills/docx/**)",
+      "Bash(pandoc \"C:/Users/vona2/Downloads/viki-vendeghaz-projektterv.docx\" -t plain)",
+      "Bash(python \"C:/Users/vona2/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/3cd80470-ea6f-4bae-9514-a0464cc7975a/faac3315-a053-4874-8c58-a2e425986a18/skills/docx/scripts/office/unpack.py\" \"C:/Users/vona2/Downloads/viki-vendeghaz-projektterv.docx\" \"C:/Users/vona2/Downloads/projektterv-unpacked/\")",
+      "Bash(python -c ' *)",
+      "PowerShell(cd \"C:\\\\Users\\\\vona2\\\\Desktop\\\\Vállalkozás\\\\BlueNet\\\\Web Projektek\\\\Viki Vendégház\"; $env:DATABASE_URL=\"postgresql://neondb_owner:npg_Ic6P5vanBsuG@ep-delicate-lab-aiv2n7y7-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require\"; node scripts/seed-posts.mjs 2>&1)",
+      "Bash(pnpm tsc *)"
     ]
   }
 }

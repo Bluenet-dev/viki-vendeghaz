@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import { db } from "@/db";
+import { rooms, availability } from "@/db/schema";
+import { asc, eq, gte } from "drizzle-orm";
+import { BookingForm } from "./booking-form";
 
 export const metadata: Metadata = {
   title: "Foglalás",
@@ -6,7 +10,25 @@ export const metadata: Metadata = {
     "Foglaljon szobát a Viki Vendégházban Szilvásváradon. Ellenőrizze az elérhetőséget és küldjön foglalási kérést.",
 };
 
-export default function FoglalasPage() {
+export default async function FoglalasPage() {
+  const allRooms = await db
+    .select({
+      slug: rooms.slug,
+      name: rooms.name,
+      capacity: rooms.capacity,
+      priceFrom: rooms.priceFrom,
+    })
+    .from(rooms)
+    .where(eq(rooms.active, true))
+    .orderBy(asc(rooms.sortOrder));
+
+  const today = new Date().toISOString().slice(0, 10);
+  const blockedDays = await db
+    .select({ roomSlug: availability.roomSlug, date: availability.date })
+    .from(availability)
+    .where(eq(availability.status, "blocked"))
+    .then((rows) => rows.filter((r) => r.date >= today));
+
   return (
     <div className="pt-16 bg-stone min-h-screen">
       <section className="bg-ink py-20 px-6">
@@ -16,31 +38,27 @@ export default function FoglalasPage() {
             Foglalja le szobáját
           </h1>
           <p className="text-mist/70 text-lg max-w-xl">
-            A foglalási naptár és az ár-kalkulátor Fázis 5-ben kerül fel. Addig
-            is foglaljon telefonon vagy emailben!
+            Válasszon szobát, jelölje ki az érkezési és távozási napot, majd küldje el foglalási kérését.
+            Telefonon vagy emailben visszaigazoljuk.
           </p>
         </div>
       </section>
 
-      <section className="py-16 px-6">
-        <div className="mx-auto max-w-xl text-center">
-          <div className="bg-white rounded-2xl border border-ink/10 p-10">
-            <p className="font-display text-2xl text-ink mb-6">Foglalás most</p>
-            <div className="space-y-4">
-              <a
-                href="tel:+36704108282"
-                className="flex items-center justify-center gap-3 w-full py-3 rounded-full bg-salt text-bark font-sans font-medium hover:bg-salt/90 transition-colors"
-              >
-                📞 +36 70 410-8282
-              </a>
-              <a
-                href="mailto:vikivendeghaz@gmail.com"
-                className="flex items-center justify-center gap-3 w-full py-3 rounded-full border border-ink/20 text-ink font-sans font-medium hover:border-ink/40 transition-colors"
-              >
-                ✉️ vikivendeghaz@gmail.com
-              </a>
-            </div>
-            <p className="mt-6 text-xs text-bark/40">24 órás ügyelet · Gyors visszajelzés</p>
+      <section className="py-12 px-6">
+        <div className="mx-auto max-w-2xl">
+          <BookingForm rooms={allRooms} blockedDays={blockedDays} />
+        </div>
+      </section>
+
+      {/* Alternatív kapcsolat */}
+      <section className="py-8 px-6 pb-16">
+        <div className="mx-auto max-w-2xl">
+          <div className="bg-ink/5 rounded-2xl p-6 text-center border border-ink/8">
+            <p className="font-mono text-xs uppercase tracking-widest text-bark/40 mb-3">Inkább telefonon?</p>
+            <a href="tel:+36704108282" className="font-display text-2xl text-ink hover:text-moss transition-colors">
+              +36 70 410-8282
+            </a>
+            <p className="text-sm text-bark/40 mt-1">24 órás ügyelet</p>
           </div>
         </div>
       </section>
