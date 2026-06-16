@@ -6,7 +6,6 @@ import {
   boolean,
   date,
   timestamp,
-  jsonb,
 } from "drizzle-orm/pg-core";
 
 // ─── Szobák ────────────────────────────────────────────────────────────────
@@ -16,9 +15,9 @@ export const rooms = pgTable("rooms", {
   name: text("name").notNull(),
   description: text("description"),
   capacity: integer("capacity"),
-  priceFrom: integer("price_from"), // Ft/éj – "tól" ár (nullable amíg nincs végleges ár)
-  images: jsonb("images").$type<string[]>().default([]),
-  amenities: jsonb("amenities").$type<string[]>().default([]),
+  bedType: text("bed_type"),         // pl. "Franciaágy", "2 egységes ágy"
+  priceFrom: integer("price_from"),  // Ft/éj – nullable amíg nincs végleges ár
+  amenities: text("amenities"),      // vesszővel elválasztott lista
   sortOrder: integer("sort_order").default(0),
   active: boolean("active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -31,12 +30,11 @@ export const packages = pgTable("packages", {
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
   description: text("description"),
-  contents: jsonb("contents").$type<string[]>().default([]),
-  price: integer("price"), // Ft
+  contents: text("contents"),        // vesszővel elválasztott lista
+  price: integer("price"),           // Ft
   validFrom: date("valid_from"),
   validTo: date("valid_to"),
-  season: text("season"), // pl. "nyár", "tél", "egész_év"
-  image: text("image"),
+  season: text("season"),            // "nyár" | "tél" | "egész_év"
   active: boolean("active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -49,22 +47,12 @@ export const posts = pgTable("posts", {
   title: text("title").notNull(),
   excerpt: text("excerpt"),
   content: text("content"),
-  coverImage: text("cover_image"),
+  coverImageUrl: text("cover_image_url"), // külső URL, nem bináris adat
   category: text("category"),
   published: boolean("published").default(false),
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// ─── Galéria ───────────────────────────────────────────────────────────────
-export const gallery = pgTable("gallery", {
-  id: serial("id").primaryKey(),
-  url: text("url").notNull(),
-  alt: text("alt"),
-  category: text("category").notNull(), // szobak | wellness | sobarlang | udvar | termeszet
-  sortOrder: integer("sort_order").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // ─── GYIK ──────────────────────────────────────────────────────────────────
@@ -101,7 +89,7 @@ export const availability = pgTable("availability", {
   roomSlug: text("room_slug").notNull(), // "szoba-1" | "szoba-2" | "superior" | "egesz-haz"
   date: date("date").notNull(),
   status: text("status").notNull().default("available"), // "available" | "blocked" | "booked"
-  source: text("source").default("manual"), // "manual" | "booking_com" | "szallas_hu"
+  source: text("source").default("manual"),              // "manual" | "booking_com" | "szallas_hu"
   note: text("note"),
   createdAt: timestamp("created_at").defaultNow(),
 });
