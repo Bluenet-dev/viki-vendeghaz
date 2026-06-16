@@ -38,6 +38,40 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "LodgingBusiness",
+  name: "Viki Vendégház",
+  url: "https://vikivendeghaz.hu",
+  telephone: "+36704108282",
+  email: "vikivendeghaz@gmail.com",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "Dózsa György utca 45.",
+    addressLocality: "Szilvásvárad",
+    postalCode: "3348",
+    addressCountry: "HU",
+  },
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: 47.9963,
+    longitude: 20.3895,
+  },
+  description:
+    "Vendégház sóbarlanggal, finn szaunával, infraszaunával és dézsafürdővel Szilvásvárad szívében, a Szalajka-völgy és a Bükki Nemzeti Park közelében.",
+  amenityFeature: [
+    { "@type": "LocationFeatureSpecification", name: "Sóbarlang", value: true },
+    { "@type": "LocationFeatureSpecification", name: "Finn szauna", value: true },
+    { "@type": "LocationFeatureSpecification", name: "Infraszauna", value: true },
+    { "@type": "LocationFeatureSpecification", name: "Dézsafürdő", value: true },
+    { "@type": "LocationFeatureSpecification", name: "Ingyenes WiFi", value: true },
+    { "@type": "LocationFeatureSpecification", name: "Ingyenes parkoló", value: true },
+  ],
+  numberOfRooms: 3,
+  checkinTime: "15:00",
+  checkoutTime: "10:00",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -51,7 +85,13 @@ export default function RootLayout({
         "antialiased scroll-smooth"
       )}
     >
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

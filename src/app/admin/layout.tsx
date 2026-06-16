@@ -9,6 +9,7 @@ const navItems = [
   { href: "/admin", label: "Áttekintés" },
   { href: "/admin/szobak", label: "Szobák" },
   { href: "/admin/csomagok", label: "Csomagok" },
+  { href: "/admin/blog", label: "Blog" },
   { href: "/admin/gyik", label: "GYIK" },
   { href: "/admin/galeria", label: "Galéria" },
   { href: "/admin/uzenetek", label: "Üzenetek" },
