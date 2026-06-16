@@ -18,12 +18,12 @@ type Status = "idle" | "sending" | "success" | "error";
 
 const MONTHS_HU = ["Január","Február","Március","Április","Május","Június","Július","Augusztus","Szeptember","Október","November","December"];
 const DAYS_HU = ["H","K","Sze","Cs","P","Szo","V"];
+const MAX_GUESTS = 12;
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
 }
 function getFirstDayOfMonth(year: number, month: number) {
-  // 0=Hétfő offset
   return (new Date(year, month, 1).getDay() + 6) % 7;
 }
 
@@ -31,7 +31,9 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [selectedRoom, setSelectedRoom] = useState(rooms[0]?.slug ?? "");
+  // Multi-room selection: set of slugs. "egész vendégház" = összes szoba
+  const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set([rooms[0]?.slug ?? ""]));
+  const [wholeHouse, setWholeHouse] = useState(false);
   const [checkIn, setCheckIn] = useState<string | null>(null);
   const [checkOut, setCheckOut] = useState<string | null>(null);
   const [calYear, setCalYear] = useState(today.getFullYear());
@@ -43,22 +45,51 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<Status>("idle");
 
+  const activeSlugs = wholeHouse ? new Set(rooms.map((r) => r.slug ?? "")) : selectedSlugs;
+
+  // Egy nap blokkolt, ha bármelyik kijelölt szoba foglalt azon a napon
   const blockedSet = useMemo(() => {
     const s = new Set<string>();
     for (const b of blockedDays) {
-      if (b.roomSlug === selectedRoom || b.roomSlug === "mind") s.add(b.date);
+      if (activeSlugs.has(b.roomSlug)) s.add(b.date);
     }
     return s;
-  }, [blockedDays, selectedRoom]);
+  }, [blockedDays, activeSlugs]);
 
-  const room = rooms.find((r) => r.slug === selectedRoom);
+  const selectedRoomsData = rooms.filter((r) => activeSlugs.has(r.slug ?? ""));
+  const totalCapacity = wholeHouse ? MAX_GUESTS : Math.min(
+    selectedRoomsData.reduce((sum, r) => sum + (r.capacity ?? 2), 0),
+    MAX_GUESTS
+  );
+  const minPrice = selectedRoomsData.reduce((sum, r) => sum + (r.priceFrom ?? 0), 0);
 
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0;
     return Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000);
   }, [checkIn, checkOut]);
 
-  const totalPrice = room?.priceFrom && nights > 0 ? room.priceFrom * nights : null;
+  const estimatedPrice = minPrice > 0 && nights > 0 ? minPrice * nights : null;
+
+  function toggleRoom(slug: string) {
+    if (wholeHouse) return;
+    const next = new Set(selectedSlugs);
+    if (next.has(slug) && next.size > 1) {
+      next.delete(slug);
+    } else if (!next.has(slug)) {
+      next.add(slug);
+    }
+    setSelectedSlugs(next);
+    setCheckIn(null);
+    setCheckOut(null);
+    setGuests(Math.min(guests, totalCapacity));
+  }
+
+  function toggleWholeHouse() {
+    setWholeHouse(!wholeHouse);
+    setCheckIn(null);
+    setCheckOut(null);
+    if (!wholeHouse) setGuests(Math.min(guests, MAX_GUESTS));
+  }
 
   function handleDayClick(dateStr: string) {
     const d = new Date(dateStr);
@@ -69,7 +100,6 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
       setCheckOut(null);
     } else {
       if (dateStr <= checkIn) { setCheckIn(dateStr); setCheckOut(null); return; }
-      // Ellenőrzés: van-e blokkolt nap a tartományban?
       const ci = new Date(checkIn);
       const co = new Date(dateStr);
       const cur = new Date(ci);
@@ -99,13 +129,14 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!checkIn || !checkOut || !selectedRoom) return;
+    if (!checkIn || !checkOut || activeSlugs.size === 0) return;
     setStatus("sending");
     try {
+      const roomSlug = wholeHouse ? "egész vendégház" : Array.from(activeSlugs).join(",");
       const res = await fetch("/api/booking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone, roomSlug: selectedRoom, checkIn, checkOut, guests, message }),
+        body: JSON.stringify({ name, email, phone, roomSlug, checkIn, checkOut, guests, message }),
       });
       if (!res.ok) throw new Error();
       setStatus("success");
@@ -134,24 +165,67 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      {/* 1. Szoba */}
+      {/* 1. Szoba(k) */}
       <div>
         <h3 className="font-mono text-xs uppercase tracking-widest text-bark/50 mb-3">1. Szoba kiválasztása</h3>
-        <div className="grid sm:grid-cols-3 gap-3">
-          {rooms.map((r) => (
-            <button
-              key={r.slug}
-              type="button"
-              onClick={() => { setSelectedRoom(r.slug ?? ""); setCheckIn(null); setCheckOut(null); }}
-              className={`p-4 rounded-xl border text-left transition-colors ${selectedRoom === r.slug ? "border-moss bg-moss/5" : "border-ink/10 hover:border-ink/25"}`}
-            >
-              <p className="font-medium text-sm text-ink">{r.name}</p>
-              <p className="text-xs text-bark/50 mt-1">{r.capacity} fő</p>
-              {r.priceFrom && (
-                <p className="text-xs text-moss mt-1">{r.priceFrom.toLocaleString("hu")} Ft/éj</p>
+        <div className="space-y-2">
+          {/* Egész vendégház */}
+          <button
+            type="button"
+            onClick={toggleWholeHouse}
+            className={`w-full p-4 rounded-xl border text-left transition-colors ${wholeHouse ? "border-moss bg-moss/5 ring-1 ring-moss/30" : "border-ink/10 hover:border-ink/25"}`}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-sm text-ink">Egész vendégház</p>
+                <p className="text-xs text-bark/50 mt-0.5">Mindhárom szoba + közös helyiségek, max. {MAX_GUESTS} fő</p>
+              </div>
+              {minPrice > 0 && (
+                <p className="text-sm text-moss font-medium ml-4 shrink-0">
+                  {rooms.reduce((s, r) => s + (r.priceFrom ?? 0), 0).toLocaleString("hu")} Ft/éj
+                </p>
               )}
-            </button>
-          ))}
+            </div>
+          </button>
+
+          {/* Egyéni szobák */}
+          <div className={`grid sm:grid-cols-3 gap-2 transition-opacity ${wholeHouse ? "opacity-40 pointer-events-none" : ""}`}>
+            {rooms.map((r) => {
+              const active = selectedSlugs.has(r.slug ?? "");
+              return (
+                <button
+                  key={r.slug}
+                  type="button"
+                  onClick={() => toggleRoom(r.slug ?? "")}
+                  className={`p-4 rounded-xl border text-left transition-colors ${active && !wholeHouse ? "border-moss bg-moss/5" : "border-ink/10 hover:border-ink/25"}`}
+                >
+                  <div className={`w-4 h-4 rounded border mb-2 flex items-center justify-center ${active && !wholeHouse ? "bg-moss border-moss" : "border-ink/30"}`}>
+                    {active && !wholeHouse && <span className="text-white text-xs leading-none">✓</span>}
+                  </div>
+                  <p className="font-medium text-sm text-ink">{r.name}</p>
+                  <p className="text-xs text-bark/50 mt-0.5">{r.capacity} fő</p>
+                  {r.priceFrom && (
+                    <p className="text-xs text-moss mt-1">{r.priceFrom.toLocaleString("hu")} Ft/éj</p>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Összesítő */}
+        <div className="mt-3 flex items-center gap-3 text-sm text-bark/60 bg-stone/50 rounded-lg px-4 py-2.5">
+          <span>
+            {wholeHouse ? "Egész vendégház" : `${activeSlugs.size} szoba`} kijelölve
+          </span>
+          <span className="text-bark/25">·</span>
+          <span>max. {totalCapacity} fő</span>
+          {minPrice > 0 && (
+            <>
+              <span className="text-bark/25">·</span>
+              <span className="text-moss font-medium">{minPrice.toLocaleString("hu")} Ft/éj-től</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -207,7 +281,7 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
             <span className="text-bark/60">Érkezés: <strong className="text-ink">{checkIn}</strong></span>
             {checkOut && <span className="text-bark/60">Távozás: <strong className="text-ink">{checkOut}</strong></span>}
             {nights > 0 && <span className="text-moss font-medium">{nights} éjszaka</span>}
-            {totalPrice && <span className="text-bark/60">Becsült ár: <strong className="text-ink">{totalPrice.toLocaleString("hu")} Ft</strong></span>}
+            {estimatedPrice && <span className="text-bark/60">Becsült ár: <strong className="text-ink">{estimatedPrice.toLocaleString("hu")} Ft</strong></span>}
           </div>
         )}
       </div>
@@ -219,10 +293,15 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
           <button type="button" onClick={() => setGuests(Math.max(1, guests - 1))}
             className="w-9 h-9 rounded-full border border-ink/15 text-ink hover:border-ink/40 transition-colors flex items-center justify-center">−</button>
           <span className="text-lg font-medium text-ink w-8 text-center">{guests}</span>
-          <button type="button" onClick={() => setGuests(Math.min(room?.capacity ?? 4, guests + 1))}
+          <button type="button" onClick={() => setGuests(Math.min(totalCapacity, guests + 1))}
             className="w-9 h-9 rounded-full border border-ink/15 text-ink hover:border-ink/40 transition-colors flex items-center justify-center">+</button>
-          <span className="text-sm text-bark/50">fő (max. {room?.capacity ?? 4})</span>
+          <span className="text-sm text-bark/50">fő (max. {totalCapacity})</span>
         </div>
+        {wholeHouse && (
+          <p className="text-xs text-bark/40 mt-2">
+            Egész vendégháznál a nappali és pótágyak is igénybe vehetők – egyeztetés szerint.
+          </p>
+        )}
       </div>
 
       {/* 4. Adatok */}
