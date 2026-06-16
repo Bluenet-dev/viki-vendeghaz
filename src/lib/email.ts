@@ -20,8 +20,10 @@ export async function sendBookingNotification(data: BookingEmailData) {
     );
 
   // Email a tulajdonosnak
+  // TODO: domain hitelesítés után visszaállítani: noreply@vikivendeghaz.hu
+  const fromAddress = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
   await resend.emails.send({
-    from: "Viki Vendégház <noreply@vikivendeghaz.hu>",
+    from: `Viki Vendégház <${fromAddress}>`,
     to: "vikivendeghaz@gmail.com",
     subject: `Új foglalási kérés – ${data.name} (${data.checkIn})`,
     html: `
@@ -43,7 +45,7 @@ export async function sendBookingNotification(data: BookingEmailData) {
 
   // Visszaigazolás a vendégnek
   await resend.emails.send({
-    from: "Viki Vendégház <noreply@vikivendeghaz.hu>",
+    from: `Viki Vendégház <${fromAddress}>`,
     to: data.email,
     subject: "Foglalási kérés megérkezett – Viki Vendégház",
     html: `
