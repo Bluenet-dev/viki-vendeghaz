@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viki Vendégház – design koncepció</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1A231E;
+    --ink-2:#222D26;
+    --stone:#F2ECE2;
+    --stone-2:#E7DECF;
+    --salt:#E7AE8E;
+    --salt-2:#F0C6AC;
+    --moss:#5E7E62;
+    --mist:#C7D1C5;
+    --bark:#2B2620;
+    --bark-soft:#5B5347;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:'Work Sans',system-ui,sans-serif;background:var(--stone);color:var(--bark);font-size:15px;line-height:1.6}
+  img{max-width:100%;display:block}
+
+  .nav{background:var(--ink);padding:18px 40px;display:flex;align-items:center;justify-content:space-between}
+  .nav-logo{font-family:'Fraunces',serif;color:var(--stone);font-size:17px;font-weight:500;letter-spacing:.01em}
+  .nav-logo span{color:var(--salt);font-style:italic;font-weight:400}
+  .nav-links{display:flex;gap:28px}
+  .nav-links a{color:var(--mist);font-size:13px;text-decoration:none;letter-spacing:.02em;transition:color .15s}
+  .nav-links a:hover{color:var(--salt)}
+  .nav-cta{border:1px solid var(--salt);color:var(--salt)!important;padding:7px 16px;border-radius:2px}
+
+  .hero{background:var(--ink);position:relative;overflow:hidden;padding:64px 40px 0}
+  .glow{
+    position:absolute;width:620px;height:620px;border-radius:50%;
+    right:-180px;top:-220px;
+    background:radial-gradient(circle, var(--salt) 0%, rgba(231,174,142,0) 68%);
+    opacity:.32;filter:blur(6px);pointer-events:none;
+  }
+  .hero-inner{
+    max-width:1140px;margin:0 auto;position:relative;z-index:1;
+    display:grid;grid-template-columns:1.25fr 1fr;gap:56px;align-items:end;
+    padding-bottom:0;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--salt);margin-bottom:18px;
+  }
+  .eyebrow::before{content:'';display:inline-block;width:22px;height:1px;background:var(--salt);vertical-align:middle;margin-right:10px}
+
+  .hero h1{
+    font-family:'Fraunces',serif;font-optical-sizing:auto;font-weight:380;
+    font-size:clamp(40px,5.6vw,66px);line-height:1.04;color:var(--stone);letter-spacing:-.01em;
+  }
+  .hero .sub{
+    font-family:'Fraunces',serif;font-style:italic;font-weight:300;
+    font-size:clamp(18px,2.4vw,23px);color:var(--salt-2);margin-top:10px;
+  }
+  .lead{
+    font-size:15.5px;line-height:1.75;color:var(--mist);max-width:480px;
+    margin:26px 0 34px;
+  }
+  .hero-ctas{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:64px}
+  .btn{
+    font-family:'Work Sans',sans-serif;font-size:13.5px;font-weight:500;letter-spacing:.02em;
+    padding:13px 26px;border-radius:2px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+    border:1px solid transparent;transition:transform .15s ease, opacity .15s ease;
+  }
+  .btn:hover{transform:translateY(-1px)}
+  .btn-fill{background:var(--salt);color:var(--ink)}
+  .btn-outline{border-color:var(--mist);color:var(--stone)}
+
+  .trust{display:flex;gap:28px;flex-wrap:wrap;padding-bottom:56px;margin-top:-8px}
+  .trust div{font-size:11.5px;color:var(--mist);letter-spacing:.04em;display:flex;align-items:center;gap:8px}
+  .trust div::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--salt);flex-shrink:0}
+
+  /* booking card */
+  .bcard{
+    background:var(--stone);border-radius:4px;padding:26px;
+    box-shadow:0 36px 70px rgba(0,0,0,.38);position:relative;z-index:2;
+    margin-bottom:-58px;
+  }
+  .bcard h3{font-family:'Fraunces',serif;font-size:19px;font-weight:500;color:var(--bark);margin-bottom:2px}
+  .bcard .bc-note{font-size:11px;color:var(--bark-soft);margin-bottom:18px}
+  .bc-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .bc-field label{
+    display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--moss);margin-bottom:5px;
+  }
+  .bc-field input,.bc-field select{
+    width:100%;border:1px solid var(--stone-2);background:#fff;border-radius:2px;
+    padding:9px 10px;font-size:13px;font-family:'Work Sans',sans-serif;color:var(--bark);
+  }
+  .bc-sep{border:none;border-top:1px solid var(--stone-2);margin:16px 0}
+  .bc-price{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px}
+  .bc-price .l{font-size:12.5px;color:var(--bark-soft)}
+  .bc-price .v{font-family:'Fraunces',serif;font-size:23px;font-weight:500;color:var(--bark)}
+  .bcard .btn-fill{width:100%;justify-content:center}
+
+  /* trail strip */
+  .trail{background:var(--stone);padding:100px 40px 56px}
+  .trail-inner{max-width:1140px;margin:0 auto}
+  .trail-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:36px;gap:24px;flex-wrap:wrap}
+  .trail-head h2{font-family:'Fraunces',serif;font-weight:500;font-size:24px;color:var(--bark)}
+  .trail-head p{font-size:13px;color:var(--bark-soft);max-width:320px}
+  .trail-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:22px}
+  .blaze{width:30px;height:11px;display:flex;border-radius:1px;overflow:hidden;margin-bottom:16px}
+  .blaze span{flex:1}
+  .blaze .m{background:var(--moss)}
+  .blaze .s{background:var(--salt)}
+  .trail-item h4{font-size:14.5px;font-weight:500;color:var(--bark);margin-bottom:6px}
+  .trail-item p{font-size:12.5px;color:var(--bark-soft);line-height:1.6}
+
+  @media (max-width:880px){
+    .hero-inner{grid-template-columns:1fr;gap:40px}
+    .bcard{margin-bottom:0;margin-top:8px}
+    .trail-grid{grid-template-columns:repeat(2,1fr)}
+    .nav-links{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-logo">Viki <span>Vendégház</span></div>
+  <div class="nav-links">
+    <a href="#">Szobák</a>
+    <a href="#">Wellness</a>
+    <a href="#">Csomagok</a>
+    <a href="#">Galéria</a>
+    <a href="#" class="nav-cta">Foglalás</a>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="glow"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="eyebrow">Szilvásvárad · Bükki-fennsík · Szalajka-völgy</div>
+      <h1>Viki Vendégház</h1>
+      <div class="sub">Sóbarlang fénye, erdei csend</div>
+      <p class="lead">Három különálló szoba egy régi szilvásváradi telken, egy percre a Szalajka-völgy bejáratától. Sóbarlang, finn szauna, infraszauna, dézsafürdő és kert – minden, amire egy hűvös bükki est után szükség van.</p>
+      <div class="hero-ctas">
+        <button class="btn btn-fill">Szabad napok megtekintése</button>
+        <button class="btn btn-outline">Szobák és árak</button>
+      </div>
+    </div>
+    <div>
+      <div class="bcard">
+        <h3>Foglalás</h3>
+        <div class="bc-note">Azonnali visszaigazolás · ingyenes lemondás 24h-ig</div>
+        <div class="bc-row">
+          <div class="bc-field"><label>Érkezés</label><input type="date" value="2026-07-04"></div>
+          <div class="bc-field"><label>Távozás</label><input type="date" value="2026-07-06"></div>
+        </div>
+        <div class="bc-field" style="margin-bottom:14px">
+          <label>Vendégek</label>
+          <select><option>2 fő</option><option>4 fő</option><option>6 fő</option><option>12 fő – egész ház</option></select>
+        </div>
+        <hr class="bc-sep">
+        <div class="bc-price"><span class="l">2 éj · Superior szoba</span><span class="v">52 000 Ft</span></div>
+        <button class="btn btn-fill">Elérhetőség ellenőrzése</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="trail">
+  <div class="trail-inner">
+    <div class="trail-head">
+      <h2>Öt útjelző a pihenésig</h2>
+      <p>Mint egy bükki tanösvény jelzései – minden élmény a vendégház saját telkén belül.</p>
+    </div>
+    <div class="trail-grid">
+      <div class="trail-item">
+        <div class="blaze"><span class="m"></span><span class="s"></span></div>
+        <h4>Sóbarlang</h4>
+        <p>Só a levegőben, csend a falak között</p>
+      </div>
+      <div class="trail-item">
+        <div class="blaze"><span class="s"></span><span class="m"></span></div>
+        <h4>Finn szauna</h4>
+        <p>80°C, nyírfaillat, lassú kilégzés</p>
+      </div>
+      <div class="trail-item">
+        <div class="blaze"><span class="m"></span><span class="s"></span></div>
+        <h4>Infraszauna</h4>
+        <p>Mélyhő közvetlenül a Superior szobából</p>
+      </div>
+      <div class="trail-item">
+        <div class="blaze"><span class="s"></span><span class="m"></span></div>
+        <h4>Dézsafürdő</h4>
+        <p>Gőzölgő víz a hideg éjszakában, csillagok alatt</p>
+      </div>
+      <div class="trail-item">
+        <div class="blaze"><span class="m"></span><span class="s"></span></div>
+        <h4>Kert &amp; medence</h4>
+        <p>Fű, grill, bogrács – nyári délutánok</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

@@ -11,12 +11,6 @@ const nextConfig: NextConfig = {
     },
   },
 
-  cacheComponents: true,
-
-  cacheLife: {
-    default: { stale: 300, revalidate: 900, expire: 1800 },
-  },
-
   // 4. Képkezelés
   images: {
     remotePatterns: [

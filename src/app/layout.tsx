@@ -1,57 +1,59 @@
 import type { Metadata } from "next";
-import { Inter, Lexend } from "next/font/google";
+import { Fraunces, Work_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import clsx from "clsx";
 import { Header } from "@/layout/header";
 import { Footer } from "@/layout/footer";
 
-const inter = Inter({
+const fraunces = Fraunces({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-inter",
+  variable: "--font-fraunces",
 });
 
-const lexend = Lexend({
+const workSans = Work_Sans({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-lexend",
+  variable: "--font-work-sans",
 });
 
-// ALAPVETŐ SEO KONFIGURÁCIÓ
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
+  variable: "--font-ibm-plex-mono",
+});
+
 export const metadata: Metadata = {
-  // Ez kritikus az OG képekhez! (Később a .env-ből jön majd, most hardcode-oljuk a domaint)
-  metadataBase: new URL("https://bluenet.hu"),
+  metadataBase: new URL("https://vikivendeghaz.hu"),
   title: {
-    template: "%s | BlueNet",
-    default: "BlueNet - Prémium Digitális Megoldások",
+    template: "%s | Viki Vendégház",
+    default: "Viki Vendégház – Szilvásvárad",
   },
-  description: "A jövő weboldalai, ma. Next.js 16 és Catalyst alapokon.",
+  description:
+    "Vendégház sóbarlanggal, szaunával és wellness lehetőségekkel Szilvásvárád szívében. Foglaljon szobát a Bükki Nemzeti Park kapujában.",
   openGraph: {
-    siteName: "BlueNet",
+    siteName: "Viki Vendégház",
     locale: "hu_HU",
     type: "website",
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="hu"
       className={clsx(
-        inter.variable,
-        lexend.variable,
+        fraunces.variable,
+        workSans.variable,
+        ibmPlexMono.variable,
         "antialiased scroll-smooth"
       )}
     >
-      <body className="font-sans bg-white text-slate-900 min-h-screen flex flex-col">
+      <body className="font-sans bg-stone text-bark min-h-screen flex flex-col">
         <Header />
         <main className="flex-grow">{children}</main>
         <Footer />

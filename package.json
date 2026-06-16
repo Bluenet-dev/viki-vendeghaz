@@ -1,17 +1,23 @@
 {
-  "name": "bluenet-core",
+  "name": "viki-vendeghaz",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
+    "@neondatabase/serverless": "^1.1.0",
     "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.2",
+    "iron-session": "^8.0.4",
     "motion": "^12.26.2",
     "next": "16.1.1-canary.29",
     "react": "19.2.3",
@@ -24,6 +30,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.1.1-canary.29",
     "tailwindcss": "^4",

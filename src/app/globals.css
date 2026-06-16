@@ -1,26 +1,31 @@
 @import "tailwindcss";
 
+/* ─── Sóbarlang-fény design tokenek ─── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #1A231E;
+  --stone: #F2ECE2;
+  --salt: #E7AE8E;
+  --moss: #5E7E62;
+  --mist: #C7D1C5;
+  --bark: #2B2620;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Színek */
+  --color-ink: var(--ink);
+  --color-stone: var(--stone);
+  --color-salt: var(--salt);
+  --color-moss: var(--moss);
+  --color-mist: var(--mist);
+  --color-bark: var(--bark);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Fontok */
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-work-sans);
+  --font-mono: var(--font-ibm-plex-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--stone);
+  color: var(--bark);
 }

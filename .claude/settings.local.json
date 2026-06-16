@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git clone *)",
+      "Bash(gh auth *)",
+      "PowerShell(git config --global credential.helper)",
+      "PowerShell(git credential-manager version 2>&1)",
+      "PowerShell(git ls-remote https://github.com/bluenetdev/bluenet-core.git 2>&1)",
+      "PowerShell($src = \"C:\\\\Users\\\\vona2\\\\Desktop\\\\Vállalkozás\\\\BlueNet\\\\Web Projektek\\\\_bluenet-core-tmp\"; $dst = \"C:\\\\Users\\\\vona2\\\\Desktop\\\\Vállalkozás\\\\BlueNet\\\\Web Projektek\\\\Viki Vendégház\"; Get-ChildItem -Path $src -Force | ForEach-Object { Copy-Item -Path $_.FullName -Destination $dst -Recurse -Force }; \"Done\")"
+    ]
+  }
+}
