@@ -1,7 +1,5 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 interface BookingEmailData {
   name: string;
   email: string;
@@ -14,6 +12,7 @@ interface BookingEmailData {
 }
 
 export async function sendBookingNotification(data: BookingEmailData) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const nights =
     Math.round(
       (new Date(data.checkOut).getTime() - new Date(data.checkIn).getTime()) /
