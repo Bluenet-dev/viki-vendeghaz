@@ -91,6 +91,7 @@ export default async function AdminNaptarPage({
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h1 className="text-2xl font-display font-semibold">Naptár</h1>
+        {/* iCal szinkron – ideiglenesen inaktív (aktiváláshoz: töröld a hidden class-t)
         <div className="flex gap-2">
           <form action={syncIcal}>
             <button type="submit" className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-sm rounded-lg transition-colors">
@@ -101,6 +102,7 @@ export default async function AdminNaptarPage({
             ⚙ Beállítások
           </Link>
         </div>
+        */}
       </div>
 
       {/* Hónap navigáció */}

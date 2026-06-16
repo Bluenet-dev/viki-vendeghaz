@@ -4,6 +4,8 @@ import { rooms, availability } from "@/db/schema";
 import { asc, eq, gte } from "drizzle-orm";
 import { BookingForm } from "./booking-form";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Foglalás",
   description:
