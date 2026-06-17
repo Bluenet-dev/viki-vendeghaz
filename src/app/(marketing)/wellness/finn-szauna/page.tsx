@@ -1,13 +1,18 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { db } from "@/db";
+import { wellnessServices } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { WellnessHeroImage } from "@/components/wellness-hero-image";
 
 export const metadata: Metadata = {
   title: "Finn szauna Szilvásvárad",
   description:
-    "Hagyományos finn gőzszauna Szilvásváradon. Méregtelenítés, izomrelaxáció, vérkeringés-javítás. 1 500 Ft/fő/óra, 19:00-ig.",
+    "Hagyományos finn gőzszauna Szilvásváradon. Méregtelenítés, izomrelaxáció, vérkeringés-javítás. 1 500 Ft/fő/óra, 21:00-ig.",
 };
 
-export default function FinnSzaunaPage() {
+export default async function FinnSzaunaPage() {
+  const [service] = await db.select().from(wellnessServices).where(eq(wellnessServices.slug, "finn-szauna"));
   return (
     <div className="pt-16 bg-stone min-h-screen">
       <section className="bg-ink py-20 px-6">
@@ -20,6 +25,7 @@ export default function FinnSzaunaPage() {
             távoznak a szervezetből, az izmok ellazulnak, a vérkeringés javul és
             a stressz szint csökken.
           </p>
+          <WellnessHeroImage category="finn-szauna" />
         </div>
       </section>
 
@@ -45,13 +51,13 @@ export default function FinnSzaunaPage() {
           <div className="space-y-4">
             <div className="bg-white rounded-2xl border border-ink/10 p-6">
               <p className="font-mono text-xs uppercase tracking-widest text-salt mb-2">Ár</p>
-              <p className="font-display text-4xl text-ink">1 500 Ft</p>
-              <p className="text-bark/50 text-sm mt-1">/fő/óra</p>
+              <p className="font-display text-4xl text-ink">{service?.guestPriceLabel ?? "1 500 Ft"}</p>
+              <p className="text-bark/50 text-sm mt-1">{service?.externalPriceLabel ?? "Csak szállóvendégeknek"}</p>
             </div>
             <div className="bg-white rounded-2xl border border-ink/10 p-6">
               <p className="font-mono text-xs uppercase tracking-widest text-salt mb-2">Nyitvatartás</p>
-              <p className="font-display text-2xl text-ink">19:00-ig</p>
-              <p className="text-bark/50 text-sm mt-1">minden nap</p>
+              <p className="font-display text-2xl text-ink">{service?.openingHours ?? "21:00-ig"}</p>
+              <p className="text-bark/50 text-sm mt-1">{service?.note ?? "Előre egyeztetés szükséges"}</p>
             </div>
           </div>
         </div>

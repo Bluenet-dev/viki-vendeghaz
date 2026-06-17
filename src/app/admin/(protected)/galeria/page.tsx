@@ -34,8 +34,12 @@ async function deleteImage(formData: FormData) {
 
 const CATEGORIES = [
   { value: "szobak", label: "Szobák" },
-  { value: "wellness", label: "Wellness" },
+  { value: "wellness", label: "Wellness (általános)" },
   { value: "sobarlang", label: "Sóbarlang" },
+  { value: "finn-szauna", label: "Finn szauna" },
+  { value: "infraszauna", label: "Infraszauna" },
+  { value: "dezsafurdo", label: "Dézsafürdő" },
+  { value: "kert-medence", label: "Kert & medence" },
   { value: "udvar", label: "Udvar & kert" },
   { value: "termeszet", label: "Természet" },
   { value: "etkezes", label: "Étkezés" },

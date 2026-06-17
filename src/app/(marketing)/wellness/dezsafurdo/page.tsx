@@ -1,5 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { db } from "@/db";
+import { wellnessServices } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { WellnessHeroImage } from "@/components/wellness-hero-image";
 
 export const metadata: Metadata = {
   title: "Dézsafürdő Szilvásvárad",
@@ -7,7 +11,8 @@ export const metadata: Metadata = {
     "Kültéri dézsafürdő Szilvásváradon. Csillagos ég alatt, meleg vízben – romantikus kikapcsolódás télen és nyáron. Felfűtési díj 7 000 Ft/nap.",
 };
 
-export default function DezsafurdoPage() {
+export default async function DezsafurdoPage() {
+  const [service] = await db.select().from(wellnessServices).where(eq(wellnessServices.slug, "dezsafurdo"));
   return (
     <div className="pt-16 bg-stone min-h-screen">
       <section className="bg-ink py-20 px-6">
@@ -19,6 +24,7 @@ export default function DezsafurdoPage() {
             vendégeink körében. Az izmok ellazulnak, a vérkeringés javul, a
             stressz szint csökken, és az ízületek is fájdalommentesebbek lesznek.
           </p>
+          <WellnessHeroImage category="dezsafurdo" />
         </div>
       </section>
 
@@ -39,14 +45,13 @@ export default function DezsafurdoPage() {
           <div className="space-y-4">
             <div className="bg-white rounded-2xl border border-ink/10 p-6">
               <p className="font-mono text-xs uppercase tracking-widest text-salt mb-2">Felfűtési díj</p>
-              <p className="font-display text-4xl text-ink">7 000 Ft</p>
-              <p className="text-bark/50 text-sm mt-1">/nap</p>
+              <p className="font-display text-4xl text-ink">{service?.guestPriceLabel ?? "7 000 Ft"}</p>
+              <p className="text-bark/50 text-sm mt-1">{service?.openingHours ?? "23:00-ig"}</p>
             </div>
             <div className="bg-white rounded-2xl border border-ink/10 p-6">
               <p className="font-mono text-xs uppercase tracking-widest text-salt mb-2">Foglalás</p>
               <p className="text-bark/70 text-sm leading-relaxed">
-                Előzetes bejelentés szükséges, hogy a dézsafürdő a kívánt
-                időpontra felfűtve készen álljon.
+                {service?.note ?? "Előzetes bejelentés szükséges, hogy a dézsafürdő a kívánt időpontra felfűtve készen álljon."}
               </p>
             </div>
           </div>

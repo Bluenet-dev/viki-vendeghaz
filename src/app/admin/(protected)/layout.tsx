@@ -8,6 +8,8 @@ export const dynamic = "force-dynamic";
 const navItems = [
   { href: "/admin", label: "Áttekintés" },
   { href: "/admin/szobak", label: "Szobák" },
+  { href: "/admin/arazas", label: "Árazás" },
+  { href: "/admin/wellness", label: "Wellness" },
   { href: "/admin/csomagok", label: "Csomagok" },
   { href: "/admin/naptar", label: "Naptár" },
   { href: "/admin/blog", label: "Blog" },

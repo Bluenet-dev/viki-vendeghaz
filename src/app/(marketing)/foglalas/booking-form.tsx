@@ -1,6 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import {
+  calculateBookingPrice,
+  getLowestPriceForScope,
+  getMinStay,
+  isWholeHouseOnlyForDate,
+  type PricingData,
+  type RoomScope,
+} from "@/lib/pricing";
 
 interface Room {
   slug: string | null;
@@ -20,6 +28,13 @@ const MONTHS_HU = ["Január","Február","Március","Április","Május","Június"
 const DAYS_HU = ["H","K","Sze","Cs","P","Szo","V"];
 const MAX_GUESTS = 12;
 
+// Az alapágyak melletti pótágy/kanapé szöveges feltüntetése (a kapacitás-szám már ezt tartalmazza).
+const CAPACITY_NOTE: Record<string, string> = {
+  "szoba-1": "2 fő + 1 pótágy",
+  "szoba-2": "2 fő + 1 pótágy",
+  superior: "2 fő + 2 fő pótágy (kihúzható kanapé)",
+};
+
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
 }
@@ -27,7 +42,15 @@ function getFirstDayOfMonth(year: number, month: number) {
   return (new Date(year, month, 1).getDay() + 6) % 7;
 }
 
-export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays: BlockedDay[] }) {
+export function BookingForm({
+  rooms,
+  blockedDays,
+  pricingData,
+}: {
+  rooms: Room[];
+  blockedDays: BlockedDay[];
+  pricingData: PricingData;
+}) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -61,14 +84,62 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
     selectedRoomsData.reduce((sum, r) => sum + (r.capacity ?? 2), 0),
     MAX_GUESTS
   );
-  const minPrice = selectedRoomsData.reduce((sum, r) => sum + (r.priceFrom ?? 0), 0);
 
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0;
     return Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000);
   }, [checkIn, checkOut]);
 
-  const estimatedPrice = minPrice > 0 && nights > 0 ? minPrice * nights : null;
+  // Ha az érkezési nap "csak egész ház" időszakba esik (nyár, Karácsony, Szilveszter),
+  // egyedi szoba nem választható – automatikusan az egész házra állunk.
+  const checkInForcesWholeHouse = checkIn
+    ? isWholeHouseOnlyForDate(new Date(checkIn + "T00:00:00"), pricingData)
+    : false;
+
+  useEffect(() => {
+    if (checkInForcesWholeHouse && !wholeHouse) setWholeHouse(true);
+  }, [checkInForcesWholeHouse, wholeHouse]);
+
+  const priceResult = useMemo(() => {
+    if (!checkIn || !checkOut || nights <= 0) return null;
+    if (wholeHouse) {
+      return calculateBookingPrice({ checkIn, checkOut, roomScope: "egesz_haz", guests, data: pricingData });
+    }
+    const threshold = pricingData.settings?.extraGuestThreshold ?? 10;
+    const feePerNight = pricingData.settings?.extraGuestFeePerNight ?? 7000;
+    let basePrice = 0;
+    let priceOnRequest = false;
+    let allAvailable = true;
+    for (const slug of activeSlugs) {
+      const r = calculateBookingPrice({ checkIn, checkOut, roomScope: slug as RoomScope, guests: 0, data: pricingData });
+      priceOnRequest = priceOnRequest || r.priceOnRequest;
+      allAvailable = allAvailable && r.allAvailable;
+      basePrice += r.basePrice ?? 0;
+    }
+    const extraGuestFee = guests > threshold ? (guests - threshold) * feePerNight * nights : 0;
+    const totalPrice = allAvailable && !priceOnRequest ? basePrice + extraGuestFee : null;
+    return { nights, basePrice, extraGuestFee, totalPrice, priceOnRequest, allAvailable };
+  }, [checkIn, checkOut, nights, wholeHouse, guests, activeSlugs, pricingData]);
+
+  const estimatedPrice = priceResult?.totalPrice ?? null;
+
+  // Szoba-választó kártyák ár-felirata: ha már van kiválasztott dátum, az adott
+  // időszakra számolt tényleges ár jelenik meg; ha még nincs, a legalacsonyabb
+  // ("-tól") ár a teljes árlistából, jelezve, hogy ez szezontól függően változik.
+  function getCardPriceLabel(slug: RoomScope): string | null {
+    if (checkIn && checkOut && nights > 0) {
+      const r = calculateBookingPrice({ checkIn, checkOut, roomScope: slug, guests: 0, data: pricingData });
+      if (r.priceOnRequest) return "Egyedi ajánlat";
+      if (!r.allAvailable) return "Nem foglalható ekkor";
+      if (r.basePrice == null) return null;
+      const perNight = Math.round(r.basePrice / r.nights);
+      return `${perNight.toLocaleString("hu")} Ft/éj (a választott dátumra)`;
+    }
+    const lowest = getLowestPriceForScope(slug, pricingData);
+    return lowest != null ? `${lowest.toLocaleString("hu")} Ft/éj-től` : null;
+  }
+
+  const wholeHousePriceLabel = getCardPriceLabel("egesz_haz");
 
   function toggleRoom(slug: string) {
     if (wholeHouse) return;
@@ -106,14 +177,11 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
     return true;
   }
 
-  // Hétvégi érkezés: péntek (5) vagy szombat (6) → min. 2 éjszaka
-  function isWeekendArrival(dateStr: string): boolean {
-    const day = new Date(dateStr).getDay();
-    return day === 5 || day === 6;
-  }
-
-  const minNightsRequired = checkIn && isWeekendArrival(checkIn) ? 2 : 1;
-  const minNightsError = nights === 1 && minNightsRequired === 2;
+  const minNightsRequired = checkIn
+    ? getMinStay(new Date(checkIn + "T00:00:00"), wholeHouse ? "egesz_haz" : "szoba-1", pricingData)
+    : 1;
+  const minNightsError = nights > 0 && nights < minNightsRequired;
+  const unavailableError = nights > 0 && priceResult != null && !priceResult.allAvailable;
 
   function handleDayClick(dateStr: string) {
     const d = new Date(dateStr);
@@ -217,39 +285,53 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-sm text-ink">Egész vendégház</p>
-                <p className="text-xs text-bark/50 mt-0.5">Mindhárom szoba + közös helyiségek, max. {MAX_GUESTS} fő</p>
+                <p className="text-xs text-bark/50 mt-0.5">
+                  3 szoba (3+3+4 fő) + a nappaliban további 2 fő, max. {MAX_GUESTS} fő
+                </p>
               </div>
-              {minPrice > 0 && (
-                <p className="text-sm text-moss font-medium ml-4 shrink-0">
-                  {rooms.reduce((s, r) => s + (r.priceFrom ?? 0), 0).toLocaleString("hu")} Ft/éj
+              {wholeHousePriceLabel && (
+                <p className="text-sm text-moss font-medium ml-4 shrink-0 text-right">
+                  {wholeHousePriceLabel}
                 </p>
               )}
             </div>
           </button>
 
           {/* Egyéni szobák */}
-          <div className={`grid sm:grid-cols-3 gap-2 transition-opacity ${wholeHouse ? "opacity-40 pointer-events-none" : ""}`}>
+          <div className={`grid sm:grid-cols-3 gap-2 transition-opacity ${wholeHouse || checkInForcesWholeHouse ? "opacity-40 pointer-events-none" : ""}`}>
             {rooms.map((r) => {
               const active = selectedSlugs.has(r.slug ?? "");
+              const priceLabel = r.slug ? getCardPriceLabel(r.slug as RoomScope) : null;
               return (
                 <button
                   key={r.slug}
                   type="button"
                   onClick={() => toggleRoom(r.slug ?? "")}
+                  disabled={checkInForcesWholeHouse}
                   className={`p-4 rounded-xl border text-left transition-colors ${active && !wholeHouse ? "border-moss bg-moss/5" : "border-ink/10 hover:border-ink/25"}`}
                 >
                   <div className={`w-4 h-4 rounded border mb-2 flex items-center justify-center ${active && !wholeHouse ? "bg-moss border-moss" : "border-ink/30"}`}>
                     {active && !wholeHouse && <span className="text-white text-xs leading-none">✓</span>}
                   </div>
                   <p className="font-medium text-sm text-ink">{r.name}</p>
-                  <p className="text-xs text-bark/50 mt-0.5">{r.capacity} fő</p>
-                  {r.priceFrom && (
-                    <p className="text-xs text-moss mt-1">{r.priceFrom.toLocaleString("hu")} Ft/éj</p>
-                  )}
+                  <p className="text-xs text-bark/50 mt-0.5">
+                    {r.slug && CAPACITY_NOTE[r.slug] ? CAPACITY_NOTE[r.slug] : `${r.capacity} fő`}
+                    {" "}(max. {r.capacity} fő)
+                  </p>
+                  {priceLabel && <p className="text-xs text-moss mt-1">{priceLabel}</p>}
                 </button>
               );
             })}
           </div>
+          {checkInForcesWholeHouse && (
+            <p className="text-xs text-amber-700 bg-amber-50 px-4 py-2.5 rounded-lg">
+              A kiválasztott időszakban (nyár / Karácsony / Szilveszter) csak az egész vendégház foglalható.
+            </p>
+          )}
+          <p className="text-xs text-bark/40">
+            Az árak szezontól és naptípustól (hétköznap/hétvége) függően változnak. A fenti
+            árak a legalacsonyabb elérhető árat jelzik – válasszon dátumot lent a pontos árért.
+          </p>
         </div>
 
         {/* Összesítő */}
@@ -259,12 +341,6 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
           </span>
           <span className="text-bark/25">·</span>
           <span>max. {totalCapacity} fő</span>
-          {minPrice > 0 && (
-            <>
-              <span className="text-bark/25">·</span>
-              <span className="text-moss font-medium">{minPrice.toLocaleString("hu")} Ft/éj-től</span>
-            </>
-          )}
         </div>
       </div>
 
@@ -321,12 +397,24 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
             <span className="text-bark/60">Érkezés: <strong className="text-ink">{checkIn}</strong></span>
             {checkOut && <span className="text-bark/60">Távozás: <strong className="text-ink">{checkOut}</strong></span>}
             {nights > 0 && <span className="text-moss font-medium">{nights} éjszaka</span>}
-            {estimatedPrice && <span className="text-bark/60">Becsült ár: <strong className="text-ink">{estimatedPrice.toLocaleString("hu")} Ft</strong></span>}
+            {priceResult?.priceOnRequest && (
+              <span className="text-bark/60">
+                Ár: <strong className="text-ink">Egyedi ajánlat – hívjon: +36 70 410-8282</strong>
+              </span>
+            )}
+            {!priceResult?.priceOnRequest && estimatedPrice != null && (
+              <span className="text-bark/60">Becsült ár: <strong className="text-ink">{estimatedPrice.toLocaleString("hu")} Ft</strong></span>
+            )}
           </div>
         )}
         {minNightsError && (
           <p className="mt-2 text-sm text-amber-700 bg-amber-50 px-4 py-2.5 rounded-lg">
-            Hétvégi érkezésnél (péntek / szombat) minimum 2 éjszakát kell foglalni.
+            A kiválasztott időszakban minimum {minNightsRequired} éjszakát kell foglalni.
+          </p>
+        )}
+        {unavailableError && !minNightsError && (
+          <p className="mt-2 text-sm text-amber-700 bg-amber-50 px-4 py-2.5 rounded-lg">
+            A kiválasztott időszakban ez a szoba-kombináció nem foglalható. Válassza az egész házat.
           </p>
         )}
       </div>
@@ -368,7 +456,7 @@ export function BookingForm({ rooms, blockedDays }: { rooms: Room[]; blockedDays
 
       <button
         type="submit"
-        disabled={!checkIn || !checkOut || !name || !email || status === "sending" || minNightsError}
+        disabled={!checkIn || !checkOut || !name || !email || status === "sending" || minNightsError || unavailableError}
         className="w-full py-4 rounded-full bg-salt text-bark font-sans font-semibold text-base hover:bg-salt/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {status === "sending" ? "Küldés..." : "Foglalási kérés elküldése"}

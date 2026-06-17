@@ -1,9 +1,11 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { db } from "@/db";
-import { rooms } from "@/db/schema";
+import { rooms, pricingRules, gallery } from "@/db/schema";
 import { asc } from "drizzle-orm";
 import { eq } from "drizzle-orm";
+import { getLowestPriceForScope, type RoomScope } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Szobák & árak",
@@ -17,6 +19,15 @@ export default async function SzobakPage() {
     .from(rooms)
     .where(eq(rooms.active, true))
     .orderBy(asc(rooms.sortOrder));
+
+  const allRules = await db.select().from(pricingRules);
+  const pricingData = { seasons: [], rules: allRules, holidays: [], holidayPrices: [], settings: null };
+
+  const roomImages = await db
+    .select()
+    .from(gallery)
+    .where(eq(gallery.category, "szobak"))
+    .orderBy(asc(gallery.sortOrder));
 
   return (
     <div className="pt-16 bg-stone min-h-screen">
@@ -38,59 +49,87 @@ export default async function SzobakPage() {
       {/* Szobák */}
       <section className="py-16 px-6">
         <div className="mx-auto max-w-4xl space-y-8">
-          {allRooms.map((room) => {
+          {allRooms.map((room, i) => {
             const amenities = room.amenities
               ? room.amenities.split(",").map((s) => s.trim()).filter(Boolean)
               : [];
+            const lowestPrice = room.slug
+              ? getLowestPriceForScope(room.slug as RoomScope, pricingData)
+              : null;
+            const image = roomImages[i];
 
             return (
               <div
                 key={room.id}
                 id={room.slug ?? String(room.id)}
-                className="bg-white rounded-2xl border border-ink/10 p-8"
+                className="bg-white rounded-2xl border border-ink/10 overflow-hidden"
               >
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div>
-                    <h2 className="font-display text-3xl text-ink">{room.name}</h2>
-                    {room.bedType && (
-                      <p className="mt-1 font-mono text-xs uppercase tracking-widest text-moss">
-                        {room.bedType}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    {room.priceFrom != null ? (
-                      <>
-                        <p className="font-mono text-xs uppercase tracking-widest text-mist/50 mb-1">-tól</p>
-                        <p className="font-display text-3xl text-ink">
-                          {room.priceFrom.toLocaleString("hu-HU")} Ft
-                        </p>
-                        <p className="text-xs text-bark/40">/éjszaka</p>
-                      </>
-                    ) : (
-                      <p className="font-mono text-xs uppercase tracking-widest text-mist/40">
-                        Ár: hamarosan
-                      </p>
-                    )}
-                  </div>
+                <div className="relative aspect-[16/9] bg-ink/5">
+                  {image ? (
+                    <Image
+                      src={image.url}
+                      alt={image.alt ?? room.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 800px"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="font-mono text-xs uppercase tracking-widest text-mist/40">
+                        Fotó hamarosan
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                {room.description && (
-                  <p className="mt-4 text-bark/70 leading-relaxed">{room.description}</p>
-                )}
+                <div className="p-8">
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div>
+                      <h2 className="font-display text-3xl text-ink">{room.name}</h2>
+                      {room.bedType && (
+                        <p className="mt-1 font-mono text-xs uppercase tracking-widest text-moss">
+                          {room.bedType}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      {lowestPrice != null ? (
+                        <>
+                          <p className="font-mono text-xs uppercase tracking-widest text-mist/50 mb-1">-tól</p>
+                          <p className="font-display text-3xl text-ink">
+                            {lowestPrice.toLocaleString("hu-HU")} Ft
+                          </p>
+                          <p className="text-xs text-bark/40">/éjszaka</p>
+                        </>
+                      ) : (
+                        <p className="font-mono text-xs uppercase tracking-widest text-mist/40">
+                          Ár: hamarosan
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
-                {amenities.length > 0 && (
-                  <ul className="mt-5 flex flex-wrap gap-2">
-                    {amenities.map((f) => (
-                      <li
-                        key={f}
-                        className="px-3 py-1 rounded-full bg-stone text-xs font-sans text-bark/70 border border-ink/8"
-                      >
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                  {room.description && (
+                    <p className="mt-4 text-bark/70 leading-relaxed">{room.description}</p>
+                  )}
+
+                  <p className="mt-3 text-xs text-bark/40">
+                    Nyári szezonban (június–augusztus) ez a szoba külön nem foglalható, csak az egész vendégház.
+                  </p>
+
+                  {amenities.length > 0 && (
+                    <ul className="mt-5 flex flex-wrap gap-2">
+                      {amenities.map((f) => (
+                        <li
+                          key={f}
+                          className="px-3 py-1 rounded-full bg-stone text-xs font-sans text-bark/70 border border-ink/8"
+                        >
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             );
           })}

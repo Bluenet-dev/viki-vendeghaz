@@ -1,5 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { db } from "@/db";
+import { wellnessServices } from "@/db/schema";
+import { asc } from "drizzle-orm";
 
 export const metadata: Metadata = {
   title: "Wellness",
@@ -7,40 +10,21 @@ export const metadata: Metadata = {
     "Sóbarlang, finn szauna, infraszauna, dézsafürdő és kültéri medence Szilvásváradon. Komplex wellness élmény a Bükki Nemzeti Park szívében.",
 };
 
-const services = [
-  {
-    name: "Sóbarlang",
-    slug: "sobarlang",
-    desc: "5 tonna himalája és parajdi só, 14 m², 6 férőhely. Fényterápia, hangterápia, TV. Szállóvendégeknek 45 perc/nap ingyenes.",
-    highlight: "45 perc ingyenes szállóvendégeknek",
-  },
-  {
-    name: "Finn szauna",
-    slug: "finn-szauna",
-    desc: "Hagyományos gőzszauna az igazi izzadásterápiához. Méregtelenítés, izomrelaxáció, vérkeringés-javítás.",
-    highlight: "1 500 Ft/fő/óra · 19:00-ig",
-  },
-  {
-    name: "Infraszauna",
-    slug: "infraszauna",
-    desc: "Kíméletesebb, mélyreható infravörös melegítés. A Superior szoba, illetve teljes ház foglalásakor elérhető.",
-    highlight: "1 000 Ft/fő/óra · Superior vendégeknek",
-  },
-  {
-    name: "Dézsafürdő",
-    slug: "dezsafurdo",
-    desc: "Csillagos égbolt alatt, meleg vízben – romantikus kikapcsolódás télen és nyáron egyaránt.",
-    highlight: "7 000 Ft/nap felfűtési díj",
-  },
-  {
-    name: "Kert & medence",
-    slug: "kert-medence",
-    desc: "Kültéri fa medence a gondosan kialakított kertben. Tavasztól őszig, este 19:00-ig használható.",
-    highlight: "Ingyenes szállóvendégeknek",
-  },
-];
+const descriptions: Record<string, string> = {
+  sobarlang:
+    "5 tonna himalája és parajdi só, 14 m², 6 férőhely. Fényterápia, hangterápia, TV. Szállóvendégeknek 45 perc/nap ingyenes.",
+  "finn-szauna":
+    "Hagyományos gőzszauna az igazi izzadásterápiához. Méregtelenítés, izomrelaxáció, vérkeringés-javítás.",
+  infraszauna:
+    "Kíméletesebb, mélyreható infravörös melegítés. A Superior szoba, illetve teljes ház foglalásakor elérhető.",
+  dezsafurdo:
+    "Csillagos égbolt alatt, meleg vízben – romantikus kikapcsolódás télen és nyáron egyaránt.",
+  "kert-medence":
+    "Kültéri fa medence a gondosan kialakított kertben. Tavasztól őszig használható.",
+};
 
-export default function WellnessPage() {
+export default async function WellnessPage() {
+  const services = await db.select().from(wellnessServices).orderBy(asc(wellnessServices.sortOrder));
   return (
     <div className="pt-16 bg-stone min-h-screen">
       <section className="bg-ink py-20 px-6">
@@ -59,7 +43,7 @@ export default function WellnessPage() {
 
       <section className="py-16 px-6">
         <div className="mx-auto max-w-4xl space-y-6">
-          {services.map((s, i) => (
+          {services.map((s) => (
             <Link
               key={s.slug}
               href={`/wellness/${s.slug}`}
@@ -75,10 +59,11 @@ export default function WellnessPage() {
                     {s.name}
                   </h2>
                   <span className="font-mono text-xs uppercase tracking-widest text-salt">
-                    {s.highlight}
+                    {s.guestPriceLabel}
+                    {s.openingHours ? ` · ${s.openingHours}` : ""}
                   </span>
                 </div>
-                <p className="mt-2 text-bark/70 leading-relaxed">{s.desc}</p>
+                <p className="mt-2 text-bark/70 leading-relaxed">{descriptions[s.slug] ?? ""}</p>
                 <p className="mt-4 text-sm text-moss font-sans">
                   Részletek & árak →
                 </p>

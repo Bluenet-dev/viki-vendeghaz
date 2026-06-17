@@ -1,5 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { db } from "@/db";
+import { wellnessServices, wellnessPriceTiers } from "@/db/schema";
+import { eq, asc } from "drizzle-orm";
+import { WellnessHeroImage } from "@/components/wellness-hero-image";
 
 export const metadata: Metadata = {
   title: "Sóbarlang Szilvásvárad",
@@ -7,25 +11,15 @@ export const metadata: Metadata = {
     "Sóbarlang Szilvásváradon: 5 tonna himalája és parajdi só, 14 m², 6 férőhely. Légzőszervi, allergiás panaszok enyhítése, mély relaxáció. Szállóvendégeknek 45 perc/nap ingyenes.",
 };
 
-const egyeniArak = [
-  { tipus: "Felnőtt (külsős)", ar: "1 250 Ft" },
-  { tipus: "Gyermek 2 éves korig", ar: "Ingyenes" },
-  { tipus: "Diák (18 évesig) / nyugdíjas", ar: "950 Ft" },
-  { tipus: "Gyermek + kísérő felnőtt", ar: "1 500 Ft" },
-  { tipus: "2 gyermek + 1 felnőtt", ar: "2 000 Ft" },
-  { tipus: "Családi (2 felnőtt + 2 gyermek)", ar: "2 600 Ft" },
-  { tipus: "Gyermek kieg. jegy (2–10 éves)", ar: "500 Ft" },
-];
-
-const berletArak = [
-  { tipus: "Felnőtt", ar: "11 500 Ft" },
-  { tipus: "Diák / nyugdíjas", ar: "9 500 Ft" },
-  { tipus: "1 gyermek + 1 felnőtt", ar: "15 000 Ft" },
-  { tipus: "2 gyermek + 1 felnőtt", ar: "17 500 Ft" },
-  { tipus: "Családi (2 gyermek + 2 felnőtt)", ar: "22 000 Ft" },
-];
-
-export default function SobarlangPage() {
+export default async function SobarlangPage() {
+  const [service] = await db.select().from(wellnessServices).where(eq(wellnessServices.slug, "sobarlang"));
+  const tiers = await db
+    .select()
+    .from(wellnessPriceTiers)
+    .where(eq(wellnessPriceTiers.serviceSlug, "sobarlang"))
+    .orderBy(asc(wellnessPriceTiers.sortOrder));
+  const egyeniArak = tiers.filter((t) => t.groupLabel === "Egyedi jegy");
+  const berletArak = tiers.filter((t) => t.groupLabel === "Bérlet (10x)");
   return (
     <div className="pt-16 bg-stone min-h-screen">
       {/* Hero */}
@@ -62,6 +56,7 @@ export default function SobarlangPage() {
               </div>
             ))}
           </div>
+          <WellnessHeroImage category="sobarlang" />
         </div>
       </section>
 
@@ -97,8 +92,8 @@ export default function SobarlangPage() {
               <p className="font-mono text-xs uppercase tracking-widest text-salt mb-4">
                 Szállóvendégeknek
               </p>
-              <p className="font-display text-4xl mb-2">Ingyenes</p>
-              <p className="text-mist/70 text-sm">45 perc / nap / vendég</p>
+              <p className="font-display text-4xl mb-2">{service?.guestPriceLabel ?? "Ingyenes"}</p>
+              <p className="text-mist/70 text-sm">{service?.guestPriceNote ?? "45 perc / nap / vendég"}</p>
               <p className="text-mist/50 text-xs mt-1">
                 A további használat az alábbi árakon lehetséges.
               </p>
@@ -117,9 +112,9 @@ export default function SobarlangPage() {
             <table className="w-full text-sm">
               <tbody className="divide-y divide-ink/5">
                 {egyeniArak.map((r) => (
-                  <tr key={r.tipus}>
-                    <td className="py-2.5 text-bark/70">{r.tipus}</td>
-                    <td className="py-2.5 text-right font-medium text-ink">{r.ar}</td>
+                  <tr key={r.id}>
+                    <td className="py-2.5 text-bark/70">{r.tierLabel}</td>
+                    <td className="py-2.5 text-right font-medium text-ink">{r.price}</td>
                   </tr>
                 ))}
               </tbody>
@@ -132,9 +127,9 @@ export default function SobarlangPage() {
             <table className="w-full text-sm">
               <tbody className="divide-y divide-ink/5">
                 {berletArak.map((r) => (
-                  <tr key={r.tipus}>
-                    <td className="py-2.5 text-bark/70">{r.tipus}</td>
-                    <td className="py-2.5 text-right font-medium text-ink">{r.ar}</td>
+                  <tr key={r.id}>
+                    <td className="py-2.5 text-bark/70">{r.tierLabel}</td>
+                    <td className="py-2.5 text-right font-medium text-ink">{r.price}</td>
                   </tr>
                 ))}
               </tbody>

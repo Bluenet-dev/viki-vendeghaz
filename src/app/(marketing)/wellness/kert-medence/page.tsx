@@ -1,13 +1,18 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { db } from "@/db";
+import { wellnessServices } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { WellnessHeroImage } from "@/components/wellness-hero-image";
 
 export const metadata: Metadata = {
   title: "Kert & medence Szilvásvárad",
   description:
-    "Kültéri fa medence és gondozott kert Szilvásváradon. Tavasztól őszig, este 19:00-ig ingyenesen használható szállóvendégeknek.",
+    "Kültéri fa medence és gondozott kert Szilvásváradon. Tavasztól őszig, este 21:00-ig ingyenesen használható szállóvendégeknek.",
 };
 
-export default function KertMedencePage() {
+export default async function KertMedencePage() {
+  const [service] = await db.select().from(wellnessServices).where(eq(wellnessServices.slug, "kert-medence"));
   return (
     <div className="pt-16 bg-stone min-h-screen">
       <section className="bg-ink py-20 px-6">
@@ -19,6 +24,7 @@ export default function KertMedencePage() {
             helyszínt nyújt a napsütéses napokhoz – legyen szó békés olvasásról,
             gyermekek fürdőzéséről vagy egy pohár bor melletti esténkézésről.
           </p>
+          <WellnessHeroImage category="kert-medence" />
         </div>
       </section>
 
@@ -53,14 +59,14 @@ export default function KertMedencePage() {
           <div className="space-y-4">
             <div className="bg-moss/10 rounded-2xl border border-moss/20 p-6">
               <p className="font-mono text-xs uppercase tracking-widest text-moss mb-2">Ár</p>
-              <p className="font-display text-4xl text-ink">Ingyenes</p>
+              <p className="font-display text-4xl text-ink">{service?.guestPriceLabel ?? "Ingyenes"}</p>
               <p className="text-bark/50 text-sm mt-1">szállóvendégeknek</p>
             </div>
             <div className="bg-white rounded-2xl border border-ink/10 p-6">
               <p className="font-mono text-xs uppercase tracking-widest text-salt mb-2">Szezon & nyitvatartás</p>
               <p className="text-bark/70 text-sm leading-relaxed">
-                Tavasztól őszig elérhető.<br />
-                A medence este <strong>19:00-ig</strong> használható.
+                {service?.note ?? "Április – október"}.<br />
+                A medence este <strong>{service?.openingHours ?? "21:00-ig"}</strong> használható.
               </p>
             </div>
           </div>

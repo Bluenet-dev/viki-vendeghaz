@@ -1,8 +1,17 @@
 import type { Metadata } from "next";
 import { db } from "@/db";
-import { rooms, availability } from "@/db/schema";
-import { asc, eq, gte } from "drizzle-orm";
+import {
+  rooms,
+  availability,
+  seasons,
+  pricingRules,
+  holidayOverrides,
+  holidayPrices,
+  pricingSettings,
+} from "@/db/schema";
+import { asc, eq } from "drizzle-orm";
 import { BookingForm } from "./booking-form";
+import type { PricingData } from "@/lib/pricing";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +40,22 @@ export default async function FoglalasPage() {
     .where(eq(availability.status, "blocked"))
     .then((rows) => rows.filter((r) => r.date >= today));
 
+  const [allSeasons, allRules, allHolidays, allHolidayPrices, settingsRows] = await Promise.all([
+    db.select().from(seasons).where(eq(seasons.active, true)),
+    db.select().from(pricingRules),
+    db.select().from(holidayOverrides).where(eq(holidayOverrides.active, true)),
+    db.select().from(holidayPrices),
+    db.select().from(pricingSettings).limit(1),
+  ]);
+
+  const pricingData: PricingData = {
+    seasons: allSeasons,
+    rules: allRules,
+    holidays: allHolidays,
+    holidayPrices: allHolidayPrices,
+    settings: settingsRows[0] ?? null,
+  };
+
   return (
     <div className="pt-16 bg-stone min-h-screen">
       <section className="bg-ink py-20 px-6">
@@ -48,7 +73,7 @@ export default async function FoglalasPage() {
 
       <section className="py-12 px-6">
         <div className="mx-auto max-w-2xl">
-          <BookingForm rooms={allRooms} blockedDays={blockedDays} />
+          <BookingForm rooms={allRooms} blockedDays={blockedDays} pricingData={pricingData} />
         </div>
       </section>
 
