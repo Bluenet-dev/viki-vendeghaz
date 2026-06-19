@@ -13,6 +13,12 @@ async function markRead(formData: FormData) {
   revalidatePath("/admin/uzenetek");
 }
 
+async function deleteMessage(formData: FormData) {
+  "use server";
+  await db.delete(messages).where(eq(messages.id, Number(formData.get("id"))));
+  revalidatePath("/admin/uzenetek");
+}
+
 export default async function AdminUzenetekPage() {
   const allMessages = await db.select().from(messages).orderBy(desc(messages.createdAt));
 
@@ -48,14 +54,22 @@ export default async function AdminUzenetekPage() {
                 )}
                 {msg.message && <p className="text-sm text-gray-300 leading-relaxed">{msg.message}</p>}
               </div>
-              {!msg.read && (
-                <form action={markRead} className="shrink-0">
+              <div className="flex flex-col gap-2 shrink-0">
+                {!msg.read && (
+                  <form action={markRead}>
+                    <input type="hidden" name="id" value={msg.id} />
+                    <button type="submit" className="text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors whitespace-nowrap w-full">
+                      Olvasottnak jelöl
+                    </button>
+                  </form>
+                )}
+                <form action={deleteMessage}>
                   <input type="hidden" name="id" value={msg.id} />
-                  <button type="submit" className="text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors whitespace-nowrap">
-                    Olvasottnak jelöl
+                  <button type="submit" className="text-xs px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-lg transition-colors whitespace-nowrap w-full">
+                    Törlés
                   </button>
                 </form>
-              )}
+              </div>
             </div>
           </div>
         ))}
