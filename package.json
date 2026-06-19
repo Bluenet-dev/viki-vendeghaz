@@ -24,6 +24,7 @@
     "node-ical": "^0.26.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "recharts": "^3.8.1",
     "resend": "^6.12.4",
     "tailwind-merge": "^3.4.0"
   },
