@@ -21,7 +21,7 @@ export default async function SzobakPage() {
     .orderBy(asc(rooms.sortOrder));
 
   const allRules = await db.select().from(pricingRules);
-  const pricingData = { seasons: [], rules: allRules, holidays: [], holidayPrices: [], settings: null };
+  const pricingData = { seasons: [], rules: allRules, holidays: [], holidayPrices: [], settings: null, roomCapacities: [] };
 
   const roomImages = await db
     .select()

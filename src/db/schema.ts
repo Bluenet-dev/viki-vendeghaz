@@ -169,14 +169,22 @@ export const holidayPrices = pgTable("holiday_prices", {
 // ─── Globális árazási beállítások (singleton) ──────────────────────────────
 export const pricingSettings = pgTable("pricing_settings", {
   id: serial("id").primaryKey(),
-  extraGuestThreshold: integer("extra_guest_threshold").notNull().default(10),
-  extraGuestFeePerNight: integer("extra_guest_fee_per_night").notNull().default(7000),
   depositPercent: integer("deposit_percent").notNull().default(10),
   ifaPerPersonPerNight: integer("ifa_per_person_per_night").notNull().default(600),
   cancellationFreeHours: integer("cancellation_free_hours").notNull().default(24),
   checkInFrom: text("check_in_from").default("15:00"),
   checkInTo: text("check_in_to").default("21:00"),
   checkOutUntil: text("check_out_until").default("10:00"),
+});
+
+// ─── Szoba-szintű alap-létszám és pótágy-felár ─────────────────────────────
+// A bázis-áron felül, a baseCapacity fölötti minden további vendég után
+// extraGuestFeePerNight Ft/éj pótdíj számolódik fel (pl. pótágy/kanapé).
+export const roomCapacityPricing = pgTable("room_capacity_pricing", {
+  id: serial("id").primaryKey(),
+  roomScope: text("room_scope").notNull().unique(), // "szoba-1" | "szoba-2" | "superior" | "egesz_haz"
+  baseCapacity: integer("base_capacity").notNull(),
+  extraGuestFeePerNight: integer("extra_guest_fee_per_night").notNull(),
 });
 
 // ─── Wellness szolgáltatások ────────────────────────────────────────────────

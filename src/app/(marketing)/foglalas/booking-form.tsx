@@ -105,18 +105,25 @@ export function BookingForm({
     if (wholeHouse) {
       return calculateBookingPrice({ checkIn, checkOut, roomScope: "egesz_haz", guests, data: pricingData });
     }
-    const threshold = pricingData.settings?.extraGuestThreshold ?? 10;
-    const feePerNight = pricingData.settings?.extraGuestFeePerNight ?? 7000;
+    const slugs = Array.from(activeSlugs).filter(Boolean) as RoomScope[];
+    if (slugs.length === 0) return null;
+    // Több szoba egyidejű foglalásánál a vendégeket egyenlően osztjuk szét a
+    // szobák közt, és mindegyik szoba a saját pótágy-díját számolja a rá eső részre.
+    const baseShare = Math.floor(guests / slugs.length);
+    let remainder = guests - baseShare * slugs.length;
     let basePrice = 0;
+    let extraGuestFee = 0;
     let priceOnRequest = false;
     let allAvailable = true;
-    for (const slug of activeSlugs) {
-      const r = calculateBookingPrice({ checkIn, checkOut, roomScope: slug as RoomScope, guests: 0, data: pricingData });
+    for (const slug of slugs) {
+      const share = baseShare + (remainder > 0 ? 1 : 0);
+      if (remainder > 0) remainder--;
+      const r = calculateBookingPrice({ checkIn, checkOut, roomScope: slug, guests: share, data: pricingData });
       priceOnRequest = priceOnRequest || r.priceOnRequest;
       allAvailable = allAvailable && r.allAvailable;
       basePrice += r.basePrice ?? 0;
+      extraGuestFee += r.extraGuestFee;
     }
-    const extraGuestFee = guests > threshold ? (guests - threshold) * feePerNight * nights : 0;
     const totalPrice = allAvailable && !priceOnRequest ? basePrice + extraGuestFee : null;
     return { nights, basePrice, extraGuestFee, totalPrice, priceOnRequest, allAvailable };
   }, [checkIn, checkOut, nights, wholeHouse, guests, activeSlugs, pricingData]);
@@ -406,6 +413,11 @@ export function BookingForm({
               <span className="text-bark/60">Becsült ár: <strong className="text-ink">{estimatedPrice.toLocaleString("hu")} Ft</strong></span>
             )}
           </div>
+        )}
+        {priceResult && priceResult.extraGuestFee > 0 && (
+          <p className="mt-1 text-xs text-bark/40">
+            Tartalmaz {priceResult.extraGuestFee.toLocaleString("hu")} Ft pótágy/pótfelár-díjat a megadott létszám miatt.
+          </p>
         )}
         {minNightsError && (
           <p className="mt-2 text-sm text-amber-700 bg-amber-50 px-4 py-2.5 rounded-lg">

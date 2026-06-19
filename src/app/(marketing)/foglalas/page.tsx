@@ -8,6 +8,7 @@ import {
   holidayOverrides,
   holidayPrices,
   pricingSettings,
+  roomCapacityPricing,
 } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { BookingForm } from "./booking-form";
@@ -40,12 +41,13 @@ export default async function FoglalasPage() {
     .where(eq(availability.status, "blocked"))
     .then((rows) => rows.filter((r) => r.date >= today));
 
-  const [allSeasons, allRules, allHolidays, allHolidayPrices, settingsRows] = await Promise.all([
+  const [allSeasons, allRules, allHolidays, allHolidayPrices, settingsRows, allRoomCapacities] = await Promise.all([
     db.select().from(seasons).where(eq(seasons.active, true)),
     db.select().from(pricingRules),
     db.select().from(holidayOverrides).where(eq(holidayOverrides.active, true)),
     db.select().from(holidayPrices),
     db.select().from(pricingSettings).limit(1),
+    db.select().from(roomCapacityPricing),
   ]);
 
   const pricingData: PricingData = {
@@ -54,6 +56,7 @@ export default async function FoglalasPage() {
     holidays: allHolidays,
     holidayPrices: allHolidayPrices,
     settings: settingsRows[0] ?? null,
+    roomCapacities: allRoomCapacities,
   };
 
   return (

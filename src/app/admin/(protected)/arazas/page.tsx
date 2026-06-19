@@ -6,6 +6,7 @@ import {
   holidayOverrides,
   holidayPrices,
   pricingSettings,
+  roomCapacityPricing,
 } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -150,14 +151,27 @@ async function updateHoliday(formData: FormData) {
   revalidatePath("/szobak");
 }
 
+async function updateRoomCapacity(formData: FormData) {
+  "use server";
+  const id = Number(formData.get("capacityId"));
+  await db
+    .update(roomCapacityPricing)
+    .set({
+      baseCapacity: Number(formData.get("baseCapacity")),
+      extraGuestFeePerNight: Number(formData.get("extraGuestFeePerNight")),
+    })
+    .where(eq(roomCapacityPricing.id, id));
+
+  revalidatePath("/admin/arazas");
+  revalidatePath("/foglalas");
+}
+
 async function updateSettings(formData: FormData) {
   "use server";
   const id = Number(formData.get("settingsId"));
   await db
     .update(pricingSettings)
     .set({
-      extraGuestThreshold: Number(formData.get("extraGuestThreshold")),
-      extraGuestFeePerNight: Number(formData.get("extraGuestFeePerNight")),
       depositPercent: Number(formData.get("depositPercent")),
       ifaPerPersonPerNight: Number(formData.get("ifaPerPersonPerNight")),
       cancellationFreeHours: Number(formData.get("cancellationFreeHours")),
@@ -192,6 +206,7 @@ export default async function AdminArazasPage({
   const allHolidays = await db.select().from(holidayOverrides).orderBy(asc(holidayOverrides.sortOrder));
   const allHolidayPrices = await db.select().from(holidayPrices);
   const [settings] = await db.select().from(pricingSettings).limit(1);
+  const allRoomCapacities = await db.select().from(roomCapacityPricing).orderBy(asc(roomCapacityPricing.id));
 
   const currentYear = new Date().getFullYear();
   const yearOptions = new Set<number>();
@@ -325,19 +340,36 @@ export default async function AdminArazasPage({
             </div>
           </section>
 
+          {/* Szoba-kapacitás & pótágy-díj összefoglaló */}
+          <section>
+            <h2 className="text-lg font-medium mb-3">Szoba-kapacitás &amp; pótágy-díj</h2>
+            <div className="border border-gray-800 rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-400 text-xs uppercase tracking-wide bg-gray-900">
+                    <th className="py-2 px-3">Szoba</th>
+                    <th className="py-2 px-3">Alap létszám</th>
+                    <th className="py-2 px-3">Pótágy-díj/fő/éj</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {allRoomCapacities.map((c) => (
+                    <tr key={c.id}>
+                      <td className="py-2 px-3 text-gray-200">{ROOM_SCOPE_LABELS[c.roomScope] ?? c.roomScope}</td>
+                      <td className="py-2 px-3 text-gray-400">{c.baseCapacity} fő</td>
+                      <td className="py-2 px-3 text-green-400">{c.extraGuestFeePerNight.toLocaleString("hu")} Ft</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
           {/* Globális beállítások összefoglaló */}
           {settings && (
             <section>
               <h2 className="text-lg font-medium mb-3">Globális beállítások</h2>
               <div className="border border-gray-800 rounded-xl p-5 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Pótdíj küszöb</p>
-                  <p className="text-gray-200">{settings.extraGuestThreshold} fő</p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Pótdíj</p>
-                  <p className="text-gray-200">{settings.extraGuestFeePerNight.toLocaleString("hu")} Ft/fő/éj</p>
-                </div>
                 <div>
                   <p className="text-gray-500 text-xs uppercase tracking-wide">Előleg</p>
                   <p className="text-gray-200">{settings.depositPercent} %</p>
@@ -640,6 +672,36 @@ export default async function AdminArazasPage({
             </div>
           </section>
 
+          {/* Szoba-kapacitás & pótágy-díj */}
+          <section>
+            <h2 className="text-lg font-medium mb-3">Szoba-kapacitás &amp; pótágy-díj</h2>
+            <p className="text-xs text-gray-500 mb-3">
+              Az "Alap létszám" fölötti minden további vendég (pl. pótágy, kihúzható kanapé) után
+              a megadott pótágy-díj számolódik fel éjszakánként, az adott szoba alapárán felül.
+            </p>
+            <div className="space-y-3">
+              {allRoomCapacities.map((c) => (
+                <form
+                  key={c.id}
+                  action={updateRoomCapacity}
+                  className="border border-gray-800 rounded-xl p-4 flex items-end gap-4 flex-wrap"
+                >
+                  <input type="hidden" name="capacityId" value={c.id} />
+                  <p className="font-medium text-sm w-32 shrink-0">{ROOM_SCOPE_LABELS[c.roomScope] ?? c.roomScope}</p>
+                  <div>
+                    <label className={label}>Alap létszám (fő)</label>
+                    <input name="baseCapacity" type="number" min={1} defaultValue={c.baseCapacity} className={input} />
+                  </div>
+                  <div>
+                    <label className={label}>Pótágy-díj (Ft/fő/éj)</label>
+                    <input name="extraGuestFeePerNight" type="number" min={0} defaultValue={c.extraGuestFeePerNight} className={input} />
+                  </div>
+                  <button type="submit" className={saveBtn}>Mentés</button>
+                </form>
+              ))}
+            </div>
+          </section>
+
           {/* Globális beállítások */}
           {settings && (
             <section>
@@ -647,14 +709,6 @@ export default async function AdminArazasPage({
               <form action={updateSettings} className="border border-gray-800 rounded-xl p-5 space-y-4 max-w-2xl">
                 <input type="hidden" name="settingsId" value={settings.id} />
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={label}>Pótdíj küszöb (fő)</label>
-                    <input name="extraGuestThreshold" type="number" defaultValue={settings.extraGuestThreshold} className={input} />
-                  </div>
-                  <div>
-                    <label className={label}>Pótdíj (Ft/fő/éj)</label>
-                    <input name="extraGuestFeePerNight" type="number" defaultValue={settings.extraGuestFeePerNight} className={input} />
-                  </div>
                   <div>
                     <label className={label}>Előleg (%)</label>
                     <input name="depositPercent" type="number" defaultValue={settings.depositPercent} className={input} />

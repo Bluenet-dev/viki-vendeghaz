@@ -50,8 +50,6 @@ export interface HolidayPriceRow {
 }
 
 export interface PricingSettingsRow {
-  extraGuestThreshold: number;
-  extraGuestFeePerNight: number;
   depositPercent: number;
   ifaPerPersonPerNight: number;
   cancellationFreeHours: number;
@@ -60,12 +58,20 @@ export interface PricingSettingsRow {
   checkOutUntil: string | null;
 }
 
+export interface RoomCapacityPricingRow {
+  id: number;
+  roomScope: string;
+  baseCapacity: number;
+  extraGuestFeePerNight: number;
+}
+
 export interface PricingData {
   seasons: SeasonRow[];
   rules: PricingRuleRow[];
   holidays: HolidayOverrideRow[];
   holidayPrices: HolidayPriceRow[];
   settings: PricingSettingsRow | null;
+  roomCapacities: RoomCapacityPricingRow[];
 }
 
 export interface NightRate {
@@ -216,6 +222,25 @@ export function resolveRateForDate(date: Date, roomScope: RoomScope, data: Prici
   return { date: iso, pricePerNight: rule.pricePerNight, priceOnRequest: false, available: true, source: "season" };
 }
 
+const DEFAULT_BASE_CAPACITY: Record<RoomScope, number> = {
+  "szoba-1": 2,
+  "szoba-2": 2,
+  superior: 2,
+  egesz_haz: 10,
+};
+const DEFAULT_EXTRA_GUEST_FEE = 7000;
+
+export function getRoomCapacityPricing(
+  roomScope: RoomScope,
+  data: PricingData
+): { baseCapacity: number; extraGuestFeePerNight: number } {
+  const row = data.roomCapacities.find((c) => c.roomScope === roomScope);
+  return {
+    baseCapacity: row?.baseCapacity ?? DEFAULT_BASE_CAPACITY[roomScope],
+    extraGuestFeePerNight: row?.extraGuestFeePerNight ?? DEFAULT_EXTRA_GUEST_FEE,
+  };
+}
+
 export function getLowestPriceForScope(roomScope: RoomScope, data: PricingData): number | null {
   const prices = data.rules
     .filter((r) => r.roomScope === roomScope && r.pricePerNight != null && !r.priceOnRequest)
@@ -249,9 +274,8 @@ export function calculateBookingPrice(params: {
     basePrice = perNight.reduce((sum, n) => sum + (n.pricePerNight ?? 0), 0);
   }
 
-  const threshold = data.settings?.extraGuestThreshold ?? 10;
-  const feePerNight = data.settings?.extraGuestFeePerNight ?? 7000;
-  const extraGuestFee = guests > threshold ? (guests - threshold) * feePerNight * nights : 0;
+  const { baseCapacity, extraGuestFeePerNight } = getRoomCapacityPricing(roomScope, data);
+  const extraGuestFee = guests > baseCapacity ? (guests - baseCapacity) * extraGuestFeePerNight * nights : 0;
 
   const totalPrice = basePrice != null ? basePrice + extraGuestFee : null;
 
