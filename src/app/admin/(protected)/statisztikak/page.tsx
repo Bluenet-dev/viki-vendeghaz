@@ -7,8 +7,6 @@ import { StatsCharts } from "./charts";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Statisztikák" };
 
-type View = "30nap" | "het" | "honap" | "ev";
-
 const ROOM_LABELS: Record<string, string> = {
   "szoba-1": "1-es szoba",
   "szoba-2": "2-es szoba",
@@ -16,8 +14,6 @@ const ROOM_LABELS: Record<string, string> = {
 };
 
 const MONTHS_SHORT = ["jan", "feb", "márc", "ápr", "máj", "jún", "júl", "aug", "szept", "okt", "nov", "dec"];
-const MONTHS_FULL = ["január", "február", "március", "április", "május", "június", "július", "augusztus", "szeptember", "október", "november", "december"];
-const WEEKDAYS_SHORT = ["H", "K", "Sze", "Cs", "P", "Szo", "V"];
 
 function normalizeRoomLabel(roomSlug: string | null): string {
   if (!roomSlug) return "Ismeretlen";
@@ -42,26 +38,10 @@ function toDateInputValue(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-// ISO 8601 hét-szám, helyi időzónában (admin egy időzónában használja).
-function getISOWeekString(d: Date): string {
-  const date = startOfDay(d);
-  const dayNum = (date.getDay() + 6) % 7; // hétfő = 0
-  date.setDate(date.getDate() - dayNum + 3); // a hét csütörtöke
-  const firstThursday = new Date(date.getFullYear(), 0, 4);
-  const fdDayNum = (firstThursday.getDay() + 6) % 7;
-  firstThursday.setDate(firstThursday.getDate() - fdDayNum + 3);
-  const week = 1 + Math.round((date.getTime() - firstThursday.getTime()) / (7 * 86400000));
-  return `${date.getFullYear()}-W${String(week).padStart(2, "0")}`;
-}
-
-function isoWeekToMonday(weekStr: string): Date {
-  const [yearStr, wStr] = weekStr.split("-W");
-  const year = Number(yearStr);
-  const week = Number(wStr);
-  const jan4 = new Date(year, 0, 4);
-  const jan4Day = (jan4.getDay() + 6) % 7;
-  const week1Monday = addDays(jan4, -jan4Day);
-  return startOfDay(addDays(week1Monday, (week - 1) * 7));
+function parseDateInput(value: string | undefined): Date | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, m - 1, d);
 }
 
 interface Bucket {
@@ -70,69 +50,56 @@ interface Bucket {
   end: Date;
 }
 
-interface RangeInfo {
-  rangeStart: Date;
-  rangeEnd: Date;
-  rangeLabel: string;
-  buckets: Bucket[];
-}
-
-function dailyBuckets(start: Date, end: Date, labelFn: (d: Date) => string): Bucket[] {
+function dailyBuckets(start: Date, end: Date): Bucket[] {
   const buckets: Bucket[] = [];
-  for (let d = startOfDay(start); d < end; d = addDays(d, 1)) {
-    buckets.push({ label: labelFn(d), start: d, end: addDays(d, 1) });
+  for (let d = start; d < end; d = addDays(d, 1)) {
+    buckets.push({ label: `${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}.`, start: d, end: addDays(d, 1) });
   }
   return buckets;
 }
 
-function resolveRange(view: View, at: string | undefined, now: Date): RangeInfo {
-  if (view === "het") {
-    const weekStr = at && /^\d{4}-W\d{2}$/.test(at) ? at : getISOWeekString(now);
-    const monday = isoWeekToMonday(weekStr);
-    const rangeEnd = addDays(monday, 7);
-    return {
-      rangeStart: monday,
-      rangeEnd,
-      rangeLabel: `${monday.getFullYear()}. ${weekStr.split("-W")[1]}. hét (${toDateInputValue(monday)} – ${toDateInputValue(addDays(rangeEnd, -1))})`,
-      buckets: dailyBuckets(monday, rangeEnd, (d) => WEEKDAYS_SHORT[(d.getDay() + 6) % 7]),
-    };
+function weeklyBuckets(start: Date, end: Date): Bucket[] {
+  const buckets: Bucket[] = [];
+  for (let d = start; d < end; d = addDays(d, 7)) {
+    const bEnd = addDays(d, 7) > end ? end : addDays(d, 7);
+    buckets.push({ label: `${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}.`, start: d, end: bEnd });
   }
+  return buckets;
+}
 
-  if (view === "honap") {
-    const match = at && /^\d{4}-\d{2}$/.test(at) ? at : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const [yearStr, monthStr] = match.split("-");
-    const year = Number(yearStr);
-    const month = Number(monthStr) - 1;
-    const rangeStart = new Date(year, month, 1);
-    const rangeEnd = new Date(year, month + 1, 1);
-    return {
-      rangeStart,
-      rangeEnd,
-      rangeLabel: `${year}. ${MONTHS_FULL[month]}`,
-      buckets: dailyBuckets(rangeStart, rangeEnd, (d) => String(d.getDate())),
-    };
+function monthlyBuckets(start: Date, end: Date): Bucket[] {
+  const buckets: Bucket[] = [];
+  let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+  while (cursor < end) {
+    const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    const bStart = cursor < start ? start : cursor;
+    const bEnd = monthEnd > end ? end : monthEnd;
+    buckets.push({ label: `${MONTHS_SHORT[cursor.getMonth()]} '${String(cursor.getFullYear()).slice(2)}`, start: bStart, end: bEnd });
+    cursor = monthEnd;
   }
+  return buckets;
+}
 
-  if (view === "ev") {
-    const year = at && /^\d{4}$/.test(at) ? Number(at) : now.getFullYear();
-    const rangeStart = new Date(year, 0, 1);
-    const rangeEnd = new Date(year + 1, 0, 1);
-    const buckets: Bucket[] = [];
-    for (let m = 0; m < 12; m++) {
-      buckets.push({ label: MONTHS_SHORT[m], start: new Date(year, m, 1), end: new Date(year, m + 1, 1) });
-    }
-    return { rangeStart, rangeEnd, rangeLabel: String(year), buckets };
+function yearlyBuckets(start: Date, end: Date): Bucket[] {
+  const buckets: Bucket[] = [];
+  let cursor = new Date(start.getFullYear(), 0, 1);
+  while (cursor < end) {
+    const yearEnd = new Date(cursor.getFullYear() + 1, 0, 1);
+    const bStart = cursor < start ? start : cursor;
+    const bEnd = yearEnd > end ? end : yearEnd;
+    buckets.push({ label: String(cursor.getFullYear()), start: bStart, end: bEnd });
+    cursor = yearEnd;
   }
+  return buckets;
+}
 
-  // 30nap (alapértelmezett)
-  const rangeEnd = addDays(startOfDay(now), 1);
-  const rangeStart = addDays(rangeEnd, -30);
-  return {
-    rangeStart,
-    rangeEnd,
-    rangeLabel: "Elmúlt 30 nap",
-    buckets: dailyBuckets(rangeStart, rangeEnd, (d) => `${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}.`),
-  };
+// A bontás (nap/hét/hónap/év) automatikusan a kiválasztott tartomány hosszától függ.
+function generateBuckets(start: Date, end: Date): Bucket[] {
+  const spanDays = Math.round((end.getTime() - start.getTime()) / 86400000);
+  if (spanDays <= 31) return dailyBuckets(start, end);
+  if (spanDays <= 120) return weeklyBuckets(start, end);
+  if (spanDays <= 731) return monthlyBuckets(start, end);
+  return yearlyBuckets(start, end);
 }
 
 const LEAD_TIME_BUCKETS = [
@@ -144,16 +111,48 @@ const LEAD_TIME_BUCKETS = [
   { label: "60+ nap", min: 61, max: Infinity },
 ];
 
+interface Preset {
+  key: string;
+  label: string;
+  from: Date;
+  to: Date;
+}
+
+function buildPresets(now: Date): Preset[] {
+  const today = startOfDay(now);
+  const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const prevMonthEnd = addDays(thisMonthStart, -1);
+  const yearStart = new Date(today.getFullYear(), 0, 1);
+  return [
+    { key: "7nap", label: "7 nap", from: addDays(today, -6), to: today },
+    { key: "30nap", label: "30 nap", from: addDays(today, -29), to: today },
+    { key: "ezahonap", label: "Ez a hónap", from: thisMonthStart, to: today },
+    { key: "elozohonap", label: "Előző hónap", from: prevMonthStart, to: prevMonthEnd },
+    { key: "ezazev", label: "Ez az év", from: yearStart, to: today },
+  ];
+}
+
 export default async function AdminStatisztikakPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; at?: string }>;
+  searchParams: Promise<{ from?: string; to?: string }>;
 }) {
   const sp = await searchParams;
-  const view: View = sp.view === "het" || sp.view === "honap" || sp.view === "ev" ? sp.view : "30nap";
-
   const now = new Date();
-  const { rangeStart, rangeEnd, rangeLabel, buckets } = resolveRange(view, sp.at, now);
+  const presets = buildPresets(now);
+  const defaultPreset = presets[1]; // 30 nap
+
+  const fromDate = parseDateInput(sp.from) ?? defaultPreset.from;
+  const toDateInclusive = parseDateInput(sp.to) ?? defaultPreset.to;
+  const rangeStart = startOfDay(fromDate < toDateInclusive ? fromDate : toDateInclusive);
+  const rangeEnd = addDays(startOfDay(fromDate < toDateInclusive ? toDateInclusive : fromDate), 1);
+  const rangeLabel = `${toDateInputValue(rangeStart)} – ${toDateInputValue(addDays(rangeEnd, -1))}`;
+  const buckets = generateBuckets(rangeStart, rangeEnd);
+
+  const activePreset = presets.find(
+    (p) => toDateInputValue(p.from) === toDateInputValue(rangeStart) && toDateInputValue(p.to) === toDateInputValue(addDays(rangeEnd, -1))
+  )?.key;
 
   const allMessages = await db.select().from(messages);
   const inRange = allMessages.filter((m) => {
@@ -226,74 +225,51 @@ export default async function AdminStatisztikakPage({
     count: bookingRequests.filter((m) => m.checkIn && new Date(m.checkIn).getMonth() === i).length,
   }));
 
-  const defaultWeek = getISOWeekString(now);
-  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const defaultYear = now.getFullYear();
-  const currentAt = sp.at;
-
   return (
     <div className="max-w-5xl space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-display font-semibold">Statisztikák</h1>
-        <div className="flex gap-1 bg-gray-900 rounded-lg p-1 border border-gray-800">
-          {(["30nap", "het", "honap", "ev"] as View[]).map((v) => (
+      <h1 className="text-2xl font-display font-semibold">Statisztikák</h1>
+
+      <div className="flex flex-wrap items-end gap-3 border border-gray-800 rounded-xl p-4 bg-gray-900/40">
+        <div className="flex gap-1 flex-wrap">
+          {presets.map((p) => (
             <Link
-              key={v}
-              href={`/admin/statisztikak?view=${v}`}
-              className={`px-4 py-1.5 rounded-md text-sm transition-colors ${
-                view === v ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"
+              key={p.key}
+              href={`/admin/statisztikak?from=${toDateInputValue(p.from)}&to=${toDateInputValue(p.to)}`}
+              className={`px-3 py-1.5 rounded-lg text-sm transition-colors whitespace-nowrap ${
+                activePreset === p.key ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
               }`}
             >
-              {v === "30nap" ? "Elmúlt 30 nap" : v === "het" ? "Hét" : v === "honap" ? "Hónap" : "Év"}
+              {p.label}
             </Link>
           ))}
         </div>
-      </div>
 
-      {view !== "30nap" && (
-        <form className="flex items-end gap-3 border border-gray-800 rounded-xl p-4 bg-gray-900/40">
-          <input type="hidden" name="view" value={view} />
-          {view === "het" && (
-            <div>
-              <label className="text-xs text-gray-400 uppercase tracking-wide block mb-1">Hét</label>
-              <input
-                type="week"
-                name="at"
-                defaultValue={currentAt && /^\d{4}-W\d{2}$/.test(currentAt) ? currentAt : defaultWeek}
-                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          )}
-          {view === "honap" && (
-            <div>
-              <label className="text-xs text-gray-400 uppercase tracking-wide block mb-1">Hónap</label>
-              <input
-                type="month"
-                name="at"
-                defaultValue={currentAt && /^\d{4}-\d{2}$/.test(currentAt) ? currentAt : defaultMonth}
-                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          )}
-          {view === "ev" && (
-            <div>
-              <label className="text-xs text-gray-400 uppercase tracking-wide block mb-1">Év</label>
-              <input
-                type="number"
-                name="at"
-                min={2020}
-                max={2099}
-                defaultValue={currentAt && /^\d{4}$/.test(currentAt) ? currentAt : defaultYear}
-                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white w-28 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          )}
+        <form className="flex items-end gap-3 ml-auto">
+          <div>
+            <label className="text-xs text-gray-400 uppercase tracking-wide block mb-1">Ettől</label>
+            <input
+              type="date"
+              name="from"
+              defaultValue={toDateInputValue(rangeStart)}
+              className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 uppercase tracking-wide block mb-1">Eddig</label>
+            <input
+              type="date"
+              name="to"
+              defaultValue={toDateInputValue(addDays(rangeEnd, -1))}
+              className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
           <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors">
             Mutat
           </button>
-          <span className="text-sm text-gray-400 ml-2 self-center">{rangeLabel}</span>
         </form>
-      )}
+      </div>
+
+      <p className="text-sm text-gray-400">Kiválasztott időszak: {rangeLabel}</p>
 
       {allMessages.length === 0 ? (
         <p className="text-gray-500 text-sm">Még nincs elég adat a statisztikákhoz – várj az első üzenetekre/foglalási kérésekre.</p>
