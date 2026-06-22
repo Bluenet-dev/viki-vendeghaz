@@ -3,6 +3,7 @@ import Image from "next/image";
 import { db } from "@/db";
 import { gallery } from "@/db/schema";
 import { asc } from "drizzle-orm";
+import { GALLERY_CATEGORIES, GALLERY_CATEGORY_LABELS } from "@/lib/gallery-categories";
 
 export const metadata: Metadata = {
   title: "Galéria",
@@ -10,26 +11,20 @@ export const metadata: Metadata = {
     "Képek a Viki Vendégházból: szobák, sóbarlang, wellness, kert és Szilvásvárad.",
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  szobak: "Szobák",
-  wellness: "Wellness",
-  sobarlang: "Sóbarlang",
-  "finn-szauna": "Finn szauna",
-  infraszauna: "Infraszauna",
-  dezsafurdo: "Dézsafürdő",
-  "kert-medence": "Kert & medence",
-  udvar: "Udvar & kert",
-  termeszet: "Természet",
-  etkezes: "Étkezés",
-};
-
 export default async function GaleriaPage() {
-  const images = await db.select().from(gallery).orderBy(asc(gallery.category), asc(gallery.sortOrder));
+  const images = await db.select().from(gallery).orderBy(asc(gallery.sortOrder), asc(gallery.id));
 
   const byCategory = images.reduce<Record<string, typeof images>>((acc, img) => {
     (acc[img.category] ??= []).push(img);
     return acc;
   }, {});
+
+  // Definiált kategória-sorrend, majd a végén bármely ismeretlen (régi) kategória.
+  const knownValues = GALLERY_CATEGORIES.map((c) => c.value);
+  const orderedCategories = [
+    ...GALLERY_CATEGORIES.map((c) => c.value),
+    ...Object.keys(byCategory).filter((k) => !knownValues.includes(k as never)),
+  ].filter((cat) => (byCategory[cat]?.length ?? 0) > 0);
 
   return (
     <div className="pt-16 bg-[var(--bg)] min-h-screen">
@@ -63,10 +58,12 @@ export default async function GaleriaPage() {
       ) : (
         <section className="py-16 px-6">
           <div className="mx-auto max-w-5xl space-y-12">
-            {Object.entries(byCategory).map(([category, imgs]) => (
+            {orderedCategories.map((category) => {
+              const imgs = byCategory[category];
+              return (
               <div key={category}>
                 <h2 className="text-2xl text-[var(--text)] mb-4">
-                  {CATEGORY_LABELS[category] ?? category}
+                  {GALLERY_CATEGORY_LABELS[category] ?? category}
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {imgs.map((img) => (
@@ -82,7 +79,8 @@ export default async function GaleriaPage() {
                   ))}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}

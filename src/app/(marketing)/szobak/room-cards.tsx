@@ -20,23 +20,26 @@ interface GalleryImage {
 
 export function RoomCards({
   rooms,
-  images,
+  roomImages,
   priceLabels,
 }: {
   rooms: Room[];
-  images: GalleryImage[];
+  roomImages: Record<string, GalleryImage[]>;
   priceLabels: Record<string, string | null>;
 }) {
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [lightbox, setLightbox] = useState<{ images: GalleryImage[]; index: number } | null>(
+    null,
+  );
 
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {rooms.map((room, i) => {
+        {rooms.map((room) => {
           const amenities = room.amenities
             ? room.amenities.split(",").map((s) => s.trim()).filter(Boolean)
             : [];
-          const image = images[i % Math.max(images.length, 1)];
+          const images = (room.slug && roomImages[room.slug]) || [];
+          const cover = images[0];
           const isSuperior = room.slug === "superior";
           const priceLabel = room.slug ? priceLabels[room.slug] : null;
 
@@ -48,13 +51,14 @@ export function RoomCards({
             >
               <button
                 type="button"
-                onClick={() => images.length > 0 && setLightboxIndex(i % images.length)}
-                className="relative w-full h-40 bg-[var(--surface2)] block cursor-pointer"
+                onClick={() => images.length > 0 && setLightbox({ images, index: 0 })}
+                disabled={images.length === 0}
+                className="relative w-full h-40 bg-[var(--surface2)] block cursor-pointer disabled:cursor-default"
               >
-                {image ? (
+                {cover ? (
                   <Image
-                    src={image.url}
-                    alt={image.alt ?? room.name}
+                    src={cover.url}
+                    alt={cover.alt ?? room.name}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 360px"
@@ -69,6 +73,11 @@ export function RoomCards({
                 {isSuperior && (
                   <span className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-[var(--accent2-bg)] text-[var(--accent2)] text-[12px] font-semibold uppercase tracking-wide">
                     Legjobb szoba
+                  </span>
+                )}
+                {images.length > 1 && (
+                  <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-black/55 text-white text-[12px]">
+                    {images.length} kép
                   </span>
                 )}
               </button>
@@ -105,11 +114,11 @@ export function RoomCards({
         })}
       </div>
 
-      {lightboxIndex !== null && images.length > 0 && (
+      {lightbox && lightbox.images.length > 0 && (
         <RoomGalleryLightbox
-          images={images}
-          initialIndex={lightboxIndex}
-          onClose={() => setLightboxIndex(null)}
+          images={lightbox.images}
+          initialIndex={lightbox.index}
+          onClose={() => setLightbox(null)}
         />
       )}
     </>

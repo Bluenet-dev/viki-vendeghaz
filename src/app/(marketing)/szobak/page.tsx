@@ -2,10 +2,12 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { db } from "@/db";
 import { rooms, pricingRules, gallery } from "@/db/schema";
-import { asc } from "drizzle-orm";
-import { eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { getLowestPriceForScope, type RoomScope } from "@/lib/pricing";
+import { ROOM_CATEGORIES } from "@/lib/gallery-categories";
 import { RoomCards } from "./room-cards";
+
+type GalleryImage = { url: string; alt: string | null };
 
 export const metadata: Metadata = {
   title: "Szobák & árak",
@@ -23,11 +25,17 @@ export default async function SzobakPage() {
   const allRules = await db.select().from(pricingRules);
   const pricingData = { seasons: [], rules: allRules, holidays: [], holidayPrices: [], settings: null, roomCapacities: [] };
 
-  const roomImages = await db
-    .select()
+  const galleryRows = await db
+    .select({ category: gallery.category, url: gallery.url, alt: gallery.alt })
     .from(gallery)
-    .where(eq(gallery.category, "szobak"))
-    .orderBy(asc(gallery.sortOrder));
+    .where(inArray(gallery.category, ROOM_CATEGORIES))
+    .orderBy(asc(gallery.sortOrder), asc(gallery.id));
+
+  // Szobánként (kategória = szoba slug) csoportosítva, sort_order szerint.
+  const roomImages: Record<string, GalleryImage[]> = {};
+  for (const row of galleryRows) {
+    (roomImages[row.category] ??= []).push({ url: row.url, alt: row.alt });
+  }
 
   const priceLabels: Record<string, string | null> = {};
   for (const room of allRooms) {
@@ -57,7 +65,7 @@ export default async function SzobakPage() {
       {/* Szobák */}
       <section className="py-16 px-6">
         <div className="mx-auto max-w-5xl">
-          <RoomCards rooms={allRooms} images={roomImages} priceLabels={priceLabels} />
+          <RoomCards rooms={allRooms} roomImages={roomImages} priceLabels={priceLabels} />
 
           <p className="mt-6 text-xs text-[var(--text3)]">
             Nyári szezonban (június–augusztus) az egyes szobák külön nem foglalhatók, csak az egész vendégház.
