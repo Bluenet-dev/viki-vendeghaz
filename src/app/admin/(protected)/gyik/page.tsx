@@ -36,23 +36,26 @@ export default async function AdminGyikPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-display font-semibold mb-6">GYIK kezelés</h1>
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold text-[var(--text)]">GYIK kezelés</h1>
+        <p className="text-sm text-[var(--text2)] mt-1">Gyakran ismételt kérdések és válaszok.</p>
+      </div>
 
       {/* Új kérdés */}
-      <details className="mb-6 border border-gray-800 rounded-xl">
-        <summary className="px-5 py-3 cursor-pointer text-sm text-blue-400 hover:text-blue-300">
+      <details className="mb-6 border-[0.5px] border-[var(--border)] rounded-[10px] bg-[var(--surface)]">
+        <summary className="px-5 py-3 cursor-pointer text-sm text-[var(--accent)] hover:underline">
           + Új kérdés hozzáadása
         </summary>
         <form action={createFaq} className="px-5 pb-5 pt-3 space-y-3">
           <div>
-            <label className="text-xs text-gray-400 uppercase tracking-wide">Kérdés</label>
+            <label className={label}>Kérdés</label>
             <input name="question" required className={input} />
           </div>
           <div>
-            <label className="text-xs text-gray-400 uppercase tracking-wide">Válasz</label>
+            <label className={label}>Válasz</label>
             <textarea name="answer" required rows={3} className={input} />
           </div>
-          <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors">
+          <button type="submit" className={saveBtn}>
             Hozzáadás
           </button>
         </form>
@@ -61,24 +64,24 @@ export default async function AdminGyikPage() {
       {/* Lista */}
       <div className="space-y-3">
         {items.map((item, i) => (
-          <div key={item.id} className="border border-gray-800 rounded-xl p-4">
+          <div key={item.id} className="border-[0.5px] border-[var(--border)] rounded-[10px] bg-[var(--surface)] p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm">{item.question}</p>
-                <p className="text-gray-400 text-sm mt-1 leading-relaxed">{item.answer}</p>
+                <p className="font-medium text-sm text-[var(--text)]">{item.question}</p>
+                <p className="text-[var(--text2)] text-sm mt-1 leading-relaxed">{item.answer}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs text-gray-500">#{i + 1}</span>
+                <span className="text-xs text-[var(--text3)]">#{i + 1}</span>
                 <form action={toggleFaq}>
                   <input type="hidden" name="id" value={item.id} />
                   <input type="hidden" name="active" value={String(item.active)} />
-                  <button type="submit" className={`px-2 py-0.5 rounded-full text-xs ${item.active ? "bg-green-900 text-green-300" : "bg-gray-800 text-gray-400"}`}>
+                  <button type="submit" className={`px-2 py-0.5 rounded-full text-[11px] ${item.active ? "bg-[var(--accent-bg)] text-[#3A5A3C]" : "bg-[var(--surface2)] text-[var(--text2)]"}`}>
                     {item.active ? "Aktív" : "Rejtett"}
                   </button>
                 </form>
                 <form action={deleteFaq}>
                   <input type="hidden" name="id" value={item.id} />
-                  <button type="submit" className="text-red-400 hover:text-red-300 text-xs px-2 py-0.5 rounded hover:bg-red-900/30 transition-colors">
+                  <button type="submit" className="text-[#C44] hover:bg-[#FCEBEB] text-xs px-2 py-0.5 rounded transition-colors">
                     Törlés
                   </button>
                 </form>
@@ -87,11 +90,13 @@ export default async function AdminGyikPage() {
           </div>
         ))}
         {items.length === 0 && (
-          <p className="text-gray-500 text-sm text-center py-8">Még nincs GYIK bejegyzés.</p>
+          <p className="text-[var(--text3)] text-sm text-center py-8">Még nincs GYIK bejegyzés.</p>
         )}
       </div>
     </div>
   );
 }
 
-const input = "mt-1 w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 block";
+const input = "mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] placeholder:text-[var(--text3)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] block";
+const label = "text-xs text-[var(--text2)] uppercase tracking-wide";
+const saveBtn = "px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity";

@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { posts } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import Link from "next/link";
+import { IconPlus } from "@tabler/icons-react";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Blog" };
@@ -11,50 +12,53 @@ export default async function AdminBlogPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-display font-semibold">Blog bejegyzések</h1>
+      <div className="flex items-end justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-xl font-semibold text-[var(--text)]">Blog bejegyzések</h1>
+          <p className="text-sm text-[var(--text2)] mt-1">Cikkek kezelése, közzététel és vázlatok.</p>
+        </div>
         <Link
           href="/admin/blog/new"
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity whitespace-nowrap"
         >
-          + Új bejegyzés
+          <IconPlus size={16} stroke={2} /> Új bejegyzés
         </Link>
       </div>
 
-      <div className="rounded-xl border border-gray-800 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-900 text-gray-400 uppercase text-xs tracking-wide">
+      <div className="bg-[var(--surface)] border-[0.5px] border-[var(--border)] rounded-[10px] overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-[var(--surface2)]">
             <tr>
-              <th className="px-4 py-3 text-left">Cím</th>
-              <th className="px-4 py-3 text-left">Kategória</th>
-              <th className="px-4 py-3 text-left">Státusz</th>
-              <th className="px-4 py-3 text-left">Dátum</th>
-              <th className="px-4 py-3" />
+              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Cím</th>
+              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Kategória</th>
+              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Státusz</th>
+              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Dátum</th>
+              <th className="px-4 py-2.5" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-800">
+          <tbody>
             {allPosts.map((post) => (
-              <tr key={post.id} className="hover:bg-gray-900/50">
-                <td className="px-4 py-3 font-medium">{post.title}</td>
-                <td className="px-4 py-3 text-gray-400">{post.category ?? "—"}</td>
+              <tr key={post.id} className="border-t-[0.5px] border-[var(--border)] hover:bg-[var(--surface2)]">
+                <td className="px-4 py-3 text-[13px] font-medium text-[var(--text)]">{post.title}</td>
+                <td className="px-4 py-3 text-[13px] text-[var(--text2)]">{post.category ?? "—"}</td>
                 <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${post.published ? "bg-green-900 text-green-300" : "bg-gray-800 text-gray-400"}`}>
+                  <span className={post.published ? badgeActive : badgeNeutral}>
                     {post.published ? "Közzétéve" : "Vázlat"}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-400 text-xs">
+                <td className="px-4 py-3 text-[13px] text-[var(--text2)]">
                   {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString("hu") : "—"}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Link href={`/admin/blog/${post.id}`} className="text-blue-400 hover:text-blue-300 text-sm">
+                  <Link href={`/admin/blog/${post.id}`} className="text-[13px] text-[var(--accent)] hover:underline">
                     Szerkesztés
                   </Link>
                 </td>
               </tr>
             ))}
             {allPosts.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-500 text-sm">
+              <tr className="border-t-[0.5px] border-[var(--border)]">
+                <td colSpan={5} className="px-4 py-8 text-center text-[var(--text3)] text-sm">
                   Még nincs bejegyzés. Kattints az „Új bejegyzés" gombra!
                 </td>
               </tr>
@@ -65,3 +69,6 @@ export default async function AdminBlogPage() {
     </div>
   );
 }
+
+const badgeActive = "inline-block px-2 py-0.5 rounded-full text-[11px] bg-[var(--accent-bg)] text-[#3A5A3C]";
+const badgeNeutral = "inline-block px-2 py-0.5 rounded-full text-[11px] bg-[var(--surface2)] text-[var(--text2)]";

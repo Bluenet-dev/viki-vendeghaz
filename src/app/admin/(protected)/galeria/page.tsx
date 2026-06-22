@@ -50,11 +50,14 @@ export default async function AdminGaleriaPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-semibold mb-6">Galéria</h1>
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold text-[var(--text)]">Galéria</h1>
+        <p className="text-sm text-[var(--text2)] mt-1">Képek feltöltése és kategóriánkénti kezelése.</p>
+      </div>
 
       {/* Feltöltés */}
-      <div className="border border-gray-800 rounded-xl p-5 mb-8">
-        <h2 className="text-sm font-medium text-gray-300 mb-4">Kép feltöltése</h2>
+      <div className="border-[0.5px] border-[var(--border)] rounded-[10px] bg-[var(--surface)] p-5 mb-8">
+        <h2 className="text-sm font-medium text-[var(--text)] mb-4">Kép feltöltése</h2>
         <form action={uploadImage} className="flex flex-wrap gap-3 items-end">
           <div>
             <label className={lbl}>Kategória</label>
@@ -70,9 +73,9 @@ export default async function AdminGaleriaPage() {
           </div>
           <div>
             <label className={lbl}>Képfájl</label>
-            <input type="file" name="file" accept="image/*" required className="mt-1 text-sm text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-gray-800 file:text-gray-300 hover:file:bg-gray-700" />
+            <input type="file" name="file" accept="image/*" required className="mt-1 text-sm text-[var(--text2)] file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-[var(--surface2)] file:text-[var(--text)] hover:file:bg-[var(--border)]" />
           </div>
-          <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors self-end">
+          <button type="submit" className="px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity self-end">
             Feltöltés
           </button>
         </form>
@@ -84,10 +87,10 @@ export default async function AdminGaleriaPage() {
         if (catImages.length === 0) return null;
         return (
           <div key={cat.value} className="mb-8">
-            <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-3">{cat.label}</h2>
+            <h2 className="text-[11px] font-semibold text-[var(--text2)] uppercase tracking-[0.06em] mb-3">{cat.label}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {catImages.map((img) => (
-                <div key={img.id} className="relative group rounded-lg overflow-hidden border border-gray-800 aspect-video bg-gray-900">
+                <div key={img.id} className="relative group rounded-lg overflow-hidden border-[0.5px] border-[var(--border)] aspect-video bg-[var(--surface2)]">
                   <Image src={img.url} alt={img.alt ?? ""} fill className="object-cover" sizes="200px" />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
                     <form action={deleteImage}>
@@ -106,11 +109,11 @@ export default async function AdminGaleriaPage() {
       })}
 
       {images.length === 0 && (
-        <p className="text-gray-500 text-sm text-center py-8">Még nincs feltöltött kép.</p>
+        <p className="text-[var(--text3)] text-sm text-center py-8">Még nincs feltöltött kép.</p>
       )}
     </div>
   );
 }
 
-const input = "mt-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 block";
-const lbl = "text-xs text-gray-400 uppercase tracking-wide";
+const input = "mt-1 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] block";
+const lbl = "text-xs text-[var(--text2)] uppercase tracking-wide";

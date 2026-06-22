@@ -19,9 +19,9 @@ import {
 const COLORS = ["#5E7E62", "#E7AE8E", "#C7D1C5", "#2B2620", "#1A231E"];
 
 const chartTheme = {
-  axis: { stroke: "#4b5563", fontSize: 12 },
-  grid: "#1f2937",
-  tooltip: { backgroundColor: "#111827", border: "1px solid #374151", borderRadius: 8, fontSize: 13 },
+  axis: { stroke: "#9B9690", fontSize: 12 },
+  grid: "#E2DDD7",
+  tooltip: { backgroundColor: "#FFFFFF", border: "1px solid #E2DDD7", borderRadius: 8, fontSize: 13, color: "#1C1C1A" },
 };
 
 interface TimelinePoint {
@@ -165,17 +165,17 @@ export function StatsCharts({
 
 function KpiCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border border-gray-800 rounded-xl p-5">
-      <p className="text-gray-500 text-xs uppercase tracking-wide">{label}</p>
-      <p className="text-2xl font-display mt-1">{value}</p>
+    <div className="bg-[var(--surface)] border-[0.5px] border-[var(--border)] rounded-[10px] p-5">
+      <p className="text-[var(--text2)] text-xs uppercase tracking-wide">{label}</p>
+      <p className="text-[28px] font-semibold mt-1 text-[var(--text)]">{value}</p>
     </div>
   );
 }
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border border-gray-800 rounded-xl p-5">
-      <h3 className="text-sm font-medium text-gray-300 mb-4">{title}</h3>
+    <div className="bg-[var(--surface)] border-[0.5px] border-[var(--border)] rounded-[10px] p-5">
+      <h3 className="text-sm font-medium text-[var(--text)] mb-4">{title}</h3>
       {children}
     </div>
   );
@@ -183,7 +183,7 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 
 function EmptyState() {
   return (
-    <div className="h-[260px] flex items-center justify-center text-gray-500 text-sm">
+    <div className="h-[260px] flex items-center justify-center text-[var(--text3)] text-sm">
       Még nincs elég adat ehhez a nézethez.
     </div>
   );

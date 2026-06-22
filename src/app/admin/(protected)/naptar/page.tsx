@@ -89,16 +89,17 @@ export default async function AdminNaptarPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h1 className="text-2xl font-display font-semibold">Naptár</h1>
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold text-[var(--text)]">Naptár</h1>
+        <p className="text-sm text-[var(--text2)] mt-1">Szobánkénti elérhetőség – kattints egy napra a zárolásához.</p>
         {/* iCal szinkron – ideiglenesen inaktív (aktiváláshoz: töröld a hidden class-t)
-        <div className="flex gap-2">
+        <div className="flex gap-2 mt-3">
           <form action={syncIcal}>
-            <button type="submit" className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-sm rounded-lg transition-colors">
+            <button type="submit" className="px-4 py-2 rounded-md border border-[var(--border)] text-[var(--text2)] hover:text-[var(--text)] text-[13px] transition-colors">
               ↻ iCal szinkron
             </button>
           </form>
-          <Link href="/admin/naptar/ical-sources" className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-sm rounded-lg transition-colors">
+          <Link href="/admin/naptar/ical-sources" className="px-4 py-2 rounded-md border border-[var(--border)] text-[var(--text2)] hover:text-[var(--text)] text-[13px] transition-colors">
             ⚙ Beállítások
           </Link>
         </div>
@@ -107,47 +108,47 @@ export default async function AdminNaptarPage({
 
       {/* Hónap navigáció */}
       <div className="flex items-center gap-4 mb-6">
-        <Link href={prevHref} className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors">← Előző</Link>
-        <h2 className="text-lg font-medium">{MONTHS_HU[month]} {year}</h2>
-        <Link href={nextHref} className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors">Következő →</Link>
+        <Link href={prevHref} className="px-3 py-1.5 rounded-md border border-[var(--border)] text-[var(--text2)] hover:text-[var(--text)] text-sm transition-colors">← Előző</Link>
+        <h2 className="text-lg font-medium text-[var(--text)]">{MONTHS_HU[month]} {year}</h2>
+        <Link href={nextHref} className="px-3 py-1.5 rounded-md border border-[var(--border)] text-[var(--text2)] hover:text-[var(--text)] text-sm transition-colors">Következő →</Link>
         {(year !== now.getFullYear() || month !== now.getMonth()) && (
-          <Link href="/admin/naptar" className="text-xs text-blue-400 hover:text-blue-300 ml-2">Ma</Link>
+          <Link href="/admin/naptar" className="text-xs text-[var(--accent)] hover:underline ml-2">Ma</Link>
         )}
       </div>
 
       {/* Jelmagyarázat */}
-      <div className="flex flex-wrap gap-4 mb-4 text-xs text-gray-400">
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-gray-800 border border-gray-700 inline-block" />Szabad</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-900 inline-block" />Manuálisan zárva</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-900 inline-block" />OTA foglalt</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-gray-600 inline-block" />Mai nap</span>
+      <div className="flex flex-wrap gap-4 mb-4 text-xs text-[var(--text2)]">
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[var(--surface2)] border border-[var(--border)] inline-block" />Szabad</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#F3C7C7] inline-block" />Manuálisan zárva</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#F4D2BC] inline-block" />OTA foglalt</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border-2 border-[var(--accent)] inline-block" />Mai nap</span>
       </div>
 
       {/* Naptár grid */}
-      <div className="overflow-x-auto rounded-xl border border-gray-800">
+      <div className="overflow-x-auto rounded-[10px] border-[0.5px] border-[var(--border)] bg-[var(--surface)]">
         <table className="w-full border-collapse text-xs">
           <thead>
-            <tr className="bg-gray-900">
-              <th className="px-3 py-2 text-left text-gray-400 font-medium sticky left-0 bg-gray-900 z-10 min-w-36">Szoba</th>
+            <tr className="bg-[var(--surface2)]">
+              <th className="px-3 py-2 text-left text-[var(--text2)] font-semibold sticky left-0 bg-[var(--surface2)] z-10 min-w-36">Szoba</th>
               {days.map((d) => {
                 const dayNum = Number(d.slice(8));
                 const dayOfWeek = new Date(d).getDay();
                 const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
                 const isToday = d === today;
                 return (
-                  <th key={d} className={`px-1 py-2 text-center font-mono min-w-8 ${isWeekend ? "text-white" : "text-gray-400"} ${isToday ? "bg-gray-700" : ""}`}>
+                  <th key={d} className={`px-1 py-2 text-center min-w-8 ${isWeekend ? "text-[var(--text)] font-semibold" : "text-[var(--text2)]"} ${isToday ? "bg-[var(--accent-bg)]" : ""}`}>
                     {dayNum}
                   </th>
                 );
               })}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-800">
+          <tbody>
             {allRooms.map((room) => (
-              <tr key={room.id} className="hover:bg-gray-900/30">
-                <td className="px-3 py-2 font-medium sticky left-0 bg-gray-950 z-10 border-r border-gray-800 whitespace-nowrap">
+              <tr key={room.id} className="border-t-[0.5px] border-[var(--border)] hover:bg-[var(--surface2)]">
+                <td className="px-3 py-2 font-medium sticky left-0 bg-[var(--surface)] z-10 border-r-[0.5px] border-[var(--border)] whitespace-nowrap text-[var(--text)]">
                   <div>{room.name}</div>
-                  <a href={`/api/ical/${room.slug}`} target="_blank" className="text-xs text-blue-400 hover:text-blue-300 font-mono">
+                  <a href={`/api/ical/${room.slug}`} target="_blank" className="text-xs text-[var(--accent)] hover:underline">
                     .ics ↗
                   </a>
                 </td>
@@ -158,29 +159,29 @@ export default async function AdminNaptarPage({
                   const isToday = d === today;
                   const isPast = d < today;
 
-                  let cellClass = "bg-gray-800/30 hover:bg-green-900/20 cursor-pointer";
+                  let cellClass = "bg-[var(--surface2)] hover:bg-[var(--accent-bg)] cursor-pointer";
                   let title = "Szabad – kattints a záráshoz";
                   let status = "free";
 
                   if (isOta) {
-                    cellClass = "bg-amber-900/60 cursor-default";
+                    cellClass = "bg-[#F4D2BC] cursor-default";
                     title = `OTA foglalt: ${entry.source} – ${entry.note ?? ""}`;
                     status = "blocked_ota";
                   } else if (isManual) {
-                    cellClass = "bg-red-900/70 hover:bg-red-800/70 cursor-pointer";
+                    cellClass = "bg-[#F3C7C7] hover:bg-[#EEB6B6] cursor-pointer";
                     title = `Manuálisan zárva: ${entry.note ?? ""} – kattints a feloldáshoz`;
                     status = "blocked_manual";
                   }
 
-                  if (isToday) cellClass += " ring-1 ring-inset ring-gray-400";
-                  if (isPast) cellClass = "opacity-30 cursor-default " + cellClass;
+                  if (isToday) cellClass += " ring-1 ring-inset ring-[var(--accent)]";
+                  if (isPast) cellClass = "opacity-40 cursor-default " + cellClass;
 
                   return (
                     <td key={d} className="p-0 text-center">
                       {isPast || isOta ? (
                         <div className={`w-full h-8 flex items-center justify-center ${cellClass}`} title={title}>
-                          {isOta && <span className="text-amber-300 text-xs">●</span>}
-                          {isManual && isPast && <span className="text-red-400 text-xs">●</span>}
+                          {isOta && <span className="text-[#8A4A22] text-xs">●</span>}
+                          {isManual && isPast && <span className="text-[#C44] text-xs">●</span>}
                         </div>
                       ) : (
                         <form action={toggleDate}>
@@ -188,7 +189,7 @@ export default async function AdminNaptarPage({
                           <input type="hidden" name="date" value={d} />
                           <input type="hidden" name="currentStatus" value={status} />
                           <button type="submit" className={`w-full h-8 flex items-center justify-center transition-colors ${cellClass}`} title={title}>
-                            {isManual && <span className="text-red-300 text-xs">●</span>}
+                            {isManual && <span className="text-[#C44] text-xs">●</span>}
                           </button>
                         </form>
                       )}
@@ -203,7 +204,7 @@ export default async function AdminNaptarPage({
 
       {/* iCal sources összefoglaló */}
       {sources.length > 0 && (
-        <div className="mt-6 text-xs text-gray-500">
+        <div className="mt-6 text-xs text-[var(--text3)]">
           Aktív iCal források: {sources.filter(s => s.active).map(s => s.name).join(", ") || "—"}
         </div>
       )}

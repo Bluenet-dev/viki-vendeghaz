@@ -55,16 +55,19 @@ export default async function AdminWellnessPage() {
 
   return (
     <div className="max-w-4xl space-y-10">
-      <h1 className="text-2xl font-display font-semibold">Wellness</h1>
+      <div>
+        <h1 className="text-xl font-semibold text-[var(--text)]">Wellness</h1>
+        <p className="text-sm text-[var(--text2)] mt-1">Wellness szolgáltatások és a sóbarlang tarifatáblázata.</p>
+      </div>
 
       <section className="space-y-4">
         {services.map((s) => (
-          <form key={s.id} action={updateService} className="border border-gray-800 rounded-xl p-5 space-y-3">
+          <form key={s.id} action={updateService} className="border-[0.5px] border-[var(--border)] rounded-[10px] bg-[var(--surface)] p-5 space-y-3">
             <input type="hidden" name="serviceId" value={s.id} />
             <div>
               <label className={label}>Megnevezés</label>
               <input name="name" defaultValue={s.name} required className={input} />
-              <span className="text-gray-500 text-xs">{s.slug}</span>
+              <span className="text-[var(--text3)] text-xs">{s.slug}</span>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -94,9 +97,9 @@ export default async function AdminWellnessPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-medium mb-3">Sóbarlang tarifatáblázat</h2>
-        <details className="mb-4 border border-gray-800 rounded-xl">
-          <summary className="px-5 py-3 cursor-pointer text-sm text-blue-400 hover:text-blue-300">
+        <h2 className="text-lg font-medium mb-3 text-[var(--text)]">Sóbarlang tarifatáblázat</h2>
+        <details className="mb-4 border-[0.5px] border-[var(--border)] rounded-[10px] bg-[var(--surface)]">
+          <summary className="px-5 py-3 cursor-pointer text-sm text-[var(--accent)] hover:underline">
             + Új sor hozzáadása
           </summary>
           <form action={addTier} className="px-5 pb-5 pt-3 grid grid-cols-4 gap-3 items-end">
@@ -118,15 +121,15 @@ export default async function AdminWellnessPage() {
         </details>
         <div className="space-y-2">
           {tiers.map((t) => (
-            <div key={t.id} className="border border-gray-800 rounded-xl p-3 flex items-center justify-between gap-4">
-              <div className="text-sm">
-                <span className="text-gray-500">{t.groupLabel} ·</span> {t.tierLabel}
+            <div key={t.id} className="border-[0.5px] border-[var(--border)] rounded-[10px] bg-[var(--surface)] p-3 flex items-center justify-between gap-4">
+              <div className="text-sm text-[var(--text)]">
+                <span className="text-[var(--text3)]">{t.groupLabel} ·</span> {t.tierLabel}
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-green-400 text-sm">{t.price}</span>
+                <span className="text-[var(--accent)] text-sm font-medium">{t.price}</span>
                 <form action={deleteTier}>
                   <input type="hidden" name="id" value={t.id} />
-                  <button type="submit" className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-red-900/30 transition-colors">
+                  <button type="submit" className="text-[#C44] hover:bg-[#FCEBEB] text-xs px-2 py-1 rounded transition-colors">
                     Törlés
                   </button>
                 </form>
@@ -139,6 +142,6 @@ export default async function AdminWellnessPage() {
   );
 }
 
-const input = "mt-1 w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 block";
-const label = "text-xs text-gray-400 uppercase tracking-wide";
-const saveBtn = "px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors";
+const input = "mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] placeholder:text-[var(--text3)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] block";
+const label = "text-xs text-[var(--text2)] uppercase tracking-wide";
+const saveBtn = "px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity";

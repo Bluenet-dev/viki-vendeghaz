@@ -227,16 +227,19 @@ export default async function AdminStatisztikakPage({
 
   return (
     <div className="max-w-5xl space-y-6">
-      <h1 className="text-2xl font-display font-semibold">Statisztikák</h1>
+      <div>
+        <h1 className="text-xl font-semibold text-[var(--text)]">Statisztikák</h1>
+        <p className="text-sm text-[var(--text2)] mt-1">Foglalási kérések és kapcsolatfelvételek elemzése.</p>
+      </div>
 
-      <div className="flex flex-wrap items-end gap-3 border border-gray-800 rounded-xl p-4 bg-gray-900/40">
+      <div className="flex flex-wrap items-end gap-3 border-[0.5px] border-[var(--border)] rounded-[10px] p-4 bg-[var(--surface)]">
         <div className="flex gap-1 flex-wrap">
           {presets.map((p) => (
             <Link
               key={p.key}
               href={`/admin/statisztikak?from=${toDateInputValue(p.from)}&to=${toDateInputValue(p.to)}`}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-colors whitespace-nowrap ${
-                activePreset === p.key ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+              className={`px-3 py-1.5 rounded-md text-sm transition-colors whitespace-nowrap ${
+                activePreset === p.key ? "bg-[var(--nav-bg)] text-white" : "bg-[var(--surface2)] text-[var(--text2)] hover:text-[var(--text)]"
               }`}
             >
               {p.label}
@@ -246,33 +249,33 @@ export default async function AdminStatisztikakPage({
 
         <form className="flex items-end gap-3 ml-auto">
           <div>
-            <label className="text-xs text-gray-400 uppercase tracking-wide block mb-1">Ettől</label>
+            <label className="text-xs text-[var(--text2)] uppercase tracking-wide block mb-1">Ettől</label>
             <input
               type="date"
               name="from"
               defaultValue={toDateInputValue(rangeStart)}
-              className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
             />
           </div>
           <div>
-            <label className="text-xs text-gray-400 uppercase tracking-wide block mb-1">Eddig</label>
+            <label className="text-xs text-[var(--text2)] uppercase tracking-wide block mb-1">Eddig</label>
             <input
               type="date"
               name="to"
               defaultValue={toDateInputValue(addDays(rangeEnd, -1))}
-              className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
             />
           </div>
-          <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors">
+          <button type="submit" className="px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity">
             Mutat
           </button>
         </form>
       </div>
 
-      <p className="text-sm text-gray-400">Kiválasztott időszak: {rangeLabel}</p>
+      <p className="text-sm text-[var(--text2)]">Kiválasztott időszak: {rangeLabel}</p>
 
       {allMessages.length === 0 ? (
-        <p className="text-gray-500 text-sm">Még nincs elég adat a statisztikákhoz – várj az első üzenetekre/foglalási kérésekre.</p>
+        <p className="text-[var(--text3)] text-sm">Még nincs elég adat a statisztikákhoz – várj az első üzenetekre/foglalási kérésekre.</p>
       ) : (
         <StatsCharts
           timeline={timeline}

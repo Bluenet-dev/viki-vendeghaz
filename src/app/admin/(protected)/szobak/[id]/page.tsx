@@ -32,7 +32,10 @@ export default async function EditRoomPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="max-w-xl">
-      <h1 className="text-2xl font-display font-semibold mb-6">Szoba szerkesztése</h1>
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold text-[var(--text)]">Szoba szerkesztése</h1>
+        <p className="text-sm text-[var(--text2)] mt-1">A szoba publikus adatainak módosítása.</p>
+      </div>
       <form action={updateRoom} className="space-y-5">
         <input type="hidden" name="id" value={room.id} />
 
@@ -57,17 +60,17 @@ export default async function EditRoomPage({ params }: { params: Promise<{ id: s
           <textarea name="amenities" defaultValue={room.amenities ?? ""} rows={3} className={input} />
         </Field>
         <Field label="">
-          <label className="flex items-center gap-2 text-sm text-gray-300">
+          <label className="flex items-center gap-2 text-sm text-[var(--text)]">
             <input type="checkbox" name="active" defaultChecked={room.active ?? true} />
             Aktív (látható az oldalon)
           </label>
         </Field>
 
         <div className="flex gap-3 pt-2">
-          <button type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors">
+          <button type="submit" className="px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity">
             Mentés
           </button>
-          <a href="/admin/szobak" className="px-5 py-2 bg-gray-800 hover:bg-gray-700 text-sm rounded-lg transition-colors">
+          <a href="/admin/szobak" className="px-5 py-2 rounded-md border border-[var(--border)] text-[var(--text2)] hover:text-[var(--text)] text-[13px] transition-colors">
             Mégse
           </a>
         </div>
@@ -76,12 +79,12 @@ export default async function EditRoomPage({ params }: { params: Promise<{ id: s
   );
 }
 
-const input = "w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500";
+const input = "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] placeholder:text-[var(--text3)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      {label && <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">{label}</label>}
+      {label && <label className="text-xs font-medium text-[var(--text2)] uppercase tracking-wide">{label}</label>}
       {children}
     </div>
   );

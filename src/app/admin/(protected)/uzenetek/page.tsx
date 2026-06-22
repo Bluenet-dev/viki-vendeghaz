@@ -26,46 +26,57 @@ export default async function AdminUzenetekPage() {
 
   return (
     <div className="max-w-3xl">
-      <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-2xl font-display font-semibold">Üzenetek</h1>
-        {unread > 0 && (
-          <span className="bg-blue-600 text-white text-xs font-medium px-2 py-0.5 rounded-full">{unread} új</span>
-        )}
+      <div className="mb-8">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-semibold text-[var(--text)]">Üzenetek</h1>
+          {unread > 0 && (
+            <span className="bg-[var(--accent2-bg)] text-[#8A4A22] text-[11px] font-medium px-2 py-0.5 rounded-full">{unread} új</span>
+          )}
+        </div>
+        <p className="text-sm text-[var(--text2)] mt-1">Beérkező kapcsolatfelvételek és foglalási igények.</p>
       </div>
 
       <div className="space-y-3">
         {allMessages.map((msg) => (
-          <div key={msg.id} className={clsx("border rounded-xl p-4", msg.read ? "border-gray-800" : "border-blue-700 bg-blue-950/20")}>
+          <div
+            key={msg.id}
+            className={clsx(
+              "rounded-[10px] p-4",
+              msg.read
+                ? "border-[0.5px] border-[var(--border)] bg-[var(--surface)]"
+                : "border border-[var(--accent2)] bg-[var(--accent2-bg)]",
+            )}
+          >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm">{msg.name}</span>
-                  <span className="text-xs text-gray-400">·</span>
-                  <a href={`mailto:${msg.email}`} className="text-xs text-blue-400 hover:underline">{msg.email}</a>
-                  {msg.phone && <><span className="text-xs text-gray-400">·</span><span className="text-xs text-gray-400">{msg.phone}</span></>}
-                  <span className="text-xs text-gray-500 ml-auto">
+                  <span className="font-medium text-sm text-[var(--text)]">{msg.name}</span>
+                  <span className="text-xs text-[var(--text3)]">·</span>
+                  <a href={`mailto:${msg.email}`} className="text-xs text-[var(--accent)] hover:underline">{msg.email}</a>
+                  {msg.phone && <><span className="text-xs text-[var(--text3)]">·</span><span className="text-xs text-[var(--text2)]">{msg.phone}</span></>}
+                  <span className="text-xs text-[var(--text3)] ml-auto">
                     {msg.createdAt ? new Date(msg.createdAt).toLocaleDateString("hu", { year: "numeric", month: "long", day: "numeric" }) : ""}
                   </span>
                 </div>
                 {msg.type === "booking_request" && (
-                  <p className="text-xs text-amber-400 mb-1">
+                  <p className="text-xs text-[#8A4A22] mb-1">
                     Foglalási igény · {msg.roomSlug} · {msg.checkIn} – {msg.checkOut} · {msg.guests} fő
                   </p>
                 )}
-                {msg.message && <p className="text-sm text-gray-300 leading-relaxed">{msg.message}</p>}
+                {msg.message && <p className="text-sm text-[var(--text2)] leading-relaxed">{msg.message}</p>}
               </div>
               <div className="flex flex-col gap-2 shrink-0">
                 {!msg.read && (
                   <form action={markRead}>
                     <input type="hidden" name="id" value={msg.id} />
-                    <button type="submit" className="text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors whitespace-nowrap w-full">
+                    <button type="submit" className="text-xs px-3 py-1.5 rounded-md border border-[var(--border)] text-[var(--text2)] bg-[var(--surface)] hover:text-[var(--text)] transition-colors whitespace-nowrap w-full">
                       Olvasottnak jelöl
                     </button>
                   </form>
                 )}
                 <form action={deleteMessage}>
                   <input type="hidden" name="id" value={msg.id} />
-                  <button type="submit" className="text-xs px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-lg transition-colors whitespace-nowrap w-full">
+                  <button type="submit" className="text-xs px-3 py-1.5 rounded-md border border-[#F09595] text-[#C44] bg-transparent hover:bg-[#FCEBEB] transition-colors whitespace-nowrap w-full">
                     Törlés
                   </button>
                 </form>
@@ -74,7 +85,7 @@ export default async function AdminUzenetekPage() {
           </div>
         ))}
         {allMessages.length === 0 && (
-          <p className="text-gray-500 text-sm text-center py-8">Még nincs beérkező üzenet.</p>
+          <p className="text-[var(--text3)] text-sm text-center py-8">Még nincs beérkező üzenet.</p>
         )}
       </div>
     </div>

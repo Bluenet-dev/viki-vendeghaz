@@ -33,13 +33,14 @@ export default async function AdminCsomagokPage() {
 
   return (
     <div className="max-w-3xl">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-display font-semibold">Csomagok</h1>
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold text-[var(--text)]">Csomagok</h1>
+        <p className="text-sm text-[var(--text2)] mt-1">Ajánlati csomagok és áraik kezelése.</p>
       </div>
 
       {/* Új csomag */}
-      <details className="mb-6 border border-gray-800 rounded-xl">
-        <summary className="px-5 py-3 cursor-pointer text-sm text-blue-400 hover:text-blue-300">
+      <details className="mb-6 border-[0.5px] border-[var(--border)] rounded-[10px] bg-[var(--surface)]">
+        <summary className="px-5 py-3 cursor-pointer text-sm text-[var(--accent)] hover:underline">
           + Új csomag hozzáadása
         </summary>
         <form action={createPackage} className="px-5 pb-5 pt-3 space-y-3">
@@ -75,7 +76,7 @@ export default async function AdminCsomagokPage() {
               </select>
             </div>
           </div>
-          <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors">
+          <button type="submit" className={saveBtn}>
             Hozzáadás
           </button>
         </form>
@@ -84,22 +85,22 @@ export default async function AdminCsomagokPage() {
       {/* Lista */}
       <div className="space-y-3">
         {allPackages.map((pkg) => (
-          <div key={pkg.id} className="border border-gray-800 rounded-xl p-4 flex items-start justify-between gap-4">
+          <div key={pkg.id} className="border-[0.5px] border-[var(--border)] rounded-[10px] bg-[var(--surface)] p-4 flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm">{pkg.name}</p>
-              <p className="text-gray-400 text-xs mt-0.5">{pkg.slug} · {pkg.season ?? "—"}</p>
-              {pkg.description && <p className="text-gray-300 text-sm mt-1">{pkg.description}</p>}
+              <p className="font-medium text-sm text-[var(--text)]">{pkg.name}</p>
+              <p className="text-[var(--text2)] text-xs mt-0.5">{pkg.slug} · {pkg.season ?? "—"}</p>
+              {pkg.description && <p className="text-[var(--text2)] text-sm mt-1">{pkg.description}</p>}
               {pkg.price && (
-                <p className="text-green-400 text-sm mt-1">{pkg.price.toLocaleString("hu")} Ft/fő</p>
+                <p className="text-[var(--accent)] text-sm mt-1 font-medium">{pkg.price.toLocaleString("hu")} Ft/fő</p>
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <a href={`/admin/csomagok/${pkg.id}`} className="text-blue-400 hover:text-blue-300 text-xs px-2 py-1 rounded hover:bg-blue-900/30 transition-colors">
+              <a href={`/admin/csomagok/${pkg.id}`} className="text-[var(--accent)] hover:underline text-xs px-2 py-1">
                 Szerkeszt
               </a>
               <form action={deletePackage}>
                 <input type="hidden" name="id" value={pkg.id} />
-                <button type="submit" className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-red-900/30 transition-colors">
+                <button type="submit" className="text-[#C44] hover:bg-[#FCEBEB] text-xs px-2 py-1 rounded transition-colors">
                   Törlés
                 </button>
               </form>
@@ -107,12 +108,13 @@ export default async function AdminCsomagokPage() {
           </div>
         ))}
         {allPackages.length === 0 && (
-          <p className="text-gray-500 text-sm text-center py-8">Még nincs csomag.</p>
+          <p className="text-[var(--text3)] text-sm text-center py-8">Még nincs csomag.</p>
         )}
       </div>
     </div>
   );
 }
 
-const input = "mt-1 w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 block";
-const label = "text-xs text-gray-400 uppercase tracking-wide";
+const input = "mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] placeholder:text-[var(--text3)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] block";
+const label = "text-xs text-[var(--text2)] uppercase tracking-wide";
+const saveBtn = "px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity";

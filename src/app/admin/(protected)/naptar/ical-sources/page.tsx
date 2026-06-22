@@ -39,20 +39,20 @@ export default async function IcalSourcesPage() {
 
   return (
     <div className="max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <a href="/admin/naptar" className="text-gray-400 hover:text-gray-200 text-sm">← Naptár</a>
-        <span className="text-gray-700">/</span>
-        <h1 className="text-xl font-display font-semibold">iCal import URL-ek</h1>
+      <div className="flex items-center gap-3 mb-2">
+        <a href="/admin/naptar" className="text-[var(--text2)] hover:text-[var(--text)] text-sm">← Naptár</a>
+        <span className="text-[var(--text3)]">/</span>
+        <h1 className="text-xl font-semibold text-[var(--text)]">iCal import URL-ek</h1>
       </div>
 
-      <p className="text-sm text-gray-400 mb-6 leading-relaxed">
+      <p className="text-sm text-[var(--text2)] mb-6 leading-relaxed">
         Add meg a Booking.com és Szállás.hu által biztosított iCal export URL-eket. Szinkronizáláskor
         ezek alapján frissül a naptár, és az OTA-n foglalt dátumok automatikusan zárolódnak.
       </p>
 
       {/* Új forrás */}
-      <details className="mb-6 border border-gray-800 rounded-xl" open>
-        <summary className="px-5 py-3 cursor-pointer text-sm text-blue-400 hover:text-blue-300">
+      <details className="mb-6 border-[0.5px] border-[var(--border)] rounded-[10px] bg-[var(--surface)]" open>
+        <summary className="px-5 py-3 cursor-pointer text-sm text-[var(--accent)] hover:underline">
           + Új iCal forrás hozzáadása
         </summary>
         <form action={addSource} className="px-5 pb-5 pt-3 space-y-3">
@@ -72,7 +72,7 @@ export default async function IcalSourcesPage() {
             <label className={lbl}>iCal URL</label>
             <input name="url" type="url" required placeholder="https://ical.booking.com/..." className={input} />
           </div>
-          <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors">
+          <button type="submit" className={saveBtn}>
             Hozzáadás
           </button>
         </form>
@@ -81,14 +81,14 @@ export default async function IcalSourcesPage() {
       {/* Lista */}
       <div className="space-y-2">
         {sources.map((s) => (
-          <div key={s.id} className="border border-gray-800 rounded-xl p-4">
+          <div key={s.id} className="border-[0.5px] border-[var(--border)] rounded-[10px] bg-[var(--surface)] p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm">{s.name}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{s.roomSlug}</p>
-                <p className="text-xs text-gray-600 mt-1 truncate font-mono">{s.url}</p>
+                <p className="font-medium text-sm text-[var(--text)]">{s.name}</p>
+                <p className="text-xs text-[var(--text2)] mt-0.5">{s.roomSlug}</p>
+                <p className="text-xs text-[var(--text3)] mt-1 truncate">{s.url}</p>
                 {s.lastFetched && (
-                  <p className="text-xs text-gray-600 mt-1">
+                  <p className="text-xs text-[var(--text3)] mt-1">
                     Utoljára szinkronizálva: {new Date(s.lastFetched).toLocaleString("hu")}
                   </p>
                 )}
@@ -97,25 +97,26 @@ export default async function IcalSourcesPage() {
                 <form action={toggleSource}>
                   <input type="hidden" name="id" value={s.id} />
                   <input type="hidden" name="active" value={String(s.active)} />
-                  <button type="submit" className={`text-xs px-2 py-0.5 rounded-full ${s.active ? "bg-green-900 text-green-300" : "bg-gray-800 text-gray-400"}`}>
+                  <button type="submit" className={`text-[11px] px-2 py-0.5 rounded-full ${s.active ? "bg-[var(--accent-bg)] text-[#3A5A3C]" : "bg-[var(--surface2)] text-[var(--text2)]"}`}>
                     {s.active ? "Aktív" : "Inaktív"}
                   </button>
                 </form>
                 <form action={deleteSource}>
                   <input type="hidden" name="id" value={s.id} />
-                  <button type="submit" className="text-xs text-red-400 hover:text-red-300">Törlés</button>
+                  <button type="submit" className="text-xs text-[#C44] hover:bg-[#FCEBEB] px-2 py-0.5 rounded transition-colors">Törlés</button>
                 </form>
               </div>
             </div>
           </div>
         ))}
         {sources.length === 0 && (
-          <p className="text-sm text-gray-500 text-center py-6">Még nincs iCal forrás.</p>
+          <p className="text-sm text-[var(--text3)] text-center py-6">Még nincs iCal forrás.</p>
         )}
       </div>
     </div>
   );
 }
 
-const input = "mt-1 w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 block";
-const lbl = "text-xs text-gray-400 uppercase tracking-wide";
+const input = "mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] block";
+const lbl = "text-xs text-[var(--text2)] uppercase tracking-wide";
+const saveBtn = "px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity";

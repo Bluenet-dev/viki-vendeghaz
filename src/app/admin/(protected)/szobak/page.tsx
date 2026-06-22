@@ -11,33 +11,37 @@ export default async function AdminSzobakPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-semibold mb-6">Szobák</h1>
-      <div className="rounded-xl border border-gray-800 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-900 text-gray-400 uppercase text-xs tracking-wide">
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold text-[var(--text)]">Szobák</h1>
+        <p className="text-sm text-[var(--text2)] mt-1">Szobák alapadatai, kapacitás és ártól-érték.</p>
+      </div>
+
+      <div className="bg-[var(--surface)] border-[0.5px] border-[var(--border)] rounded-[10px] overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-[var(--surface2)]">
             <tr>
-              <th className="px-4 py-3 text-left">Név</th>
-              <th className="px-4 py-3 text-left">Kapacitás</th>
-              <th className="px-4 py-3 text-left">Ártól</th>
-              <th className="px-4 py-3 text-left">Aktív</th>
-              <th className="px-4 py-3" />
+              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Név</th>
+              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Kapacitás</th>
+              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Ártól</th>
+              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Aktív</th>
+              <th className="px-4 py-2.5" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-800">
+          <tbody>
             {allRooms.map((room) => (
-              <tr key={room.id} className="hover:bg-gray-900/50">
-                <td className="px-4 py-3 font-medium">{room.name}</td>
-                <td className="px-4 py-3 text-gray-400">{room.capacity} fő</td>
-                <td className="px-4 py-3 text-gray-400">
+              <tr key={room.id} className="border-t-[0.5px] border-[var(--border)] hover:bg-[var(--surface2)]">
+                <td className="px-4 py-3 text-[13px] font-medium text-[var(--text)]">{room.name}</td>
+                <td className="px-4 py-3 text-[13px] text-[var(--text2)]">{room.capacity} fő</td>
+                <td className="px-4 py-3 text-[13px] text-[var(--text2)]">
                   {room.priceFrom != null ? `${room.priceFrom.toLocaleString("hu")} Ft` : "—"}
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${room.active ? "bg-green-900 text-green-300" : "bg-gray-800 text-gray-400"}`}>
+                  <span className={room.active ? badgeActive : badgeNeutral}>
                     {room.active ? "Igen" : "Nem"}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Link href={`/admin/szobak/${room.id}`} className="text-blue-400 hover:text-blue-300 text-sm">
+                  <Link href={`/admin/szobak/${room.id}`} className="text-[13px] text-[var(--accent)] hover:underline">
                     Szerkesztés
                   </Link>
                 </td>
@@ -49,3 +53,6 @@ export default async function AdminSzobakPage() {
     </div>
   );
 }
+
+const badgeActive = "inline-block px-2 py-0.5 rounded-full text-[11px] bg-[var(--accent-bg)] text-[#3A5A3C]";
+const badgeNeutral = "inline-block px-2 py-0.5 rounded-full text-[11px] bg-[var(--surface2)] text-[var(--text2)]";

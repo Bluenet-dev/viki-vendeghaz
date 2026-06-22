@@ -9,13 +9,11 @@ export default async function LoginPage() {
   if (session.isLoggedIn) redirect("/admin");
 
   return (
-    <div className="min-h-screen bg-ink flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <p className="font-mono text-xs uppercase tracking-widest text-salt mb-2">
-            Admin belépés
-          </p>
-          <h1 className="font-display text-3xl text-stone">Viki Vendégház</h1>
+    <div className="min-h-screen flex items-center justify-center px-4 bg-[var(--nav-bg)]">
+      <div className="w-full max-w-[380px] bg-[var(--surface)] rounded-xl p-8">
+        <div className="mb-6">
+          <h1 className="text-xl font-semibold text-[var(--text)]">Viki Admin</h1>
+          <p className="text-xs text-[var(--text2)] mt-1">Vendégház kezelő – bejelentkezés</p>
         </div>
         <LoginForm />
       </div>

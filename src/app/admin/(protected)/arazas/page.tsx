@@ -217,12 +217,15 @@ export default async function AdminArazasPage({
   return (
     <div className="max-w-5xl space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-display font-semibold">Árazás</h1>
-        <div className="flex gap-1 bg-gray-900 rounded-lg p-1 border border-gray-800">
+        <div>
+          <h1 className="text-xl font-semibold text-[var(--text)]">Árazás</h1>
+          <p className="text-sm text-[var(--text2)] mt-1">Szezonok, ünnepnapok, kapacitás és globális beállítások.</p>
+        </div>
+        <div className="flex gap-1 bg-[var(--surface2)] rounded-lg p-1 border border-[var(--border)]">
           <Link
             href="/admin/arazas?tab=attekintes"
             className={`px-4 py-1.5 rounded-md text-sm transition-colors ${
-              activeTab === "attekintes" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"
+              activeTab === "attekintes" ? "bg-[var(--nav-bg)] text-white" : "text-[var(--text2)] hover:text-[var(--text)]"
             }`}
           >
             Áttekintés
@@ -230,7 +233,7 @@ export default async function AdminArazasPage({
           <Link
             href="/admin/arazas?tab=beallitasok"
             className={`px-4 py-1.5 rounded-md text-sm transition-colors ${
-              activeTab === "beallitasok" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"
+              activeTab === "beallitasok" ? "bg-[var(--nav-bg)] text-white" : "text-[var(--text2)] hover:text-[var(--text)]"
             }`}
           >
             Beállítások
@@ -247,13 +250,13 @@ export default async function AdminArazasPage({
               {allSeasons.map((season) => {
                 const rulesForSeason = allRules.filter((r) => r.seasonId === season.id);
                 return (
-                  <div key={season.id} className="border border-gray-800 rounded-xl p-5">
+                  <div key={season.id} className="border border-[var(--border)] rounded-xl p-5">
                     <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
                       <h3 className="font-medium">
                         {season.name}{" "}
-                        <span className="text-gray-500 text-sm font-normal">({season.year})</span>
+                        <span className="text-[var(--text3)] text-sm font-normal">({season.year})</span>
                       </h3>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-[var(--text2)]">
                         {formatMonthDay(season.startMonth, season.startDay)} –{" "}
                         {formatMonthDay(season.endMonth, season.endDay)}
                         {season.wholeHouseOnly ? " · csak egész ház" : ""} · min. {season.minStayNights} éj
@@ -264,24 +267,24 @@ export default async function AdminArazasPage({
                     </div>
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-left text-gray-400 text-xs uppercase tracking-wide">
+                        <tr className="text-left text-[var(--text2)] text-xs uppercase tracking-wide">
                           <th className="py-1.5">Szoba</th>
                           <th className="py-1.5">Hétköznap</th>
                           <th className="py-1.5">Hétvége</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-800">
+                      <tbody className="divide-y divide-[var(--border)]">
                         {ROOM_SCOPES.map((scope) => {
                           if (season.wholeHouseOnly && scope !== "egesz_haz") return null;
                           const weekday = rulesForSeason.find((r) => r.roomScope === scope && r.dayType === "weekday");
                           const weekend = rulesForSeason.find((r) => r.roomScope === scope && r.dayType === "weekend");
                           return (
                             <tr key={scope}>
-                              <td className="py-2 text-gray-300">{ROOM_SCOPE_LABELS[scope]}</td>
-                              <td className="py-2 text-green-400">
+                              <td className="py-2 text-[var(--text)]">{ROOM_SCOPE_LABELS[scope]}</td>
+                              <td className="py-2 text-[var(--accent)]">
                                 {weekday?.pricePerNight != null ? `${weekday.pricePerNight.toLocaleString("hu")} Ft` : "—"}
                               </td>
-                              <td className="py-2 text-green-400">
+                              <td className="py-2 text-[var(--accent)]">
                                 {weekend?.pricePerNight != null ? `${weekend.pricePerNight.toLocaleString("hu")} Ft` : "—"}
                               </td>
                             </tr>
@@ -292,17 +295,17 @@ export default async function AdminArazasPage({
                   </div>
                 );
               })}
-              {allSeasons.length === 0 && <p className="text-gray-500 text-sm">Még nincs szezon beállítva.</p>}
+              {allSeasons.length === 0 && <p className="text-[var(--text3)] text-sm">Még nincs szezon beállítva.</p>}
             </div>
           </section>
 
           {/* Ünnepnapok összefoglaló */}
           <section>
             <h2 className="text-lg font-medium mb-3">Ünnepnapok &amp; hosszú hétvégék</h2>
-            <div className="border border-gray-800 rounded-xl overflow-hidden">
+            <div className="border border-[var(--border)] rounded-xl overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-400 text-xs uppercase tracking-wide bg-gray-900">
+                  <tr className="text-left text-[var(--text2)] text-xs uppercase tracking-wide bg-[var(--surface2)]">
                     <th className="py-2 px-3">Ünnep</th>
                     <th className="py-2 px-3">Időszak</th>
                     <th className="py-2 px-3">Min. éj</th>
@@ -312,7 +315,7 @@ export default async function AdminArazasPage({
                     <th className="py-2 px-3">Egész ház</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800">
+                <tbody className="divide-y divide-[var(--border)]">
                   {allHolidays.map((h) => {
                     const prices = allHolidayPrices.filter((p) => p.holidayId === h.id);
                     const period = h.recurring
@@ -325,13 +328,13 @@ export default async function AdminArazasPage({
                     };
                     return (
                       <tr key={h.id}>
-                        <td className="py-2 px-3 text-gray-200">{h.name}</td>
-                        <td className="py-2 px-3 text-gray-400 text-xs">{period}</td>
-                        <td className="py-2 px-3 text-gray-400">{h.minStayNights}</td>
-                        <td className="py-2 px-3 text-green-400">{h.wholeHouseOnly ? "—" : priceFor("szoba-1")}</td>
-                        <td className="py-2 px-3 text-green-400">{h.wholeHouseOnly ? "—" : priceFor("szoba-2")}</td>
-                        <td className="py-2 px-3 text-green-400">{h.wholeHouseOnly ? "—" : priceFor("superior")}</td>
-                        <td className="py-2 px-3 text-green-400">{priceFor("egesz_haz")}</td>
+                        <td className="py-2 px-3 text-[var(--text)]">{h.name}</td>
+                        <td className="py-2 px-3 text-[var(--text2)] text-xs">{period}</td>
+                        <td className="py-2 px-3 text-[var(--text2)]">{h.minStayNights}</td>
+                        <td className="py-2 px-3 text-[var(--accent)]">{h.wholeHouseOnly ? "—" : priceFor("szoba-1")}</td>
+                        <td className="py-2 px-3 text-[var(--accent)]">{h.wholeHouseOnly ? "—" : priceFor("szoba-2")}</td>
+                        <td className="py-2 px-3 text-[var(--accent)]">{h.wholeHouseOnly ? "—" : priceFor("superior")}</td>
+                        <td className="py-2 px-3 text-[var(--accent)]">{priceFor("egesz_haz")}</td>
                       </tr>
                     );
                   })}
@@ -343,21 +346,21 @@ export default async function AdminArazasPage({
           {/* Szoba-kapacitás & pótágy-díj összefoglaló */}
           <section>
             <h2 className="text-lg font-medium mb-3">Szoba-kapacitás &amp; pótágy-díj</h2>
-            <div className="border border-gray-800 rounded-xl overflow-hidden">
+            <div className="border border-[var(--border)] rounded-xl overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-400 text-xs uppercase tracking-wide bg-gray-900">
+                  <tr className="text-left text-[var(--text2)] text-xs uppercase tracking-wide bg-[var(--surface2)]">
                     <th className="py-2 px-3">Szoba</th>
                     <th className="py-2 px-3">Alap létszám</th>
                     <th className="py-2 px-3">Pótágy-díj/fő/éj</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800">
+                <tbody className="divide-y divide-[var(--border)]">
                   {allRoomCapacities.map((c) => (
                     <tr key={c.id}>
-                      <td className="py-2 px-3 text-gray-200">{ROOM_SCOPE_LABELS[c.roomScope] ?? c.roomScope}</td>
-                      <td className="py-2 px-3 text-gray-400">{c.baseCapacity} fő</td>
-                      <td className="py-2 px-3 text-green-400">{c.extraGuestFeePerNight.toLocaleString("hu")} Ft</td>
+                      <td className="py-2 px-3 text-[var(--text)]">{ROOM_SCOPE_LABELS[c.roomScope] ?? c.roomScope}</td>
+                      <td className="py-2 px-3 text-[var(--text2)]">{c.baseCapacity} fő</td>
+                      <td className="py-2 px-3 text-[var(--accent)]">{c.extraGuestFeePerNight.toLocaleString("hu")} Ft</td>
                     </tr>
                   ))}
                 </tbody>
@@ -369,26 +372,26 @@ export default async function AdminArazasPage({
           {settings && (
             <section>
               <h2 className="text-lg font-medium mb-3">Globális beállítások</h2>
-              <div className="border border-gray-800 rounded-xl p-5 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+              <div className="border border-[var(--border)] rounded-xl p-5 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Előleg</p>
-                  <p className="text-gray-200">{settings.depositPercent} %</p>
+                  <p className="text-[var(--text3)] text-xs uppercase tracking-wide">Előleg</p>
+                  <p className="text-[var(--text)]">{settings.depositPercent} %</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">IFA</p>
-                  <p className="text-gray-200">{settings.ifaPerPersonPerNight.toLocaleString("hu")} Ft/fő/éj</p>
+                  <p className="text-[var(--text3)] text-xs uppercase tracking-wide">IFA</p>
+                  <p className="text-[var(--text)]">{settings.ifaPerPersonPerNight.toLocaleString("hu")} Ft/fő/éj</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Ingyenes lemondás</p>
-                  <p className="text-gray-200">{settings.cancellationFreeHours} óra</p>
+                  <p className="text-[var(--text3)] text-xs uppercase tracking-wide">Ingyenes lemondás</p>
+                  <p className="text-[var(--text)]">{settings.cancellationFreeHours} óra</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Bejelentkezés</p>
-                  <p className="text-gray-200">{settings.checkInFrom}–{settings.checkInTo}</p>
+                  <p className="text-[var(--text3)] text-xs uppercase tracking-wide">Bejelentkezés</p>
+                  <p className="text-[var(--text)]">{settings.checkInFrom}–{settings.checkInTo}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Kijelentkezés</p>
-                  <p className="text-gray-200">{settings.checkOutUntil}-ig</p>
+                  <p className="text-[var(--text3)] text-xs uppercase tracking-wide">Kijelentkezés</p>
+                  <p className="text-[var(--text)]">{settings.checkOutUntil}-ig</p>
                 </div>
               </div>
             </section>
@@ -398,8 +401,8 @@ export default async function AdminArazasPage({
         <div className="space-y-10">
           {/* Új szezon */}
           <section>
-            <details className="border border-gray-800 rounded-xl">
-              <summary className="px-5 py-3 cursor-pointer text-sm text-blue-400 hover:text-blue-300">
+            <details className="border border-[var(--border)] rounded-xl">
+              <summary className="px-5 py-3 cursor-pointer text-sm text-[var(--accent)] hover:underline">
                 + Új szezon hozzáadása (pl. egy következő év árainak felvétele)
               </summary>
               <form action={createSeason} className="px-5 pb-5 pt-3 space-y-3">
@@ -415,7 +418,7 @@ export default async function AdminArazasPage({
                   <div>
                     <label className={label}>Név</label>
                     <input name="name" required placeholder="pl. Nyár – június" className={input} />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-[var(--text3)] mt-1">
                       Ha egy meglévő szezon következő évi árát viszed fel, használd pontosan
                       ugyanazt a nevet (pl. „Nyár – június”) – így az Áttekintésben egymás
                       mellett, az évek szerint sorba rendezve jelennek meg.
@@ -449,7 +452,7 @@ export default async function AdminArazasPage({
                     <label className={label}>Min. éjszaka</label>
                     <input name="minStayNights" type="number" min={1} defaultValue={2} className={input} />
                   </div>
-                  <label className="flex items-center gap-2 text-xs text-gray-400 mt-5">
+                  <label className="flex items-center gap-2 text-xs text-[var(--text2)] mt-5">
                     <input type="checkbox" name="wholeHouseOnly" /> Csak egész ház foglalható
                   </label>
                 </div>
@@ -468,21 +471,21 @@ export default async function AdminArazasPage({
                   <form
                     key={season.id}
                     action={updateSeason}
-                    className="border border-gray-800 rounded-xl p-5 space-y-4"
+                    className="border border-[var(--border)] rounded-xl p-5 space-y-4"
                   >
                     <input type="hidden" name="seasonId" value={season.id} />
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <h3 className="font-medium">
-                        {season.name} <span className="text-gray-500 text-sm font-normal">({season.year})</span>
+                        {season.name} <span className="text-[var(--text3)] text-sm font-normal">({season.year})</span>
                       </h3>
                       <div className="flex items-center gap-4">
-                        <label className="flex items-center gap-2 text-xs text-gray-400">
+                        <label className="flex items-center gap-2 text-xs text-[var(--text2)]">
                           <input type="checkbox" name="wholeHouseOnly" defaultChecked={!!season.wholeHouseOnly} />
                           Csak egész ház foglalható
                         </label>
                         <form action={deleteSeason}>
                           <input type="hidden" name="seasonId" value={season.id} />
-                          <button type="submit" className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-red-900/30 transition-colors">
+                          <button type="submit" className="text-[#C44] hover:bg-[#FCEBEB] text-xs px-2 py-1 rounded transition-colors">
                             Törlés
                           </button>
                         </form>
@@ -535,20 +538,20 @@ export default async function AdminArazasPage({
 
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-left text-gray-400 text-xs uppercase tracking-wide">
+                        <tr className="text-left text-[var(--text2)] text-xs uppercase tracking-wide">
                           <th className="py-1.5">Szoba</th>
                           <th className="py-1.5">Hétköznap (Ft/éj)</th>
                           <th className="py-1.5">Hétvége (Ft/éj)</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-800">
+                      <tbody className="divide-y divide-[var(--border)]">
                         {ROOM_SCOPES.map((scope) => {
                           if (season.wholeHouseOnly && scope !== "egesz_haz") return null;
                           const weekday = rulesForSeason.find((r) => r.roomScope === scope && r.dayType === "weekday");
                           const weekend = rulesForSeason.find((r) => r.roomScope === scope && r.dayType === "weekend");
                           return (
                             <tr key={scope}>
-                              <td className="py-2 text-gray-300">{ROOM_SCOPE_LABELS[scope]}</td>
+                              <td className="py-2 text-[var(--text)]">{ROOM_SCOPE_LABELS[scope]}</td>
                               <td className="py-2">
                                 {weekday && <input type="hidden" name={`rule_${scope}_weekday_id`} value={weekday.id} />}
                                 <input
@@ -589,11 +592,11 @@ export default async function AdminArazasPage({
               {allHolidays.map((h) => {
                 const pricesForHoliday = allHolidayPrices.filter((p) => p.holidayId === h.id);
                 return (
-                  <form key={h.id} action={updateHoliday} className="border border-gray-800 rounded-xl p-5 space-y-4">
+                  <form key={h.id} action={updateHoliday} className="border border-[var(--border)] rounded-xl p-5 space-y-4">
                     <input type="hidden" name="holidayId" value={h.id} />
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <input name="name" defaultValue={h.name} className={`${input} max-w-xs`} />
-                      <div className="flex items-center gap-4 text-xs text-gray-400">
+                      <div className="flex items-center gap-4 text-xs text-[var(--text2)]">
                         <label className="flex items-center gap-1.5">
                           <input type="checkbox" name="recurring" defaultChecked={h.recurring} /> Évente ismétlődő
                         </label>
@@ -624,7 +627,7 @@ export default async function AdminArazasPage({
                           <label className={label}>Nap (ig)</label>
                           <input name="endDay" type="number" min={1} max={31} defaultValue={h.endDay ?? ""} className={input} />
                         </div>
-                        <p className="col-span-4 text-xs text-gray-500">Évente ismétlődő ünnepekhez (pl. Karácsony).</p>
+                        <p className="col-span-4 text-xs text-[var(--text3)]">Évente ismétlődő ünnepekhez (pl. Karácsony).</p>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
@@ -635,7 +638,7 @@ export default async function AdminArazasPage({
                           <label className={label}>Dátum (ig)</label>
                           <input name="endDate" type="date" defaultValue={h.endDate ?? ""} className={input} />
                         </div>
-                        <p className="col-span-2 text-xs text-gray-500">Mozgó ünnepekhez (Húsvét, Pünkösd) – évente frissítendő.</p>
+                        <p className="col-span-2 text-xs text-[var(--text3)]">Mozgó ünnepekhez (Húsvét, Pünkösd) – évente frissítendő.</p>
                       </div>
                     </div>
 
@@ -675,7 +678,7 @@ export default async function AdminArazasPage({
           {/* Szoba-kapacitás & pótágy-díj */}
           <section>
             <h2 className="text-lg font-medium mb-3">Szoba-kapacitás &amp; pótágy-díj</h2>
-            <p className="text-xs text-gray-500 mb-3">
+            <p className="text-xs text-[var(--text3)] mb-3">
               Az "Alap létszám" fölötti minden további vendég (pl. pótágy, kihúzható kanapé) után
               a megadott pótágy-díj számolódik fel éjszakánként, az adott szoba alapárán felül.
             </p>
@@ -684,7 +687,7 @@ export default async function AdminArazasPage({
                 <form
                   key={c.id}
                   action={updateRoomCapacity}
-                  className="border border-gray-800 rounded-xl p-4 flex items-end gap-4 flex-wrap"
+                  className="border border-[var(--border)] rounded-xl p-4 flex items-end gap-4 flex-wrap"
                 >
                   <input type="hidden" name="capacityId" value={c.id} />
                   <p className="font-medium text-sm w-32 shrink-0">{ROOM_SCOPE_LABELS[c.roomScope] ?? c.roomScope}</p>
@@ -706,7 +709,7 @@ export default async function AdminArazasPage({
           {settings && (
             <section>
               <h2 className="text-lg font-medium mb-3">Globális beállítások</h2>
-              <form action={updateSettings} className="border border-gray-800 rounded-xl p-5 space-y-4 max-w-2xl">
+              <form action={updateSettings} className="border border-[var(--border)] rounded-xl p-5 space-y-4 max-w-2xl">
                 <input type="hidden" name="settingsId" value={settings.id} />
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -748,6 +751,6 @@ export default async function AdminArazasPage({
   );
 }
 
-const input = "mt-1 w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 block disabled:opacity-40";
-const label = "text-xs text-gray-400 uppercase tracking-wide";
-const saveBtn = "px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors";
+const input = "mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] placeholder:text-[var(--text3)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] block disabled:opacity-40";
+const label = "text-xs text-[var(--text2)] uppercase tracking-wide";
+const saveBtn = "px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity";
