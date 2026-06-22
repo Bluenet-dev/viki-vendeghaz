@@ -3,11 +3,16 @@
 import { db } from "@/db";
 import { gallery } from "@/db/schema";
 import { asc, desc, eq } from "drizzle-orm";
-import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
+import { getSession } from "@/lib/session";
 import { WELLNESS_CATEGORIES } from "@/lib/gallery-categories";
 
-export type UploadState = { ok?: boolean; error?: string };
+export type SaveState = { ok?: boolean; error?: string };
+
+async function requireAdmin(): Promise<boolean> {
+  const session = await getSession();
+  return session.isLoggedIn === true;
+}
 
 function revalidateGallery(category?: string) {
   revalidatePath("/admin/galeria");
@@ -29,44 +34,38 @@ async function nextSortOrder(category: string): Promise<number> {
   return (last?.sortOrder ?? 0) + 1;
 }
 
-export async function uploadImageAction(
-  _prev: UploadState,
-  formData: FormData,
-): Promise<UploadState> {
+// A tényleges fájl a böngészőből közvetlenül a Blob tárolóba kerül
+// (lásd /api/gallery/upload). Ez a függvény csak a feltöltött kép adatsorát
+// szúrja be az adatbázisba – kis JSON, így nincs body-méret limit probléma.
+export async function saveUploadedImage(input: {
+  url: string;
+  alt: string;
+  category: string;
+}): Promise<SaveState> {
   try {
-    const file = formData.get("file") as File | null;
-    const category = String(formData.get("category") || "");
-    const alt = String(formData.get("alt") || "");
+    if (!(await requireAdmin())) return { error: "Nincs jogosultság a művelethez." };
+    if (!input.url || !input.category) return { error: "Hiányzó kép-adat." };
 
-    if (!file || file.size === 0) return { error: "Nincs kiválasztott képfájl." };
-    if (!category) return { error: "Hiányzó kategória." };
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      return {
-        error:
-          "A képtároló (BLOB_READ_WRITE_TOKEN) nincs beállítva ezen a környezeten. Add hozzá a Vercel → Settings → Environment Variables alatt, majd próbáld újra.",
-      };
-    }
-
-    const blob = await put(`gallery/${category}/${Date.now()}-${file.name}`, file, {
-      access: "public",
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+    const sortOrder = await nextSortOrder(input.category);
+    await db.insert(gallery).values({
+      url: input.url,
+      alt: input.alt ?? "",
+      category: input.category,
+      sortOrder,
     });
 
-    const sortOrder = await nextSortOrder(category);
-    await db.insert(gallery).values({ url: blob.url, alt, category, sortOrder });
-
-    revalidateGallery(category);
+    revalidateGallery(input.category);
     return { ok: true };
   } catch (err) {
-    console.error("Galéria feltöltési hiba:", err);
+    console.error("Galéria mentési hiba:", err);
     return {
-      error:
-        "Feltöltési hiba: " + (err instanceof Error ? err.message : "ismeretlen hiba"),
+      error: "Mentési hiba: " + (err instanceof Error ? err.message : "ismeretlen hiba"),
     };
   }
 }
 
 export async function deleteImageAction(formData: FormData) {
+  if (!(await requireAdmin())) return;
   const id = Number(formData.get("id"));
   if (!id) return;
   const [row] = await db.select().from(gallery).where(eq(gallery.id, id));
@@ -77,6 +76,7 @@ export async function deleteImageAction(formData: FormData) {
 // ↑/↓: a kép és a szomszédja helyet cserél a kategórián belül, majd a teljes
 // kategória sort_order-jét 1..n-re normalizáljuk (így a holtversenyek is eltűnnek).
 export async function moveImageAction(formData: FormData) {
+  if (!(await requireAdmin())) return;
   const id = Number(formData.get("id"));
   const direction = String(formData.get("direction"));
   if (!id || (direction !== "up" && direction !== "down")) return;
@@ -106,6 +106,7 @@ export async function moveImageAction(formData: FormData) {
 }
 
 export async function updateAltAction(formData: FormData) {
+  if (!(await requireAdmin())) return;
   const id = Number(formData.get("id"));
   if (!id) return;
   const alt = String(formData.get("alt") || "");

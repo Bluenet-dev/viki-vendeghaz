@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
-import { uploadImageAction, type UploadState } from "./actions";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { upload } from "@vercel/blob/client";
+import { saveUploadedImage } from "./actions";
 import { GALLERY_CATEGORIES } from "@/lib/gallery-categories";
 
 const input =
@@ -9,20 +11,57 @@ const input =
 const lbl = "text-xs text-[var(--text2)] uppercase tracking-wide";
 
 export function UploadForm() {
-  const [state, formAction, pending] = useActionState<UploadState, FormData>(
-    uploadImageAction,
-    {},
-  );
+  const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
 
-  useEffect(() => {
-    if (state.ok) formRef.current?.reset();
-  }, [state.ok]);
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setOk(false);
+
+    const form = e.currentTarget;
+    const category = (form.elements.namedItem("category") as HTMLSelectElement).value;
+    const alt = (form.elements.namedItem("alt") as HTMLInputElement).value;
+    const file = (form.elements.namedItem("file") as HTMLInputElement).files?.[0];
+
+    if (!file) {
+      setError("Nincs kiválasztott képfájl.");
+      return;
+    }
+
+    setPending(true);
+    try {
+      // A fájl közvetlenül a böngészőből kerül a Blob tárolóba (nincs body-limit).
+      const blob = await upload(`gallery/${category}/${file.name}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/gallery/upload",
+        clientPayload: JSON.stringify({ category }),
+      });
+
+      const res = await saveUploadedImage({ url: blob.url, alt, category });
+      if (res?.error) {
+        setError(res.error);
+      } else {
+        setOk(true);
+        formRef.current?.reset();
+        router.refresh();
+      }
+    } catch (err) {
+      setError(
+        "Feltöltési hiba: " + (err instanceof Error ? err.message : "ismeretlen hiba"),
+      );
+    } finally {
+      setPending(false);
+    }
+  }
 
   return (
     <div className="border-[0.5px] border-[var(--border)] rounded-[10px] bg-[var(--surface)] p-5 mb-8">
       <h2 className="text-sm font-medium text-[var(--text)] mb-4">Kép feltöltése</h2>
-      <form ref={formRef} action={formAction} className="flex flex-wrap gap-3 items-end">
+      <form ref={formRef} onSubmit={handleSubmit} className="flex flex-wrap gap-3 items-end">
         <div>
           <label className={lbl}>Kategória</label>
           <select name="category" className={input} defaultValue={GALLERY_CATEGORIES[0].value}>
@@ -56,10 +95,10 @@ export function UploadForm() {
         </button>
       </form>
 
-      {state.error && (
-        <p className="mt-3 text-sm text-[#C44] bg-[#FCEBEB] rounded-md px-3 py-2">{state.error}</p>
+      {error && (
+        <p className="mt-3 text-sm text-[#C44] bg-[#FCEBEB] rounded-md px-3 py-2">{error}</p>
       )}
-      {state.ok && (
+      {ok && (
         <p className="mt-3 text-sm text-[#3A5A3C] bg-[var(--accent-bg)] rounded-md px-3 py-2">
           Kép sikeresen feltöltve.
         </p>
