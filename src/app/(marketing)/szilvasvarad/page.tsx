@@ -76,7 +76,7 @@ export default function SzilvasvaradPage() {
           <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             Fedezze fel Szilvásváradot
           </h1>
-          <p className="text-[var(--text2)]/70 text-lg leading-relaxed max-w-2xl">
+          <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
             A Viki Vendégház mindössze egy perc sétára van a Szalajka-völgy
             bejáratától. Programban nem lesz hiány – természet, kultúra és
             kaland egy helyen.
@@ -115,7 +115,7 @@ export default function SzilvasvaradPage() {
         <div className="mx-auto max-w-3xl">
           <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Helytörténet</p>
           <h2 className="text-4xl text-white mb-8">Szilvásvárad rövid története</h2>
-          <div className="space-y-4 text-[var(--text2)]/70 leading-relaxed">
+          <div className="space-y-4 text-[var(--nav-text)]/80 leading-relaxed">
             <p>
               Szilvásvárad nem csupán Magyarország egyik legnépszerűbb turisztikai
               célpontja, hanem gazdag történelmi múlttal rendelkező település is,

@@ -19,7 +19,7 @@ export default async function KertMedencePage() {
         <div className="mx-auto max-w-4xl">
           <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Wellness · Kert & medence</p>
           <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">Kert & medence</h1>
-          <p className="text-[var(--text2)]/70 text-lg leading-relaxed max-w-2xl">
+          <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
             A gondosan kialakított kert és a kültéri fa medence tökéletes
             helyszínt nyújt a napsütéses napokhoz – legyen szó békés olvasásról,
             gyermekek fürdőzéséről vagy egy pohár bor melletti esténkézésről.

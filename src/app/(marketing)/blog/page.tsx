@@ -34,7 +34,7 @@ export default async function BlogPage() {
           <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             Tippek & szilvásvárad
           </h1>
-          <p className="text-[var(--text2)]/70 text-lg max-w-xl">
+          <p className="text-[var(--nav-text)]/80 text-lg max-w-xl">
             Túra-útmutatók, wellness-tippek és szilvásváradi élmények –
             közvetlenül a vendégháztól.
           </p>

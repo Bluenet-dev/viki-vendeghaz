@@ -38,7 +38,7 @@ export default async function SobarlangPage() {
           <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             Sóbarlang
           </h1>
-          <p className="text-[var(--text2)]/70 text-lg leading-relaxed max-w-2xl">
+          <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
             A sóbarlangban található sós levegő természetes módon tisztítja a
             légutakat, enyhíti az allergiás és légzőszervi panaszokat, miközben
             mély relaxációt biztosít.
@@ -52,7 +52,7 @@ export default async function SobarlangPage() {
             ].map((s) => (
               <div key={s.label} className="bg-[var(--surface)]/5 rounded-xl p-4 text-center">
                 <p className="text-2xl text-[var(--accent2)]">{s.value}</p>
-                <p className="text-xs uppercase tracking-widest text-[var(--text2)]/50 mt-1">{s.label}</p>
+                <p className="text-xs uppercase tracking-widest text-[var(--nav-text)]/60 mt-1">{s.label}</p>
               </div>
             ))}
           </div>
@@ -93,8 +93,8 @@ export default async function SobarlangPage() {
                 Szállóvendégeknek
               </p>
               <p className="text-4xl mb-2">{service?.guestPriceLabel ?? "Ingyenes"}</p>
-              <p className="text-[var(--text2)]/70 text-sm">{service?.guestPriceNote ?? "45 perc / nap / vendég"}</p>
-              <p className="text-[var(--text2)]/50 text-xs mt-1">
+              <p className="text-[var(--nav-text)]/80 text-sm">{service?.guestPriceNote ?? "45 perc / nap / vendég"}</p>
+              <p className="text-[var(--nav-text)]/60 text-xs mt-1">
                 A további használat az alábbi árakon lehetséges.
               </p>
             </div>

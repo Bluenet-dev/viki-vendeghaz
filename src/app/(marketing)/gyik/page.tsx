@@ -24,7 +24,7 @@ export default async function GyikPage() {
           <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             Gyakran ismételt kérdések
           </h1>
-          <p className="text-[var(--text2)]/70 text-lg max-w-2xl">
+          <p className="text-[var(--nav-text)]/80 text-lg max-w-2xl">
             Ha kérdése nem szerepel itt, hívjon minket vagy írjon emailt – 24 órás
             ügyeleten elérhető vagyunk.
           </p>

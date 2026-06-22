@@ -15,7 +15,7 @@ export default function RolunkPage() {
           <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             A Viki Vendégház története
           </h1>
-          <p className="text-[var(--text2)]/70 text-lg leading-relaxed max-w-2xl">
+          <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
             A Bükk lábánál, Szilvásvárad szívében egy álom vált valóra – 2015 tavaszán.
           </p>
         </div>
@@ -42,7 +42,7 @@ export default function RolunkPage() {
             várja Önt és szeretteit – ideális pároknak, családoknak és baráti
             társaságoknak egyaránt.
           </p>
-          <blockquote className="border-l-2 border-salt pl-6 my-8 text-2xl text-[var(--text)] font-light leading-snug">
+          <blockquote className="border-l-2 border-[var(--accent2)] pl-6 my-8 text-2xl text-[var(--text)] font-light leading-snug">
             &ldquo;Modern és kényelmes szállásunk Szilvásvárad szívében várja Önt
             és szeretteit egy felejthetetlen pihenésre és kikapcsolódásra.&rdquo;
           </blockquote>

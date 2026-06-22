@@ -25,7 +25,7 @@ export default function EtekezesPage() {
           <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             Főzés a friss levegőn
           </h1>
-          <p className="text-[var(--text2)]/70 text-lg leading-relaxed max-w-2xl">
+          <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
             Amennyiben szívesen főz a szabadban, vagy szeretne közösen időt
             tölteni családjával, barátaival a friss levegőn, a Viki Vendégház
             kültéri közösségi terei kiváló lehetőséget kínálnak.
@@ -53,7 +53,7 @@ export default function EtekezesPage() {
           <div className="mt-12 bg-[var(--nav-bg)] rounded-2xl p-8">
             <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-3">Hamarosan</p>
             <h3 className="text-2xl text-white mb-3">Reggeli & félpanzió</h3>
-            <p className="text-[var(--text2)]/60 leading-relaxed">
+            <p className="text-[var(--nav-text)]/80 leading-relaxed">
               Hamarosan részletes tájékoztatót adunk reggelizési és félpanzió
               lehetőségeinkről. Érdeklődjön a foglaláskor!
             </p>

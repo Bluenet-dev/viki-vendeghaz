@@ -17,7 +17,7 @@ export async function WellnessHeroImage({ category }: { category: string }) {
         <Image src={image.url} alt={image.alt ?? ""} fill className="object-cover" sizes="(max-width: 768px) 100vw, 900px" />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xs uppercase tracking-widest text-[var(--text2)]/40">Fotó hamarosan</span>
+          <span className="text-xs uppercase tracking-widest text-[var(--nav-text)]/50">Fotó hamarosan</span>
         </div>
       )}
     </div>

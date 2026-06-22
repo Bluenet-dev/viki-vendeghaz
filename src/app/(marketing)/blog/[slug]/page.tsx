@@ -58,7 +58,7 @@ export default async function BlogPostPage({
             {post.title}
           </h1>
           {post.publishedAt && (
-            <p className="text-[var(--text2)]/50 text-sm ">
+            <p className="text-[var(--nav-text)]/70 text-sm ">
               {new Date(post.publishedAt).toLocaleDateString("hu-HU", {
                 year: "numeric",
                 month: "long",

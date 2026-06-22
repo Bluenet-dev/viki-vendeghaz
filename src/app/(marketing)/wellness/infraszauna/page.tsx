@@ -19,7 +19,7 @@ export default async function InfraszaunaPage() {
         <div className="mx-auto max-w-4xl">
           <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Wellness · Infraszauna</p>
           <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">Infraszauna</h1>
-          <p className="text-[var(--text2)]/70 text-lg leading-relaxed max-w-2xl">
+          <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
             Az infraszauna mélyreható infravörös hője serkenti a vérkeringést,
             ellazítja az izmokat, elősegíti a méregtelenítést, és hatékonyan
             csökkenti a stresszt. Kíméletesebb, mint a hagyományos finn szauna –
@@ -69,7 +69,7 @@ export default async function InfraszaunaPage() {
         <h2 className="text-3xl text-white mb-4">
           Foglalja a Superior szobát, kapja az infraszaunát
         </h2>
-        <p className="text-[var(--text2)]/60 mb-6 max-w-md mx-auto">
+        <p className="text-[var(--nav-text)]/80 mb-6 max-w-md mx-auto">
           A Superior szoba vendégei az infraszaunát saját szobájukban használhatják.
         </p>
         <Link href="/foglalas" className="inline-flex px-8 py-3 rounded-full bg-[var(--accent2)] text-[var(--text)] font-sans font-medium hover:bg-[var(--accent2)]/90 transition-colors">

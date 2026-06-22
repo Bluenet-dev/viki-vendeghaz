@@ -16,7 +16,7 @@ export default function KapcsolatPage() {
           <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             Írjon vagy hívjon!
           </h1>
-          <p className="text-[var(--text2)]/70 text-lg max-w-xl">
+          <p className="text-[var(--nav-text)]/80 text-lg max-w-xl">
             24 órás ügyeleten elérhető vagyunk – foglalási kérdésben, egyedi
             ajánlatkérésnél vagy bármilyen információra van szüksége.
           </p>

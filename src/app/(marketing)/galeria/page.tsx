@@ -41,7 +41,7 @@ export default async function GaleriaPage() {
           <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             Képek a vendégházból
           </h1>
-          <p className="text-[var(--text2)]/70 text-lg max-w-xl">
+          <p className="text-[var(--nav-text)]/80 text-lg max-w-xl">
             Szobák, sóbarlang, wellness, kert, udvar és a környező természet –
             valós fotók a Viki Vendégházról.
           </p>

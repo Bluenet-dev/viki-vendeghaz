@@ -25,7 +25,7 @@ export default async function CsomagokPage() {
           <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             Csomagajánlatok
           </h1>
-          <p className="text-[var(--text2)]/70 text-lg leading-relaxed max-w-2xl">
+          <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
             Szezonális csomagjaink és különleges ajánlataink – foglaljon egyedi
             élményt Szilvásváradon.
           </p>

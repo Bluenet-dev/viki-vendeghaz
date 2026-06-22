@@ -19,7 +19,7 @@ export default async function FinnSzaunaPage() {
         <div className="mx-auto max-w-4xl">
           <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Wellness · Finn szauna</p>
           <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">Finn szauna</h1>
-          <p className="text-[var(--text2)]/70 text-lg leading-relaxed max-w-2xl">
+          <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
             A hagyományos finn gőzszauna az egyik legkedveltebb kikapcsolódási
             lehetőség vendégeink körében. Az izzadás révén a méreganyagok
             távoznak a szervezetből, az izmok ellazulnak, a vérkeringés javul és
@@ -69,7 +69,7 @@ export default async function FinnSzaunaPage() {
           <Link href="/foglalas" className="px-8 py-3 rounded-full bg-[var(--accent2)] text-[var(--text)] font-sans font-medium hover:bg-[var(--accent2)]/90 transition-colors">
             Foglalás
           </Link>
-          <Link href="/kapcsolat" className="px-8 py-3 rounded-full border border-[var(--border)] text-[var(--text2)] font-sans font-medium hover:border-salt hover:text-[var(--accent2)] transition-colors">
+          <Link href="/kapcsolat" className="px-8 py-3 rounded-full border border-white/35 text-white font-sans font-medium hover:bg-white/5 transition-colors">
             Kapcsolat
           </Link>
         </div>
