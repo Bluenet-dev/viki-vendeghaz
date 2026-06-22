@@ -9,6 +9,8 @@ import { RoomCards } from "./room-cards";
 
 type GalleryImage = { url: string; alt: string | null };
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Szobák & árak",
   description:

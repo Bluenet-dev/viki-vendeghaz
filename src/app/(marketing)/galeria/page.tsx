@@ -1,9 +1,11 @@
 ﻿import type { Metadata } from "next";
-import Image from "next/image";
 import { db } from "@/db";
 import { gallery } from "@/db/schema";
 import { asc } from "drizzle-orm";
 import { GALLERY_CATEGORIES, GALLERY_CATEGORY_LABELS } from "@/lib/gallery-categories";
+import { GalleryGrid } from "./gallery-grid";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Galéria",
@@ -25,6 +27,11 @@ export default async function GaleriaPage() {
     ...GALLERY_CATEGORIES.map((c) => c.value),
     ...Object.keys(byCategory).filter((k) => !knownValues.includes(k as never)),
   ].filter((cat) => (byCategory[cat]?.length ?? 0) > 0);
+
+  const sections = orderedCategories.map((category) => ({
+    label: GALLERY_CATEGORY_LABELS[category] ?? category,
+    images: byCategory[category].map((img) => ({ url: img.url, alt: img.alt })),
+  }));
 
   return (
     <div className="pt-16 bg-[var(--bg)] min-h-screen">
@@ -57,31 +64,7 @@ export default async function GaleriaPage() {
         </section>
       ) : (
         <section className="py-16 px-6">
-          <div className="mx-auto max-w-5xl space-y-12">
-            {orderedCategories.map((category) => {
-              const imgs = byCategory[category];
-              return (
-              <div key={category}>
-                <h2 className="text-2xl text-[var(--text)] mb-4">
-                  {GALLERY_CATEGORY_LABELS[category] ?? category}
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {imgs.map((img) => (
-                    <div key={img.id} className="relative aspect-square rounded-xl overflow-hidden bg-[var(--surface2)]">
-                      <Image
-                        src={img.url}
-                        alt={img.alt ?? ""}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 50vw, 33vw"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              );
-            })}
-          </div>
+          <GalleryGrid sections={sections} />
         </section>
       )}
     </div>

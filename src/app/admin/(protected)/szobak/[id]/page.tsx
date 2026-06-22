@@ -22,6 +22,8 @@ async function updateRoom(formData: FormData) {
     })
     .where(eq(rooms.id, id));
   revalidatePath("/admin/szobak");
+  revalidatePath("/szobak");
+  revalidatePath("/");
   redirect("/admin/szobak");
 }
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Copyright } from "@/components/copyright";
 
 const cols = [
   {
@@ -127,10 +128,24 @@ export function Footer() {
 
         <div className="mt-12 border-t border-white/10 pt-8 flex flex-col sm:flex-row justify-between gap-4">
           <p className="text-xs text-[var(--nav-text)]/40">
-            © 2025 Viki Vendégház. Minden jog fenntartva.
+            © <Copyright /> Viki Vendégház. Minden jog fenntartva.
           </p>
           <p className="text-xs text-[var(--nav-text)]/40">
             NTAK: MA22031772 · Adószám: 52477937-1-30
+          </p>
+        </div>
+
+        <div className="mt-6 pt-6 border-t border-white/5 text-center">
+          <p className="text-xs text-[var(--nav-text)]/40">
+            Weboldal tervezés és fejlesztés:{" "}
+            <a
+              href="https://bluenet.hu"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-[var(--nav-text)]/70 underline underline-offset-2 hover:text-white transition-colors"
+            >
+              BlueNet
+            </a>
           </p>
         </div>
       </div>

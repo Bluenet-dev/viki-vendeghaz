@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { db } from "@/db";
 import {
   rooms,
@@ -11,9 +12,11 @@ import {
   pricingSettings,
   roomCapacityPricing,
   wellnessServices,
+  gallery,
 } from "@/db/schema";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { getLowestPriceForScope, type PricingData, type RoomScope } from "@/lib/pricing";
+import { ROOM_CATEGORIES } from "@/lib/gallery-categories";
 import { MiniCalendar } from "./mini-calendar";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +65,17 @@ export default async function Home() {
     .where(eq(availability.status, "blocked"))
     .then((rows) => rows.filter((r) => r.date >= today));
   const blockedDates = Array.from(new Set(blockedRows.map((r) => r.date)));
+
+  // Szoba borítóképek (kategória = szoba slug), a legkisebb sort_order az első.
+  const roomGalleryRows = await db
+    .select({ category: gallery.category, url: gallery.url, alt: gallery.alt })
+    .from(gallery)
+    .where(inArray(gallery.category, ROOM_CATEGORIES))
+    .orderBy(asc(gallery.sortOrder), asc(gallery.id));
+  const roomCovers: Record<string, { url: string; alt: string | null }> = {};
+  for (const row of roomGalleryRows) {
+    if (!roomCovers[row.category]) roomCovers[row.category] = { url: row.url, alt: row.alt };
+  }
 
   const [allSeasons, allRules, allHolidays, allHolidayPrices, settingsRows, allRoomCapacities, allWellness] = await Promise.all([
     db.select().from(seasons).where(eq(seasons.active, true)),
@@ -175,13 +189,24 @@ export default async function Home() {
               const amenities = room.amenities ? room.amenities.split(",").map((s) => s.trim()).filter(Boolean) : [];
               const isSuperior = room.slug === "superior";
               const lowest = room.slug ? getLowestPriceForScope(room.slug as RoomScope, pricingData) : null;
+              const cover = room.slug ? roomCovers[room.slug] : null;
               return (
                 <div
                   key={room.slug}
                   className={`bg-[var(--surface)] rounded-xl border overflow-hidden ${isSuperior ? "border-[var(--accent2)]" : "border-[var(--border)]"}`}
                 >
-                  <div className="relative h-40 bg-[var(--surface2)] flex items-center justify-center">
-                    <span className="text-xs uppercase tracking-widest text-[var(--text3)]">Fotó hamarosan</span>
+                  <div className="relative h-40 bg-[var(--surface2)] flex items-center justify-center overflow-hidden">
+                    {cover ? (
+                      <Image
+                        src={cover.url}
+                        alt={cover.alt ?? room.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, 360px"
+                      />
+                    ) : (
+                      <span className="text-xs uppercase tracking-widest text-[var(--text3)]">Fotó hamarosan</span>
+                    )}
                     {isSuperior && (
                       <span className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-[var(--accent2-bg)] text-[var(--accent2)] text-[12px] font-semibold uppercase tracking-wide">
                         Legjobb szoba
