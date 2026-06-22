@@ -20,7 +20,17 @@
       "Bash(pnpm tsc *)",
       "Bash(pandoc \"C:\\\\Users\\\\vona2\\\\Downloads\\\\viki-vendeghaz-projektterv.docx\" -o /tmp/projektterv.md)",
       "Read(//tmp/**)",
-      "PowerShell(pandoc \"C:\\\\Users\\\\vona2\\\\Downloads\\\\viki-vendeghaz-projektterv.docx\" -o \"$env:TEMP\\\\projektterv.md\" 2>&1; if \\($?\\) { Get-Content \"$env:TEMP\\\\projektterv.md\" })"
+      "PowerShell(pandoc \"C:\\\\Users\\\\vona2\\\\Downloads\\\\viki-vendeghaz-projektterv.docx\" -o \"$env:TEMP\\\\projektterv.md\" 2>&1; if \\($?\\) { Get-Content \"$env:TEMP\\\\projektterv.md\" })",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm -v)",
+      "Bash(pnpm -v)",
+      "PowerShell(pnpm add @tabler/icons-react 2>&1)",
+      "Bash(ls src/components)",
+      "Bash(ls src/components/cookie-banner.tsx)",
+      "Bash(ls next.config.*)",
+      "Bash(cat next.config.*)"
     ]
   }
 }
