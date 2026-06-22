@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import type { Metadata } from "next";
 import { db } from "@/db";
 import { wellnessServices, wellnessPriceTiers } from "@/db/schema";
@@ -21,9 +21,9 @@ export default async function SobarlangPage() {
   const egyeniArak = tiers.filter((t) => t.groupLabel === "Egyedi jegy");
   const berletArak = tiers.filter((t) => t.groupLabel === "Bérlet (10x)");
   return (
-    <div className="pt-16 bg-stone min-h-screen">
+    <div className="pt-16 bg-[var(--bg)] min-h-screen">
       {/* Hero */}
-      <section className="relative bg-ink py-20 px-6 overflow-hidden">
+      <section className="relative bg-[var(--nav-bg)] py-20 px-6 overflow-hidden">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -32,13 +32,13 @@ export default async function SobarlangPage() {
           }}
         />
         <div className="relative mx-auto max-w-4xl">
-          <p className="font-mono text-xs uppercase tracking-widest text-salt mb-4">
+          <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">
             Wellness · Sóbarlang
           </p>
-          <h1 className="font-display text-5xl sm:text-6xl text-stone font-light mb-6">
+          <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             Sóbarlang
           </h1>
-          <p className="text-mist/70 text-lg leading-relaxed max-w-2xl">
+          <p className="text-[var(--text2)]/70 text-lg leading-relaxed max-w-2xl">
             A sóbarlangban található sós levegő természetes módon tisztítja a
             légutakat, enyhíti az allergiás és légzőszervi panaszokat, miközben
             mély relaxációt biztosít.
@@ -50,9 +50,9 @@ export default async function SobarlangPage() {
               { label: "Hőmérséklet", value: "19–22 °C" },
               { label: "Páratartalom", value: "60 %" },
             ].map((s) => (
-              <div key={s.label} className="bg-white/5 rounded-xl p-4 text-center">
-                <p className="font-display text-2xl text-salt">{s.value}</p>
-                <p className="font-mono text-xs uppercase tracking-widest text-mist/50 mt-1">{s.label}</p>
+              <div key={s.label} className="bg-[var(--surface)]/5 rounded-xl p-4 text-center">
+                <p className="text-2xl text-[var(--accent2)]">{s.value}</p>
+                <p className="text-xs uppercase tracking-widest text-[var(--text2)]/50 mt-1">{s.label}</p>
               </div>
             ))}
           </div>
@@ -64,8 +64,8 @@ export default async function SobarlangPage() {
       <section className="py-14 px-6">
         <div className="mx-auto max-w-4xl grid md:grid-cols-2 gap-12">
           <div>
-            <h2 className="font-display text-3xl text-ink mb-4">A sóbarlangról</h2>
-            <div className="space-y-3 text-bark/70 leading-relaxed">
+            <h2 className="text-3xl text-[var(--text)] mb-4">A sóbarlangról</h2>
+            <div className="space-y-3 text-[var(--text)]/70 leading-relaxed">
               <p>
                 Sóbarlangunk himalája és parajdi sótömbökből épül, 5 tonna só
                 természetes mikroklímát teremt. A 19–22 fokos hőmérséklet és
@@ -80,21 +80,21 @@ export default async function SobarlangPage() {
             </div>
             <ul className="mt-6 space-y-2">
               {["Fényterápia", "Hangterápia", "TV", "6 férőhely", "Himalája só", "Parajdi só"].map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-bark/70">
-                  <span className="w-4 h-0.5 bg-salt inline-block flex-shrink-0" />
+                <li key={f} className="flex items-center gap-2 text-sm text-[var(--text)]/70">
+                  <span className="w-4 h-0.5 bg-[var(--accent2)] inline-block flex-shrink-0" />
                   {f}
                 </li>
               ))}
             </ul>
           </div>
           <div>
-            <div className="bg-ink rounded-2xl p-6 text-stone">
-              <p className="font-mono text-xs uppercase tracking-widest text-salt mb-4">
+            <div className="bg-[var(--nav-bg)] rounded-2xl p-6 text-white">
+              <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">
                 Szállóvendégeknek
               </p>
-              <p className="font-display text-4xl mb-2">{service?.guestPriceLabel ?? "Ingyenes"}</p>
-              <p className="text-mist/70 text-sm">{service?.guestPriceNote ?? "45 perc / nap / vendég"}</p>
-              <p className="text-mist/50 text-xs mt-1">
+              <p className="text-4xl mb-2">{service?.guestPriceLabel ?? "Ingyenes"}</p>
+              <p className="text-[var(--text2)]/70 text-sm">{service?.guestPriceNote ?? "45 perc / nap / vendég"}</p>
+              <p className="text-[var(--text2)]/50 text-xs mt-1">
                 A további használat az alábbi árakon lehetséges.
               </p>
             </div>
@@ -106,30 +106,30 @@ export default async function SobarlangPage() {
       <section className="pb-16 px-6">
         <div className="mx-auto max-w-4xl grid md:grid-cols-2 gap-8">
           {/* Egyéni */}
-          <div className="bg-white rounded-2xl border border-ink/10 p-6">
-            <h3 className="font-display text-2xl text-ink mb-1">Egyéni belépők</h3>
-            <p className="font-mono text-xs uppercase tracking-widest text-salt mb-5">45 perc / alkalom</p>
+          <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6">
+            <h3 className="text-2xl text-[var(--text)] mb-1">Egyéni belépők</h3>
+            <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-5">45 perc / alkalom</p>
             <table className="w-full text-sm">
-              <tbody className="divide-y divide-ink/5">
+              <tbody className="divide-y divide-[var(--border)]">
                 {egyeniArak.map((r) => (
                   <tr key={r.id}>
-                    <td className="py-2.5 text-bark/70">{r.tierLabel}</td>
-                    <td className="py-2.5 text-right font-medium text-ink">{r.price}</td>
+                    <td className="py-2.5 text-[var(--text)]/70">{r.tierLabel}</td>
+                    <td className="py-2.5 text-right font-medium text-[var(--text)]">{r.price}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
           {/* Bérlet */}
-          <div className="bg-white rounded-2xl border border-ink/10 p-6">
-            <h3 className="font-display text-2xl text-ink mb-1">Bérletek</h3>
-            <p className="font-mono text-xs uppercase tracking-widest text-salt mb-5">10 alkalom · 8 hétig érvényes</p>
+          <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6">
+            <h3 className="text-2xl text-[var(--text)] mb-1">Bérletek</h3>
+            <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-5">10 alkalom · 8 hétig érvényes</p>
             <table className="w-full text-sm">
-              <tbody className="divide-y divide-ink/5">
+              <tbody className="divide-y divide-[var(--border)]">
                 {berletArak.map((r) => (
                   <tr key={r.id}>
-                    <td className="py-2.5 text-bark/70">{r.tierLabel}</td>
-                    <td className="py-2.5 text-right font-medium text-ink">{r.price}</td>
+                    <td className="py-2.5 text-[var(--text)]/70">{r.tierLabel}</td>
+                    <td className="py-2.5 text-right font-medium text-[var(--text)]">{r.price}</td>
                   </tr>
                 ))}
               </tbody>
@@ -139,14 +139,14 @@ export default async function SobarlangPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-ink py-14 px-6 text-center">
-        <p className="font-mono text-xs uppercase tracking-widest text-salt mb-3">Foglaljon szobát</p>
-        <h2 className="font-display text-3xl text-stone mb-6">
+      <section className="bg-[var(--nav-bg)] py-14 px-6 text-center">
+        <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-3">Foglaljon szobát</p>
+        <h2 className="text-3xl text-white mb-6">
           Szállóvendégeknek a sóbarlang ingyenes
         </h2>
         <Link
           href="/foglalas"
-          className="inline-flex px-8 py-3 rounded-full bg-salt text-bark font-sans font-medium hover:bg-salt/90 transition-colors"
+          className="inline-flex px-8 py-3 rounded-full bg-[var(--accent2)] text-[var(--text)] font-sans font-medium hover:bg-[var(--accent2)]/90 transition-colors"
         >
           Foglalás
         </Link>

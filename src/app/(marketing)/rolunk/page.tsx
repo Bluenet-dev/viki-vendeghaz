@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Rólunk",
@@ -8,21 +8,21 @@ export const metadata: Metadata = {
 
 export default function RolunkPage() {
   return (
-    <div className="pt-16 bg-stone min-h-screen">
-      <section className="bg-ink py-20 px-6">
+    <div className="pt-16 bg-[var(--bg)] min-h-screen">
+      <section className="bg-[var(--nav-bg)] py-20 px-6">
         <div className="mx-auto max-w-4xl">
-          <p className="font-mono text-xs uppercase tracking-widest text-salt mb-4">Rólunk</p>
-          <h1 className="font-display text-5xl sm:text-6xl text-stone font-light mb-6">
+          <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Rólunk</p>
+          <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             A Viki Vendégház története
           </h1>
-          <p className="text-mist/70 text-lg leading-relaxed max-w-2xl">
+          <p className="text-[var(--text2)]/70 text-lg leading-relaxed max-w-2xl">
             A Bükk lábánál, Szilvásvárad szívében egy álom vált valóra – 2015 tavaszán.
           </p>
         </div>
       </section>
 
       <section className="py-16 px-6">
-        <div className="mx-auto max-w-3xl space-y-8 text-bark/75 leading-relaxed text-lg">
+        <div className="mx-auto max-w-3xl space-y-8 text-[var(--text)]/75 leading-relaxed text-lg">
           <p>
             A Bükk lábánál, Szilvásvárad szívében egy család addig csak álmaiban
             és terveiben élt a vendégház lehetőség ötletével. Ahogy telt az idő,
@@ -42,7 +42,7 @@ export default function RolunkPage() {
             várja Önt és szeretteit – ideális pároknak, családoknak és baráti
             társaságoknak egyaránt.
           </p>
-          <blockquote className="border-l-2 border-salt pl-6 my-8 font-display text-2xl text-ink font-light leading-snug">
+          <blockquote className="border-l-2 border-salt pl-6 my-8 text-2xl text-[var(--text)] font-light leading-snug">
             &ldquo;Modern és kényelmes szállásunk Szilvásvárad szívében várja Önt
             és szeretteit egy felejthetetlen pihenésre és kikapcsolódásra.&rdquo;
           </blockquote>
@@ -61,9 +61,9 @@ export default function RolunkPage() {
             { label: "Maximális kapacitás", value: "12 fő" },
             { label: "Booking értékelés", value: "9.5 ★" },
           ].map((f) => (
-            <div key={f.label} className="text-center p-5 rounded-2xl bg-white border border-ink/8">
-              <p className="font-display text-3xl text-ink">{f.value}</p>
-              <p className="font-mono text-xs uppercase tracking-widest text-salt mt-2">{f.label}</p>
+            <div key={f.label} className="text-center p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+              <p className="text-3xl text-[var(--text)]">{f.value}</p>
+              <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mt-2">{f.label}</p>
             </div>
           ))}
         </div>

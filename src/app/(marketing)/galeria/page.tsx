@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Image from "next/image";
 import { db } from "@/db";
 import { gallery } from "@/db/schema";
@@ -32,14 +32,14 @@ export default async function GaleriaPage() {
   }, {});
 
   return (
-    <div className="pt-16 bg-stone min-h-screen">
-      <section className="bg-ink py-20 px-6">
+    <div className="pt-16 bg-[var(--bg)] min-h-screen">
+      <section className="bg-[var(--nav-bg)] py-20 px-6">
         <div className="mx-auto max-w-4xl">
-          <p className="font-mono text-xs uppercase tracking-widest text-salt mb-4">Galéria</p>
-          <h1 className="font-display text-5xl sm:text-6xl text-stone font-light mb-6">
+          <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Galéria</p>
+          <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             Képek a vendégházból
           </h1>
-          <p className="text-mist/70 text-lg max-w-xl">
+          <p className="text-[var(--text2)]/70 text-lg max-w-xl">
             Szobák, sóbarlang, wellness, kert, udvar és a környező természet –
             valós fotók a Viki Vendégházról.
           </p>
@@ -50,11 +50,11 @@ export default async function GaleriaPage() {
         <section className="py-20 px-6 text-center">
           <div className="mx-auto max-w-xl">
             <div className="flex justify-center gap-1 mb-8">
-              <div className="w-8 h-2 bg-moss rounded-sm" />
-              <div className="w-8 h-2 bg-salt rounded-sm" />
+              <div className="w-8 h-2 bg-[var(--accent)] rounded-sm" />
+              <div className="w-8 h-2 bg-[var(--accent2)] rounded-sm" />
             </div>
-            <p className="font-display text-2xl text-ink mb-3">Képek hamarosan</p>
-            <p className="text-bark/50 leading-relaxed">
+            <p className="text-2xl text-[var(--text)] mb-3">Képek hamarosan</p>
+            <p className="text-[var(--text)]/50 leading-relaxed">
               A valós fotókat a nyitás után töltjük fel. Addig is keressen
               minket és szívesen küldünk képeket emailben!
             </p>
@@ -65,12 +65,12 @@ export default async function GaleriaPage() {
           <div className="mx-auto max-w-5xl space-y-12">
             {Object.entries(byCategory).map(([category, imgs]) => (
               <div key={category}>
-                <h2 className="font-display text-2xl text-ink mb-4">
+                <h2 className="text-2xl text-[var(--text)] mb-4">
                   {CATEGORY_LABELS[category] ?? category}
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {imgs.map((img) => (
-                    <div key={img.id} className="relative aspect-square rounded-xl overflow-hidden bg-ink/5">
+                    <div key={img.id} className="relative aspect-square rounded-xl overflow-hidden bg-[var(--surface2)]">
                       <Image
                         src={img.url}
                         alt={img.alt ?? ""}

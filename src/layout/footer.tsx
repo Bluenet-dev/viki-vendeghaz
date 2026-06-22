@@ -41,27 +41,27 @@ const cols = [
 
 export function Footer() {
   return (
-    <footer className="bg-ink text-mist">
+    <footer className="bg-[var(--nav-bg)] text-[var(--nav-text)]">
       <div className="mx-auto max-w-7xl px-6 lg:px-8 py-16">
         <div className="grid grid-cols-2 gap-8 lg:grid-cols-5">
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
-            <p className="font-display text-xl text-stone font-semibold">
+            <p className="font-sans text-xl text-white font-semibold">
               Viki Vendégház
             </p>
-            <p className="mt-1 font-mono text-xs uppercase tracking-widest text-salt">
+            <p className="mt-1 text-xs uppercase tracking-widest text-[var(--accent2)]">
               Szilvásvárad
             </p>
-            <div className="mt-4 space-y-1 text-sm text-mist/70">
+            <div className="mt-4 space-y-1 text-sm text-[var(--nav-text)]/70">
               <p>3348 Szilvásvárad,</p>
               <p>Dózsa György utca 45.</p>
               <p className="mt-2">
-                <a href="tel:+36704108282" className="hover:text-salt transition-colors">
+                <a href="tel:+36704108282" className="hover:text-[var(--accent2)] transition-colors">
                   +36 70 410-8282
                 </a>
               </p>
               <p>
-                <a href="mailto:vikivendeghaz@gmail.com" className="hover:text-salt transition-colors">
+                <a href="mailto:vikivendeghaz@gmail.com" className="hover:text-[var(--accent2)] transition-colors">
                   vikivendeghaz@gmail.com
                 </a>
               </p>
@@ -71,7 +71,7 @@ export function Footer() {
                 href="https://facebook.com/vikivendeghaz"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-mist/60 hover:text-salt transition-colors"
+                className="text-[var(--nav-text)]/60 hover:text-[var(--accent2)] transition-colors"
                 aria-label="Facebook"
               >
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -82,7 +82,7 @@ export function Footer() {
                 href="https://instagram.com/vikivendeghaz"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-mist/60 hover:text-salt transition-colors"
+                className="text-[var(--nav-text)]/60 hover:text-[var(--accent2)] transition-colors"
                 aria-label="Instagram"
               >
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -93,7 +93,7 @@ export function Footer() {
                 href="https://tiktok.com/@vikivendeghaz"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-mist/60 hover:text-salt transition-colors"
+                className="text-[var(--nav-text)]/60 hover:text-[var(--accent2)] transition-colors"
                 aria-label="TikTok"
               >
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -106,7 +106,7 @@ export function Footer() {
           {/* Nav columns */}
           {cols.map((col) => (
             <div key={col.heading}>
-              <p className="font-mono text-xs uppercase tracking-widest text-salt mb-4">
+              <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">
                 {col.heading}
               </p>
               <ul className="space-y-2">
@@ -114,7 +114,7 @@ export function Footer() {
                   <li key={link.name}>
                     <Link
                       href={link.href}
-                      className="text-sm text-mist/70 hover:text-stone transition-colors"
+                      className="text-sm text-[var(--nav-text)]/70 hover:text-white transition-colors"
                     >
                       {link.name}
                     </Link>
@@ -125,11 +125,11 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-12 border-t border-mist/10 pt-8 flex flex-col sm:flex-row justify-between gap-4">
-          <p className="text-xs text-mist/40">
+        <div className="mt-12 border-t border-white/10 pt-8 flex flex-col sm:flex-row justify-between gap-4">
+          <p className="text-xs text-[var(--nav-text)]/40">
             © 2025 Viki Vendégház. Minden jog fenntartva.
           </p>
-          <p className="text-xs text-mist/40">
+          <p className="text-xs text-[var(--nav-text)]/40">
             NTAK: MA22031772 · Adószám: 52477937-1-30
           </p>
         </div>

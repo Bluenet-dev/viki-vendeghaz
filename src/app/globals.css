@@ -1,31 +1,46 @@
 @import "tailwindcss";
 
-/* ─── Sóbarlang-fény design tokenek ─── */
+/* ─── Design tokenek ─── */
 :root {
-  --ink: #1A231E;
-  --stone: #F2ECE2;
-  --salt: #E7AE8E;
-  --moss: #5E7E62;
-  --mist: #C7D1C5;
-  --bark: #2B2620;
+  --bg: #F7F5F1;
+  --surface: #FFFFFF;
+  --surface2: #F0EDE8;
+  --border: #E2DDD7;
+  --text: #1C1C1A;
+  --text2: #6B6560;
+  --text3: #9B9690;
+  --accent: #5A7A5C;
+  --accent-bg: #EEF3EE;
+  --accent2: #E8A882;
+  --accent2-bg: #FDF1EA;
+  --nav-bg: #2A3228;
+  --nav-text: #D8DDD7;
 }
 
 @theme inline {
   /* Színek */
-  --color-ink: var(--ink);
-  --color-stone: var(--stone);
-  --color-salt: var(--salt);
-  --color-moss: var(--moss);
-  --color-mist: var(--mist);
-  --color-bark: var(--bark);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text2: var(--text2);
+  --color-text3: var(--text3);
+  --color-accent: var(--accent);
+  --color-accent-bg: var(--accent-bg);
+  --color-accent2: var(--accent2);
+  --color-accent2-bg: var(--accent2-bg);
+  --color-nav-bg: var(--nav-bg);
+  --color-nav-text: var(--nav-text);
 
-  /* Fontok */
-  --font-display: var(--font-fraunces);
-  --font-sans: var(--font-work-sans);
-  --font-mono: var(--font-ibm-plex-mono);
+  /* Fontok – DM Sans mindenhol */
+  --font-display: var(--font-dm-sans);
+  --font-sans: var(--font-dm-sans);
+  --font-mono: var(--font-dm-sans);
 }
 
 body {
-  background-color: var(--stone);
-  color: var(--bark);
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-dm-sans);
 }

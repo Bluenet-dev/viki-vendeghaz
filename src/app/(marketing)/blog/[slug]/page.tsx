@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { db } from "@/db";
 import { posts } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -45,20 +45,20 @@ export default async function BlogPostPage({
   if (!post || !post.published) notFound();
 
   return (
-    <div className="pt-16 bg-stone min-h-screen">
+    <div className="pt-16 bg-[var(--bg)] min-h-screen">
       {/* Hero */}
-      <section className="bg-ink py-20 px-6">
+      <section className="bg-[var(--nav-bg)] py-20 px-6">
         <div className="mx-auto max-w-3xl">
           {post.category && (
-            <p className="font-mono text-xs uppercase tracking-widest text-salt mb-4">
+            <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">
               {CATEGORY_LABELS[post.category] ?? post.category}
             </p>
           )}
-          <h1 className="font-display text-4xl sm:text-5xl text-stone font-light mb-4 leading-tight">
+          <h1 className="text-4xl sm:text-5xl text-white font-light mb-4 leading-tight">
             {post.title}
           </h1>
           {post.publishedAt && (
-            <p className="text-mist/50 text-sm font-mono">
+            <p className="text-[var(--text2)]/50 text-sm ">
               {new Date(post.publishedAt).toLocaleDateString("hu-HU", {
                 year: "numeric",
                 month: "long",
@@ -71,7 +71,7 @@ export default async function BlogPostPage({
 
       {/* Borítókép */}
       {post.coverImageUrl && (
-        <div className="relative w-full aspect-[16/7] bg-ink/10 max-h-96 overflow-hidden">
+        <div className="relative w-full aspect-[16/7] bg-[var(--surface2)] max-h-96 overflow-hidden">
           <Image
             src={post.coverImageUrl}
             alt={post.title}
@@ -87,12 +87,12 @@ export default async function BlogPostPage({
       <article className="py-12 px-6">
         <div className="mx-auto max-w-3xl">
           {post.excerpt && (
-            <p className="text-lg text-bark/70 leading-relaxed mb-8 border-l-4 border-salt pl-5 italic">
+            <p className="text-lg text-[var(--text)]/70 leading-relaxed mb-8 border-l-4 border-[var(--accent2)] pl-5 italic">
               {post.excerpt}
             </p>
           )}
           {post.content && (
-            <div className="prose prose-bark max-w-none text-bark/80 leading-relaxed whitespace-pre-wrap">
+            <div className="prose prose-stone max-w-none text-[var(--text)]/80 leading-relaxed whitespace-pre-wrap">
               {post.content}
             </div>
           )}
@@ -101,13 +101,13 @@ export default async function BlogPostPage({
 
       {/* Vissza */}
       <div className="px-6 pb-16">
-        <div className="mx-auto max-w-3xl border-t border-ink/10 pt-8 flex items-center justify-between gap-4 flex-wrap">
-          <Link href="/blog" className="text-sm text-moss hover:underline">
+        <div className="mx-auto max-w-3xl border-t border-[var(--border)] pt-8 flex items-center justify-between gap-4 flex-wrap">
+          <Link href="/blog" className="text-sm text-[var(--accent)] hover:underline">
             ← Vissza a bloghoz
           </Link>
           <Link
             href="/foglalas"
-            className="px-6 py-2.5 rounded-full bg-salt text-bark font-sans font-medium text-sm hover:bg-salt/90 transition-colors"
+            className="px-6 py-2.5 rounded-full bg-[var(--accent2)] text-[var(--text)] font-sans font-medium text-sm hover:bg-[var(--accent2)]/90 transition-colors"
           >
             Szobát foglalok
           </Link>

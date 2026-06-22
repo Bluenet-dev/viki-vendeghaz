@@ -19,12 +19,12 @@ export function Header() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-40 bg-ink/90 backdrop-blur-sm border-b border-mist/10">
+      <header className="fixed inset-x-0 top-0 z-40 bg-[var(--nav-bg)]/90 backdrop-blur-sm border-b border-white/10">
         <nav className="mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-between h-16">
           {/* Logó */}
           <Link
             href="/"
-            className="font-display text-xl font-semibold text-stone tracking-tight"
+            className="font-sans text-xl font-semibold text-white tracking-tight"
           >
             Viki Vendégház
           </Link>
@@ -35,7 +35,7 @@ export function Header() {
               <Link
                 key={link.name}
                 href={link.href}
-                className="font-mono text-xs uppercase tracking-widest text-mist hover:text-salt transition-colors"
+                className="text-sm text-[var(--nav-text)] hover:text-[var(--accent2)] transition-colors"
               >
                 {link.name}
               </Link>
@@ -46,13 +46,13 @@ export function Header() {
           <div className="flex items-center gap-4">
             <Link
               href="/foglalas"
-              className="hidden lg:inline-flex items-center px-4 py-2 rounded-full bg-salt text-bark font-sans text-sm font-medium hover:bg-salt/90 transition-colors"
+              className="hidden lg:inline-flex items-center px-4 py-2 rounded-full bg-[var(--accent2)] text-white font-sans text-sm font-semibold hover:opacity-90 transition-opacity"
             >
               Foglalás
             </Link>
             <button
               type="button"
-              className="lg:hidden -m-2 p-2 text-mist"
+              className="lg:hidden -m-2 p-2 text-[var(--nav-text)]"
               onClick={() => setMobileMenuOpen(true)}
             >
               <span className="sr-only">Menü megnyitása</span>
@@ -69,19 +69,19 @@ export function Header() {
         open={mobileMenuOpen}
         onClose={setMobileMenuOpen}
       >
-        <div className="fixed inset-0 z-40 bg-ink/40 backdrop-blur-sm" />
-        <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full max-w-xs bg-ink px-6 py-6 overflow-y-auto">
+        <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" />
+        <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full max-w-xs bg-[var(--nav-bg)] px-6 py-6 overflow-y-auto">
           <div className="flex items-center justify-between mb-8">
             <Link
               href="/"
-              className="font-display text-xl font-semibold text-stone"
+              className="font-sans text-xl font-semibold text-white"
               onClick={() => setMobileMenuOpen(false)}
             >
               Viki Vendégház
             </Link>
             <button
               type="button"
-              className="-m-2 p-2 text-mist"
+              className="-m-2 p-2 text-[var(--nav-text)]"
               onClick={() => setMobileMenuOpen(false)}
             >
               <span className="sr-only">Menü bezárása</span>
@@ -94,7 +94,7 @@ export function Header() {
               <Link
                 key={link.name}
                 href={link.href}
-                className="block px-3 py-3 font-mono text-xs uppercase tracking-widest text-mist hover:text-salt border-b border-mist/10"
+                className="block px-3 py-3 text-sm text-[var(--nav-text)] hover:text-[var(--accent2)] border-b border-white/10"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {link.name}
@@ -102,7 +102,7 @@ export function Header() {
             ))}
             <Link
               href="/foglalas"
-              className="mt-6 block text-center px-4 py-3 rounded-full bg-salt text-bark font-sans text-sm font-medium"
+              className="mt-6 block text-center px-4 py-3 rounded-full bg-[var(--accent2)] text-white font-sans text-sm font-semibold"
               onClick={() => setMobileMenuOpen(false)}
             >
               Foglalás

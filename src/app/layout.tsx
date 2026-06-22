@@ -1,25 +1,13 @@
 import type { Metadata } from "next";
-import { Fraunces, Work_Sans, IBM_Plex_Mono } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import clsx from "clsx";
 
-const fraunces = Fraunces({
+const dmSans = DM_Sans({
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-dm-sans",
   display: "swap",
-  variable: "--font-fraunces",
-});
-
-const workSans = Work_Sans({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-work-sans",
-});
-
-const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  display: "swap",
-  variable: "--font-ibm-plex-mono",
 });
 
 export const metadata: Metadata = {
@@ -78,12 +66,7 @@ export default function RootLayout({
   return (
     <html
       lang="hu"
-      className={clsx(
-        fraunces.variable,
-        workSans.variable,
-        ibmPlexMono.variable,
-        "antialiased scroll-smooth"
-      )}
+      className={clsx(dmSans.variable, "antialiased scroll-smooth")}
     >
       <body className="font-sans">
         <script

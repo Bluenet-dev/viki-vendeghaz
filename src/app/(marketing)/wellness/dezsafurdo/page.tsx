@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import type { Metadata } from "next";
 import { db } from "@/db";
 import { wellnessServices } from "@/db/schema";
@@ -14,12 +14,12 @@ export const metadata: Metadata = {
 export default async function DezsafurdoPage() {
   const [service] = await db.select().from(wellnessServices).where(eq(wellnessServices.slug, "dezsafurdo"));
   return (
-    <div className="pt-16 bg-stone min-h-screen">
-      <section className="bg-ink py-20 px-6">
+    <div className="pt-16 bg-[var(--bg)] min-h-screen">
+      <section className="bg-[var(--nav-bg)] py-20 px-6">
         <div className="mx-auto max-w-4xl">
-          <p className="font-mono text-xs uppercase tracking-widest text-salt mb-4">Wellness · Dézsafürdő</p>
-          <h1 className="font-display text-5xl sm:text-6xl text-stone font-light mb-6">Dézsafürdő</h1>
-          <p className="text-mist/70 text-lg leading-relaxed max-w-2xl">
+          <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Wellness · Dézsafürdő</p>
+          <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">Dézsafürdő</h1>
+          <p className="text-[var(--text2)]/70 text-lg leading-relaxed max-w-2xl">
             A fürdődézsa az egyik legkedveltebb kikapcsolódási lehetőség
             vendégeink körében. Az izmok ellazulnak, a vérkeringés javul, a
             stressz szint csökken, és az ízületek is fájdalommentesebbek lesznek.
@@ -31,26 +31,26 @@ export default async function DezsafurdoPage() {
       <section className="py-16 px-6">
         <div className="mx-auto max-w-4xl grid md:grid-cols-2 gap-12">
           <div>
-            <h2 className="font-display text-3xl text-ink mb-4">Az élményről</h2>
-            <p className="text-bark/70 leading-relaxed mb-4">
+            <h2 className="text-3xl text-[var(--text)] mb-4">Az élményről</h2>
+            <p className="text-[var(--text)]/70 leading-relaxed mb-4">
               A csillagos égbolt alatt, meleg vízben töltött esték felejthetetlen
               élményt nyújtanak – akár télen, akár nyáron. A dézsafürdő különösen
               népszerű romantikus párok és baráti társaságok körében.
             </p>
-            <p className="text-bark/70 leading-relaxed">
+            <p className="text-[var(--text)]/70 leading-relaxed">
               A meleg víz és a friss levegő kombinációja páratlan ellazulást
               biztosít a hosszú túrák vagy aktív programok után.
             </p>
           </div>
           <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-ink/10 p-6">
-              <p className="font-mono text-xs uppercase tracking-widest text-salt mb-2">Felfűtési díj</p>
-              <p className="font-display text-4xl text-ink">{service?.guestPriceLabel ?? "7 000 Ft"}</p>
-              <p className="text-bark/50 text-sm mt-1">{service?.openingHours ?? "23:00-ig"}</p>
+            <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6">
+              <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-2">Felfűtési díj</p>
+              <p className="text-4xl text-[var(--text)]">{service?.guestPriceLabel ?? "7 000 Ft"}</p>
+              <p className="text-[var(--text)]/50 text-sm mt-1">{service?.openingHours ?? "23:00-ig"}</p>
             </div>
-            <div className="bg-white rounded-2xl border border-ink/10 p-6">
-              <p className="font-mono text-xs uppercase tracking-widest text-salt mb-2">Foglalás</p>
-              <p className="text-bark/70 text-sm leading-relaxed">
+            <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6">
+              <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-2">Foglalás</p>
+              <p className="text-[var(--text)]/70 text-sm leading-relaxed">
                 {service?.note ?? "Előzetes bejelentés szükséges, hogy a dézsafürdő a kívánt időpontra felfűtve készen álljon."}
               </p>
             </div>
@@ -58,13 +58,13 @@ export default async function DezsafurdoPage() {
         </div>
       </section>
 
-      <section className="bg-ink py-14 px-6 text-center">
-        <h2 className="font-display text-3xl text-stone mb-6">Foglalja be a dézsafürdőt</h2>
+      <section className="bg-[var(--nav-bg)] py-14 px-6 text-center">
+        <h2 className="text-3xl text-white mb-6">Foglalja be a dézsafürdőt</h2>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/foglalas" className="px-8 py-3 rounded-full bg-salt text-bark font-sans font-medium hover:bg-salt/90 transition-colors">
+          <Link href="/foglalas" className="px-8 py-3 rounded-full bg-[var(--accent2)] text-[var(--text)] font-sans font-medium hover:bg-[var(--accent2)]/90 transition-colors">
             Foglalás
           </Link>
-          <Link href="/kapcsolat" className="px-8 py-3 rounded-full border border-mist/30 text-mist font-sans font-medium hover:border-salt hover:text-salt transition-colors">
+          <Link href="/kapcsolat" className="px-8 py-3 rounded-full border border-[var(--border)] text-[var(--text2)] font-sans font-medium hover:border-salt hover:text-[var(--accent2)] transition-colors">
             Érdeklődöm
           </Link>
         </div>

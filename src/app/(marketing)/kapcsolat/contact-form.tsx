@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -37,15 +37,15 @@ export function ContactForm() {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <div className="w-14 h-14 rounded-full bg-moss/15 flex items-center justify-center mb-5">
-          <span className="text-moss text-2xl">✓</span>
+          <span className="text-[var(--accent)] text-2xl">✓</span>
         </div>
-        <h3 className="font-display text-2xl text-ink mb-2">Üzenet elküldve!</h3>
-        <p className="text-bark/60 max-w-xs leading-relaxed">
+        <h3 className="text-2xl text-[var(--text)] mb-2">Üzenet elküldve!</h3>
+        <p className="text-[var(--text)]/60 max-w-xs leading-relaxed">
           Köszönjük megkeresését. Hamarosan felvesszük Önnel a kapcsolatot.
         </p>
         <button
           onClick={() => setStatus("idle")}
-          className="mt-6 text-sm text-moss hover:underline"
+          className="mt-6 text-sm text-[var(--accent)] hover:underline"
         >
           Új üzenet küldése
         </button>
@@ -56,7 +56,7 @@ export function ContactForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block font-mono text-xs uppercase tracking-widest text-bark/60 mb-1.5" htmlFor="name">
+        <label className="block text-xs uppercase tracking-widest text-[var(--text)]/60 mb-1.5" htmlFor="name">
           Neve
         </label>
         <input
@@ -69,7 +69,7 @@ export function ContactForm() {
         />
       </div>
       <div>
-        <label className="block font-mono text-xs uppercase tracking-widest text-bark/60 mb-1.5" htmlFor="email">
+        <label className="block text-xs uppercase tracking-widest text-[var(--text)]/60 mb-1.5" htmlFor="email">
           Email
         </label>
         <input
@@ -82,7 +82,7 @@ export function ContactForm() {
         />
       </div>
       <div>
-        <label className="block font-mono text-xs uppercase tracking-widest text-bark/60 mb-1.5" htmlFor="phone">
+        <label className="block text-xs uppercase tracking-widest text-[var(--text)]/60 mb-1.5" htmlFor="phone">
           Telefon (opcionális)
         </label>
         <input
@@ -94,7 +94,7 @@ export function ContactForm() {
         />
       </div>
       <div>
-        <label className="block font-mono text-xs uppercase tracking-widest text-bark/60 mb-1.5" htmlFor="message">
+        <label className="block text-xs uppercase tracking-widest text-[var(--text)]/60 mb-1.5" htmlFor="message">
           Üzenet
         </label>
         <textarea
@@ -116,13 +116,13 @@ export function ContactForm() {
       <button
         type="submit"
         disabled={status === "sending"}
-        className="w-full py-3 rounded-full bg-salt text-bark font-sans font-medium hover:bg-salt/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3 rounded-full bg-[var(--accent2)] text-[var(--text)] font-sans font-medium hover:bg-[var(--accent2)]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {status === "sending" ? "Küldés..." : "Üzenet küldése"}
       </button>
-      <p className="text-xs text-bark/40 text-center">
+      <p className="text-xs text-[var(--text)]/40 text-center">
         Az adatkezelési tájékoztatót{" "}
-        <a href="/adatvedelem" className="underline hover:text-bark/60">itt</a>{" "}
+        <a href="/adatvedelem" className="underline hover:text-[var(--text)]/60">itt</a>{" "}
         olvashatja.
       </p>
     </form>
@@ -130,4 +130,4 @@ export function ContactForm() {
 }
 
 const input =
-  "w-full px-4 py-3 rounded-lg bg-white border border-ink/15 text-ink placeholder-ink/30 focus:outline-none focus:border-moss transition-colors";
+  "w-full px-4 py-3 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] placeholder-ink/30 focus:outline-none focus:border-moss transition-colors";

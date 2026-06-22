@@ -60,14 +60,14 @@ export default async function FoglalasPage() {
   };
 
   return (
-    <div className="pt-16 bg-stone min-h-screen">
-      <section className="bg-ink py-20 px-6">
+    <div className="pt-16 bg-[var(--bg)] min-h-screen">
+      <section className="bg-[var(--nav-bg)] py-20 px-6">
         <div className="mx-auto max-w-4xl">
-          <p className="font-mono text-xs uppercase tracking-widest text-salt mb-4">Foglalás</p>
-          <h1 className="font-display text-5xl sm:text-6xl text-stone font-light mb-6">
+          <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Foglalás</p>
+          <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             Foglalja le szobáját
           </h1>
-          <p className="text-mist/70 text-lg max-w-xl">
+          <p className="text-[var(--nav-text)]/80 text-lg max-w-xl">
             Válasszon szobát, jelölje ki az érkezési és távozási napot, majd küldje el foglalási kérését.
             Telefonon vagy emailben visszaigazoljuk.
           </p>
@@ -75,20 +75,20 @@ export default async function FoglalasPage() {
       </section>
 
       <section className="py-12 px-6">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-[1000px]">
           <BookingForm rooms={allRooms} blockedDays={blockedDays} pricingData={pricingData} />
         </div>
       </section>
 
       {/* Alternatív kapcsolat */}
       <section className="py-8 px-6 pb-16">
-        <div className="mx-auto max-w-2xl">
-          <div className="bg-ink/5 rounded-2xl p-6 text-center border border-ink/8">
-            <p className="font-mono text-xs uppercase tracking-widest text-bark/40 mb-3">Inkább telefonon?</p>
-            <a href="tel:+36704108282" className="font-display text-2xl text-ink hover:text-moss transition-colors">
+        <div className="mx-auto max-w-[1000px]">
+          <div className="bg-[var(--surface2)] rounded-xl p-6 text-center border border-[var(--border)]">
+            <p className="text-xs uppercase tracking-widest text-[var(--text3)] mb-3">Inkább telefonon?</p>
+            <a href="tel:+36704108282" className="text-2xl text-[var(--text)] hover:text-[var(--accent)] transition-colors">
               +36 70 410-8282
             </a>
-            <p className="text-sm text-bark/40 mt-1">24 órás ügyelet</p>
+            <p className="text-sm text-[var(--text3)] mt-1">24 órás ügyelet</p>
           </div>
         </div>
       </section>

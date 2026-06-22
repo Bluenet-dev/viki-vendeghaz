@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Impresszum",
@@ -7,17 +7,17 @@ export const metadata: Metadata = {
 
 export default function ImpresszumPage() {
   return (
-    <div className="pt-16 bg-stone min-h-screen">
-      <section className="bg-ink py-16 px-6">
+    <div className="pt-16 bg-[var(--bg)] min-h-screen">
+      <section className="bg-[var(--nav-bg)] py-16 px-6">
         <div className="mx-auto max-w-3xl">
-          <p className="font-mono text-xs uppercase tracking-widest text-salt mb-4">Jogi</p>
-          <h1 className="font-display text-4xl text-stone font-light">Impresszum</h1>
+          <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Jogi</p>
+          <h1 className="text-4xl text-white font-light">Impresszum</h1>
         </div>
       </section>
 
       <section className="py-12 px-6">
         <div className="mx-auto max-w-3xl">
-          <dl className="divide-y divide-ink/8">
+          <dl className="divide-y divide-[var(--border)]">
             {[
               { label: "Szálláshely neve", value: "Viki Vendégház" },
               { label: "Tulajdonos / üzemeltető", value: "Kiss Józsefné" },
@@ -32,8 +32,8 @@ export default function ImpresszumPage() {
               { label: "Tárhelyszolgáltató", value: "Vercel Inc., 340 Pine Street Suite 701, San Francisco, CA 94104" },
             ].map((r) => (
               <div key={r.label} className="py-4 grid grid-cols-2 gap-4">
-                <dt className="font-mono text-xs uppercase tracking-widest text-salt">{r.label}</dt>
-                <dd className="text-bark/75 text-sm">{r.value}</dd>
+                <dt className="text-xs uppercase tracking-widest text-[var(--accent2)]">{r.label}</dt>
+                <dd className="text-[var(--text)]/75 text-sm">{r.value}</dd>
               </div>
             ))}
           </dl>

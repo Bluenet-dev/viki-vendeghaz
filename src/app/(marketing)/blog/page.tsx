@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { db } from "@/db";
 import { posts } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
@@ -27,14 +27,14 @@ export default async function BlogPage() {
     .orderBy(desc(posts.publishedAt));
 
   return (
-    <div className="pt-16 bg-stone min-h-screen">
-      <section className="bg-ink py-20 px-6">
+    <div className="pt-16 bg-[var(--bg)] min-h-screen">
+      <section className="bg-[var(--nav-bg)] py-20 px-6">
         <div className="mx-auto max-w-4xl">
-          <p className="font-mono text-xs uppercase tracking-widest text-salt mb-4">Blog</p>
-          <h1 className="font-display text-5xl sm:text-6xl text-stone font-light mb-6">
+          <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Blog</p>
+          <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             Tippek & szilvásvárad
           </h1>
-          <p className="text-mist/70 text-lg max-w-xl">
+          <p className="text-[var(--text2)]/70 text-lg max-w-xl">
             Túra-útmutatók, wellness-tippek és szilvásváradi élmények –
             közvetlenül a vendégháztól.
           </p>
@@ -49,10 +49,10 @@ export default async function BlogPage() {
                 <Link
                   key={post.id}
                   href={`/blog/${post.slug}`}
-                  className="group bg-white rounded-2xl border border-ink/10 overflow-hidden hover:border-ink/25 transition-colors"
+                  className="group bg-[var(--surface)] rounded-2xl border border-[var(--border)] overflow-hidden hover:border-[var(--border)] transition-colors"
                 >
                   {post.coverImageUrl && (
-                    <div className="relative aspect-video bg-ink/5">
+                    <div className="relative aspect-video bg-[var(--surface2)]">
                       <Image
                         src={post.coverImageUrl}
                         alt={post.title}
@@ -64,19 +64,19 @@ export default async function BlogPage() {
                   )}
                   <div className="p-6">
                     {post.category && (
-                      <p className="font-mono text-xs uppercase tracking-widest text-salt mb-2">
+                      <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-2">
                         {CATEGORY_LABELS[post.category] ?? post.category}
                       </p>
                     )}
-                    <h2 className="font-display text-xl text-ink group-hover:text-moss transition-colors mb-2">
+                    <h2 className="text-xl text-[var(--text)] group-hover:text-[var(--accent)] transition-colors mb-2">
                       {post.title}
                     </h2>
                     {post.excerpt && (
-                      <p className="text-bark/60 text-sm leading-relaxed line-clamp-3">
+                      <p className="text-[var(--text)]/60 text-sm leading-relaxed line-clamp-3">
                         {post.excerpt}
                       </p>
                     )}
-                    <p className="mt-4 text-xs text-bark/40">
+                    <p className="mt-4 text-xs text-[var(--text)]/40">
                       {post.publishedAt
                         ? new Date(post.publishedAt).toLocaleDateString("hu-HU", {
                             year: "numeric",
@@ -91,8 +91,8 @@ export default async function BlogPage() {
             </div>
           ) : (
             <div className="text-center py-16">
-              <p className="font-display text-2xl text-ink mb-3">Cikkek hamarosan</p>
-              <p className="text-bark/50">
+              <p className="text-2xl text-[var(--text)] mb-3">Cikkek hamarosan</p>
+              <p className="text-[var(--text)]/50">
                 Hamarosan feltöltjük az első túra-útmutatókat és szilvásváradi élménybeszámolókat.
               </p>
             </div>

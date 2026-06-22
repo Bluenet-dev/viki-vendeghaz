@@ -26,14 +26,14 @@ const descriptions: Record<string, string> = {
 export default async function WellnessPage() {
   const services = await db.select().from(wellnessServices).orderBy(asc(wellnessServices.sortOrder));
   return (
-    <div className="pt-16 bg-stone min-h-screen">
-      <section className="bg-ink py-20 px-6">
+    <div className="pt-16 bg-[var(--bg)] min-h-screen">
+      <section className="bg-[var(--nav-bg)] py-20 px-6">
         <div className="mx-auto max-w-4xl">
-          <p className="font-mono text-xs uppercase tracking-widest text-salt mb-4">Wellness</p>
-          <h1 className="font-display text-5xl sm:text-6xl text-stone font-light mb-6">
+          <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Wellness</p>
+          <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
             Megújulás, öt irányból
           </h1>
-          <p className="text-mist/70 text-lg leading-relaxed max-w-2xl">
+          <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
             A Viki Vendégház wellness-kínálata nemcsak pihenést, hanem valódi
             testi-lelki megújulást nyújt. Sóbarlang, szaunák, dézsafürdő és
             kert – minden egy helyen, a Szalajka-völgy szomszédságában.
@@ -47,24 +47,24 @@ export default async function WellnessPage() {
             <Link
               key={s.slug}
               href={`/wellness/${s.slug}`}
-              className="group flex flex-col sm:flex-row items-start gap-6 bg-white rounded-2xl border border-ink/10 p-8 hover:border-salt/40 hover:shadow-md transition-all"
+              className="group flex flex-col sm:flex-row items-start gap-6 bg-[var(--surface)] rounded-xl border border-[var(--border)] p-8 hover:border-[var(--accent)]/40 transition-all"
             >
               <div className="flex-shrink-0 flex gap-1">
-                <div className="w-2 h-12 bg-moss rounded-full" />
-                <div className="w-2 h-12 bg-salt rounded-full" />
+                <div className="w-2 h-12 bg-[var(--accent)] rounded-full" />
+                <div className="w-2 h-12 bg-[var(--accent2)] rounded-full" />
               </div>
               <div className="flex-1">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <h2 className="font-display text-2xl text-ink group-hover:text-moss transition-colors">
+                  <h2 className="text-2xl text-[var(--text)] font-semibold group-hover:text-[var(--accent)] transition-colors">
                     {s.name}
                   </h2>
-                  <span className="font-mono text-xs uppercase tracking-widest text-salt">
+                  <span className="text-xs uppercase tracking-widest text-[var(--accent2)]">
                     {s.guestPriceLabel}
                     {s.openingHours ? ` · ${s.openingHours}` : ""}
                   </span>
                 </div>
-                <p className="mt-2 text-bark/70 leading-relaxed">{descriptions[s.slug] ?? ""}</p>
-                <p className="mt-4 text-sm text-moss font-sans">
+                <p className="mt-2 text-[var(--text2)] leading-relaxed">{descriptions[s.slug] ?? ""}</p>
+                <p className="mt-4 text-sm text-[var(--accent)] font-sans">
                   Részletek & árak →
                 </p>
               </div>
