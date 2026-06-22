@@ -102,7 +102,7 @@ export default async function AdminPage() {
       </div>
 
       {/* Gyors navigáció */}
-      <h2 className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] mb-3">
+      <h2 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] mb-3">
         Gyors navigáció
       </h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -115,7 +115,7 @@ export default async function AdminPage() {
               className="flex items-center gap-3 bg-[var(--surface)] border-[0.5px] border-[var(--border)] rounded-lg p-4 transition-all hover:border-[var(--accent)] hover:scale-[1.01]"
             >
               <Icon size={20} stroke={1.6} className="text-[var(--accent)] shrink-0" />
-              <span className="text-[13px] font-medium text-[var(--text)]">{item.label}</span>
+              <span className="text-[14px] font-medium text-[var(--text)]">{item.label}</span>
             </Link>
           );
         })}

@@ -97,7 +97,7 @@ export default async function IcalSourcesPage() {
                 <form action={toggleSource}>
                   <input type="hidden" name="id" value={s.id} />
                   <input type="hidden" name="active" value={String(s.active)} />
-                  <button type="submit" className={`text-[11px] px-2 py-0.5 rounded-full ${s.active ? "bg-[var(--accent-bg)] text-[#3A5A3C]" : "bg-[var(--surface2)] text-[var(--text2)]"}`}>
+                  <button type="submit" className={`text-[12px] px-2 py-0.5 rounded-full ${s.active ? "bg-[var(--accent-bg)] text-[#3A5A3C]" : "bg-[var(--surface2)] text-[var(--text2)]"}`}>
                     {s.active ? "Aktív" : "Inaktív"}
                   </button>
                 </form>
@@ -117,6 +117,6 @@ export default async function IcalSourcesPage() {
   );
 }
 
-const input = "mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] block";
+const input = "mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[14px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] block";
 const lbl = "text-xs text-[var(--text2)] uppercase tracking-wide";
-const saveBtn = "px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity";
+const saveBtn = "px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[14px] font-semibold hover:opacity-90 transition-opacity";

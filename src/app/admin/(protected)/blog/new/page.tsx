@@ -69,10 +69,10 @@ export default function NewPostPage() {
         </Field>
 
         <div className="flex gap-3 pt-2">
-          <button type="submit" className="px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity">
+          <button type="submit" className="px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[14px] font-semibold hover:opacity-90 transition-opacity">
             Létrehozás
           </button>
-          <a href="/admin/blog" className="px-5 py-2 rounded-md border border-[var(--border)] text-[var(--text2)] hover:text-[var(--text)] text-[13px] transition-colors">
+          <a href="/admin/blog" className="px-5 py-2 rounded-md border border-[var(--border)] text-[var(--text2)] hover:text-[var(--text)] text-[14px] transition-colors">
             Mégse
           </a>
         </div>
@@ -81,7 +81,7 @@ export default function NewPostPage() {
   );
 }
 
-const input = "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] placeholder:text-[var(--text3)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] block";
+const input = "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[14px] text-[var(--text)] placeholder:text-[var(--text3)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] block";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

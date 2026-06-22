@@ -254,7 +254,7 @@ export default async function AdminStatisztikakPage({
               type="date"
               name="from"
               defaultValue={toDateInputValue(rangeStart)}
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[14px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
             />
           </div>
           <div>
@@ -263,10 +263,10 @@ export default async function AdminStatisztikakPage({
               type="date"
               name="to"
               defaultValue={toDateInputValue(addDays(rangeEnd, -1))}
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[14px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
             />
           </div>
-          <button type="submit" className="px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity">
+          <button type="submit" className="px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[14px] font-semibold hover:opacity-90 transition-opacity">
             Mutat
           </button>
         </form>

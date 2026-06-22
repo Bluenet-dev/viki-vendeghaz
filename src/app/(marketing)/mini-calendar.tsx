@@ -46,7 +46,7 @@ export function MiniCalendar({ blockedDates }: { blockedDates: string[] }) {
 
       <div className="grid grid-cols-7 mb-0.5">
         {DAYS_HU.map((d) => (
-          <div key={d} className="text-center text-[9px] text-[var(--text3)] py-0.5">{d}</div>
+          <div key={d} className="text-center text-[11px] text-[var(--text3)] py-0.5">{d}</div>
         ))}
       </div>
 
@@ -62,7 +62,7 @@ export function MiniCalendar({ blockedDates }: { blockedDates: string[] }) {
           if (isPast) cls = "text-[var(--text3)]/50";
           else if (isBlocked) cls = "bg-[#FEE9E9] text-[#C45252] rounded";
           return (
-            <div key={day} className={`text-center text-[10px] py-1 ${cls}`}>
+            <div key={day} className={`text-center text-[12px] py-1 ${cls}`}>
               {day}
             </div>
           );
@@ -70,17 +70,17 @@ export function MiniCalendar({ blockedDates }: { blockedDates: string[] }) {
       </div>
 
       <div className="flex gap-3 mt-2 pt-2 border-t border-[var(--border)]">
-        <span className="flex items-center gap-1 text-[9px] text-[var(--text3)]">
+        <span className="flex items-center gap-1 text-[11px] text-[var(--text3)]">
           <span className="w-2 h-2 rounded-full bg-[#FEE9E9] inline-block" />Foglalt
         </span>
-        <span className="flex items-center gap-1 text-[9px] text-[var(--text3)]">
+        <span className="flex items-center gap-1 text-[11px] text-[var(--text3)]">
           <span className="w-2 h-2 rounded-full bg-[var(--surface)] border border-[var(--border)] inline-block" />Szabad
         </span>
       </div>
 
       <Link
         href="/foglalas"
-        className="mt-2 block text-center text-[10px] text-[var(--accent)] hover:underline"
+        className="mt-2 block text-center text-[12px] text-[var(--accent)] hover:underline"
       >
         Foglalás indítása →
       </Link>

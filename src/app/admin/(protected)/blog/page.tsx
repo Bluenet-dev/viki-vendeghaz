@@ -19,7 +19,7 @@ export default async function AdminBlogPage() {
         </div>
         <Link
           href="/admin/blog/new"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity whitespace-nowrap"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[14px] font-semibold hover:opacity-90 transition-opacity whitespace-nowrap"
         >
           <IconPlus size={16} stroke={2} /> Új bejegyzés
         </Link>
@@ -29,28 +29,28 @@ export default async function AdminBlogPage() {
         <table className="w-full">
           <thead className="bg-[var(--surface2)]">
             <tr>
-              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Cím</th>
-              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Kategória</th>
-              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Státusz</th>
-              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Dátum</th>
+              <th className="text-left text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Cím</th>
+              <th className="text-left text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Kategória</th>
+              <th className="text-left text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Státusz</th>
+              <th className="text-left text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Dátum</th>
               <th className="px-4 py-2.5" />
             </tr>
           </thead>
           <tbody>
             {allPosts.map((post) => (
               <tr key={post.id} className="border-t-[0.5px] border-[var(--border)] hover:bg-[var(--surface2)]">
-                <td className="px-4 py-3 text-[13px] font-medium text-[var(--text)]">{post.title}</td>
-                <td className="px-4 py-3 text-[13px] text-[var(--text2)]">{post.category ?? "—"}</td>
+                <td className="px-4 py-3 text-[14px] font-medium text-[var(--text)]">{post.title}</td>
+                <td className="px-4 py-3 text-[14px] text-[var(--text2)]">{post.category ?? "—"}</td>
                 <td className="px-4 py-3">
                   <span className={post.published ? badgeActive : badgeNeutral}>
                     {post.published ? "Közzétéve" : "Vázlat"}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-[13px] text-[var(--text2)]">
+                <td className="px-4 py-3 text-[14px] text-[var(--text2)]">
                   {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString("hu") : "—"}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Link href={`/admin/blog/${post.id}`} className="text-[13px] text-[var(--accent)] hover:underline">
+                  <Link href={`/admin/blog/${post.id}`} className="text-[14px] text-[var(--accent)] hover:underline">
                     Szerkesztés
                   </Link>
                 </td>
@@ -70,5 +70,5 @@ export default async function AdminBlogPage() {
   );
 }
 
-const badgeActive = "inline-block px-2 py-0.5 rounded-full text-[11px] bg-[var(--accent-bg)] text-[#3A5A3C]";
-const badgeNeutral = "inline-block px-2 py-0.5 rounded-full text-[11px] bg-[var(--surface2)] text-[var(--text2)]";
+const badgeActive = "inline-block px-2 py-0.5 rounded-full text-[12px] bg-[var(--accent-bg)] text-[#3A5A3C]";
+const badgeNeutral = "inline-block px-2 py-0.5 rounded-full text-[12px] bg-[var(--surface2)] text-[var(--text2)]";

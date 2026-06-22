@@ -30,7 +30,7 @@ export default async function AdminUzenetekPage() {
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-semibold text-[var(--text)]">Üzenetek</h1>
           {unread > 0 && (
-            <span className="bg-[var(--accent2-bg)] text-[#8A4A22] text-[11px] font-medium px-2 py-0.5 rounded-full">{unread} új</span>
+            <span className="bg-[var(--accent2-bg)] text-[#8A4A22] text-[12px] font-medium px-2 py-0.5 rounded-full">{unread} új</span>
           )}
         </div>
         <p className="text-sm text-[var(--text2)] mt-1">Beérkező kapcsolatfelvételek és foglalási igények.</p>

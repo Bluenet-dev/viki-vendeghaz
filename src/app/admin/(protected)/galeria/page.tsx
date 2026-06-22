@@ -75,7 +75,7 @@ export default async function AdminGaleriaPage() {
             <label className={lbl}>Képfájl</label>
             <input type="file" name="file" accept="image/*" required className="mt-1 text-sm text-[var(--text2)] file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-[var(--surface2)] file:text-[var(--text)] hover:file:bg-[var(--border)]" />
           </div>
-          <button type="submit" className="px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity self-end">
+          <button type="submit" className="px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[14px] font-semibold hover:opacity-90 transition-opacity self-end">
             Feltöltés
           </button>
         </form>
@@ -87,7 +87,7 @@ export default async function AdminGaleriaPage() {
         if (catImages.length === 0) return null;
         return (
           <div key={cat.value} className="mb-8">
-            <h2 className="text-[11px] font-semibold text-[var(--text2)] uppercase tracking-[0.06em] mb-3">{cat.label}</h2>
+            <h2 className="text-[12px] font-semibold text-[var(--text2)] uppercase tracking-[0.06em] mb-3">{cat.label}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {catImages.map((img) => (
                 <div key={img.id} className="relative group rounded-lg overflow-hidden border-[0.5px] border-[var(--border)] aspect-video bg-[var(--surface2)]">
@@ -115,5 +115,5 @@ export default async function AdminGaleriaPage() {
   );
 }
 
-const input = "mt-1 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] block";
+const input = "mt-1 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[14px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] block";
 const lbl = "text-xs text-[var(--text2)] uppercase tracking-wide";

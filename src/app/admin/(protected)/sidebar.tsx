@@ -59,7 +59,7 @@ export function Sidebar() {
         style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
       >
         <div className="text-[15px] font-semibold text-white leading-tight">Viki Admin</div>
-        <div className="text-[11px] mt-0.5 text-[rgba(216,221,215,0.55)]">Vendégház kezelő</div>
+        <div className="text-[12px] mt-0.5 text-[rgba(216,221,215,0.55)]">Vendégház kezelő</div>
       </div>
 
       {/* Nav */}
@@ -72,7 +72,7 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={[
-                "flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] transition-colors",
+                "flex items-center gap-2.5 rounded-md px-3 py-2 text-[14px] transition-colors",
                 active
                   ? "bg-[rgba(255,255,255,0.12)] text-white font-medium border-l-2 border-[var(--accent2)]"
                   : "text-[var(--nav-text)] font-normal hover:bg-[rgba(255,255,255,0.07)] hover:text-white",
@@ -90,7 +90,7 @@ export function Sidebar() {
         <form action={logoutAction}>
           <button
             type="submit"
-            className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-[rgba(216,221,215,0.5)] transition-colors hover:bg-[rgba(255,255,255,0.07)] hover:text-white"
+            className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[14px] text-[rgba(216,221,215,0.5)] transition-colors hover:bg-[rgba(255,255,255,0.07)] hover:text-white"
           >
             <IconLogout size={18} stroke={1.6} className="shrink-0" />
             <span>Kijelentkezés</span>

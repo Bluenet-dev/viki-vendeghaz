@@ -67,7 +67,7 @@ export function RoomCards({
                   </div>
                 )}
                 {isSuperior && (
-                  <span className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-[var(--accent2-bg)] text-[var(--accent2)] text-[10px] font-semibold uppercase tracking-wide">
+                  <span className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-[var(--accent2-bg)] text-[var(--accent2)] text-[12px] font-semibold uppercase tracking-wide">
                     Legjobb szoba
                   </span>
                 )}
@@ -85,7 +85,7 @@ export function RoomCards({
                     {amenities.slice(0, 4).map((f) => (
                       <li
                         key={f}
-                        className="px-2.5 py-1 rounded-full bg-[var(--surface2)] text-[10px] text-[var(--text2)]"
+                        className="px-2.5 py-1 rounded-full bg-[var(--surface2)] text-[12px] text-[var(--text2)]"
                       >
                         {f}
                       </li>

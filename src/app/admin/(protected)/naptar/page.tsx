@@ -95,11 +95,11 @@ export default async function AdminNaptarPage({
         {/* iCal szinkron – ideiglenesen inaktív (aktiváláshoz: töröld a hidden class-t)
         <div className="flex gap-2 mt-3">
           <form action={syncIcal}>
-            <button type="submit" className="px-4 py-2 rounded-md border border-[var(--border)] text-[var(--text2)] hover:text-[var(--text)] text-[13px] transition-colors">
+            <button type="submit" className="px-4 py-2 rounded-md border border-[var(--border)] text-[var(--text2)] hover:text-[var(--text)] text-[14px] transition-colors">
               ↻ iCal szinkron
             </button>
           </form>
-          <Link href="/admin/naptar/ical-sources" className="px-4 py-2 rounded-md border border-[var(--border)] text-[var(--text2)] hover:text-[var(--text)] text-[13px] transition-colors">
+          <Link href="/admin/naptar/ical-sources" className="px-4 py-2 rounded-md border border-[var(--border)] text-[var(--text2)] hover:text-[var(--text)] text-[14px] transition-colors">
             ⚙ Beállítások
           </Link>
         </div>

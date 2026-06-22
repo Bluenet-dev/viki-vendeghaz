@@ -20,19 +20,19 @@ export default async function AdminSzobakPage() {
         <table className="w-full">
           <thead className="bg-[var(--surface2)]">
             <tr>
-              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Név</th>
-              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Kapacitás</th>
-              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Ártól</th>
-              <th className="text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Aktív</th>
+              <th className="text-left text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Név</th>
+              <th className="text-left text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Kapacitás</th>
+              <th className="text-left text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Ártól</th>
+              <th className="text-left text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] px-4 py-2.5">Aktív</th>
               <th className="px-4 py-2.5" />
             </tr>
           </thead>
           <tbody>
             {allRooms.map((room) => (
               <tr key={room.id} className="border-t-[0.5px] border-[var(--border)] hover:bg-[var(--surface2)]">
-                <td className="px-4 py-3 text-[13px] font-medium text-[var(--text)]">{room.name}</td>
-                <td className="px-4 py-3 text-[13px] text-[var(--text2)]">{room.capacity} fő</td>
-                <td className="px-4 py-3 text-[13px] text-[var(--text2)]">
+                <td className="px-4 py-3 text-[14px] font-medium text-[var(--text)]">{room.name}</td>
+                <td className="px-4 py-3 text-[14px] text-[var(--text2)]">{room.capacity} fő</td>
+                <td className="px-4 py-3 text-[14px] text-[var(--text2)]">
                   {room.priceFrom != null ? `${room.priceFrom.toLocaleString("hu")} Ft` : "—"}
                 </td>
                 <td className="px-4 py-3">
@@ -41,7 +41,7 @@ export default async function AdminSzobakPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Link href={`/admin/szobak/${room.id}`} className="text-[13px] text-[var(--accent)] hover:underline">
+                  <Link href={`/admin/szobak/${room.id}`} className="text-[14px] text-[var(--accent)] hover:underline">
                     Szerkesztés
                   </Link>
                 </td>
@@ -54,5 +54,5 @@ export default async function AdminSzobakPage() {
   );
 }
 
-const badgeActive = "inline-block px-2 py-0.5 rounded-full text-[11px] bg-[var(--accent-bg)] text-[#3A5A3C]";
-const badgeNeutral = "inline-block px-2 py-0.5 rounded-full text-[11px] bg-[var(--surface2)] text-[var(--text2)]";
+const badgeActive = "inline-block px-2 py-0.5 rounded-full text-[12px] bg-[var(--accent-bg)] text-[#3A5A3C]";
+const badgeNeutral = "inline-block px-2 py-0.5 rounded-full text-[12px] bg-[var(--surface2)] text-[var(--text2)]";

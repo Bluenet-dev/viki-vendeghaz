@@ -75,7 +75,7 @@ export default async function AdminGyikPage() {
                 <form action={toggleFaq}>
                   <input type="hidden" name="id" value={item.id} />
                   <input type="hidden" name="active" value={String(item.active)} />
-                  <button type="submit" className={`px-2 py-0.5 rounded-full text-[11px] ${item.active ? "bg-[var(--accent-bg)] text-[#3A5A3C]" : "bg-[var(--surface2)] text-[var(--text2)]"}`}>
+                  <button type="submit" className={`px-2 py-0.5 rounded-full text-[12px] ${item.active ? "bg-[var(--accent-bg)] text-[#3A5A3C]" : "bg-[var(--surface2)] text-[var(--text2)]"}`}>
                     {item.active ? "Aktív" : "Rejtett"}
                   </button>
                 </form>
@@ -97,6 +97,6 @@ export default async function AdminGyikPage() {
   );
 }
 
-const input = "mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] placeholder:text-[var(--text3)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] block";
+const input = "mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[14px] text-[var(--text)] placeholder:text-[var(--text3)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] block";
 const label = "text-xs text-[var(--text2)] uppercase tracking-wide";
-const saveBtn = "px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity";
+const saveBtn = "px-5 py-2 rounded-md bg-[var(--nav-bg)] text-white text-[14px] font-semibold hover:opacity-90 transition-opacity";

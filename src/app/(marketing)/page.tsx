@@ -91,10 +91,10 @@ export default async function Home() {
         <div className="mx-auto max-w-7xl grid lg:grid-cols-[1.1fr_1fr] gap-10 items-start">
           {/* Bal oszlop */}
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-[var(--accent2)] font-semibold mb-4">
+            <p className="text-[12px] uppercase tracking-widest text-[var(--accent2)] font-semibold mb-4">
               Szilvásvárad · Bükki Nemzeti Park · Szalajka-völgy
             </p>
-            <h1 className="text-[clamp(28px,4vw,42px)] font-light text-white leading-[1.15] max-w-lg">
+            <h1 className="text-[clamp(34px,5vw,52px)] font-light text-white leading-[1.12] max-w-lg">
               Pihenj úgy, ahogy <span className="font-semibold text-[var(--accent2)]">megérdemled</span>
             </h1>
             <p className="mt-5 text-sm text-[var(--nav-text)]/75 leading-relaxed max-w-sm">
@@ -118,15 +118,15 @@ export default async function Home() {
             <div className="mt-12 flex items-center gap-8">
               <div>
                 <p className="text-lg font-bold text-white">9,9</p>
-                <p className="text-[9px] uppercase tracking-widest text-[var(--nav-text)]/50">Szállás.hu</p>
+                <p className="text-[11px] uppercase tracking-widest text-[var(--nav-text)]/50">Szállás.hu</p>
               </div>
               <div>
                 <p className="text-lg font-bold text-white">9,5</p>
-                <p className="text-[9px] uppercase tracking-widest text-[var(--nav-text)]/50">Booking.com</p>
+                <p className="text-[11px] uppercase tracking-widest text-[var(--nav-text)]/50">Booking.com</p>
               </div>
               <div>
                 <p className="text-lg font-bold text-white">12 fő</p>
-                <p className="text-[9px] uppercase tracking-widest text-[var(--nav-text)]/50">Max kapacitás</p>
+                <p className="text-[11px] uppercase tracking-widest text-[var(--nav-text)]/50">Max kapacitás</p>
               </div>
             </div>
           </div>
@@ -134,7 +134,7 @@ export default async function Home() {
           {/* Jobb oszlop: foglalás-kártya + mini naptár */}
           <div className="bg-[var(--surface)] rounded-xl p-4">
             <p className="font-semibold text-sm text-[var(--text)]">Elérhetőség ellenőrzése</p>
-            <p className="text-[10px] text-[var(--text3)] mt-0.5 mb-4">
+            <p className="text-[12px] text-[var(--text3)] mt-0.5 mb-4">
               Azonnali visszaigazolás · ingyenes lemondás 24 h-ig
             </p>
             <div className="space-y-2 text-sm">
@@ -183,7 +183,7 @@ export default async function Home() {
                   <div className="relative h-40 bg-[var(--surface2)] flex items-center justify-center">
                     <span className="text-xs uppercase tracking-widest text-[var(--text3)]">Fotó hamarosan</span>
                     {isSuperior && (
-                      <span className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-[var(--accent2-bg)] text-[var(--accent2)] text-[10px] font-semibold uppercase tracking-wide">
+                      <span className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-[var(--accent2-bg)] text-[var(--accent2)] text-[12px] font-semibold uppercase tracking-wide">
                         Legjobb szoba
                       </span>
                     )}
@@ -196,7 +196,7 @@ export default async function Home() {
                     {amenities.length > 0 && (
                       <ul className="mt-3 flex flex-wrap gap-1.5">
                         {amenities.slice(0, 3).map((f) => (
-                          <li key={f} className="px-2.5 py-1 rounded-full bg-[var(--surface2)] text-[10px] text-[var(--text2)]">{f}</li>
+                          <li key={f} className="px-2.5 py-1 rounded-full bg-[var(--surface2)] text-[12px] text-[var(--text2)]">{f}</li>
                         ))}
                       </ul>
                     )}
@@ -242,8 +242,8 @@ export default async function Home() {
               >
                 <div className={`w-7 h-7 rounded-md ${i % 2 === 0 ? "bg-[var(--accent-bg)]" : "bg-[var(--accent2-bg)]"} mb-2`} />
                 <p className="font-semibold text-xs text-[var(--text)]">{item.name}</p>
-                <p className="text-[10px] text-[var(--text2)] mt-1">{item.guestPriceLabel}</p>
-                <span className="mt-2 inline-block text-[9px] font-semibold uppercase tracking-wide text-[var(--accent)]">
+                <p className="text-[12px] text-[var(--text2)] mt-1">{item.guestPriceLabel}</p>
+                <span className="mt-2 inline-block text-[11px] font-semibold uppercase tracking-wide text-[var(--accent)]">
                   Részletek →
                 </span>
               </Link>
@@ -293,15 +293,15 @@ export default async function Home() {
             <div className="mt-8 flex items-center justify-center gap-8">
               <div>
                 <p className="text-lg font-bold text-[var(--accent2)]">9,9</p>
-                <p className="text-[9px] uppercase tracking-widest text-[var(--nav-text)]/50">Szállás.hu</p>
+                <p className="text-[11px] uppercase tracking-widest text-[var(--nav-text)]/50">Szállás.hu</p>
               </div>
               <div>
                 <p className="text-lg font-bold text-[var(--accent2)]">9,5</p>
-                <p className="text-[9px] uppercase tracking-widest text-[var(--nav-text)]/50">Booking.com</p>
+                <p className="text-[11px] uppercase tracking-widest text-[var(--nav-text)]/50">Booking.com</p>
               </div>
               <div>
                 <p className="text-lg font-bold text-[var(--accent2)]">2015</p>
-                <p className="text-[9px] uppercase tracking-widest text-[var(--nav-text)]/50">Nyitás éve</p>
+                <p className="text-[11px] uppercase tracking-widest text-[var(--nav-text)]/50">Nyitás éve</p>
               </div>
             </div>
           </div>
