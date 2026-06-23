@@ -22,9 +22,9 @@ import { MiniCalendar } from "./mini-calendar";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Viki Vendégház – Szilvásvárad | Sóbarlang, szauna, wellness",
+  title: "Viki Vendégház Szilvásvárad | Szállás sóbarlanggal, szaunával, medencével",
   description:
-    "Vendégház sóbarlanggal, finn szaunával, infraszaunával és dézsafürdővel Szilvásvárad szívében. 3 szoba, 12 fő, Szalajka-völgy és Bükki Nemzeti Park közelében. Booking.com 9,5 · Szállás.hu 9,9.",
+    "Szilvásváradon, a Szalajka-völgy kapujánál: 3 tágas szoba saját fürdőszobával, sóbarlang, finn szauna, infraszauna, dézsafürdő és kültéri medence. Max. 12 fő. Booking.com 9,5 · Szállás.hu 9,9. Foglaljon most!",
   openGraph: {
     title: "Viki Vendégház – Szilvásvárad",
     description:
@@ -109,11 +109,12 @@ export default async function Home() {
               Szilvásvárad · Bükki Nemzeti Park · Szalajka-völgy
             </p>
             <h1 className="text-[clamp(34px,5vw,52px)] font-light text-white leading-[1.12] max-w-lg">
-              Pihenj úgy, ahogy <span className="font-semibold text-[var(--accent2)]">megérdemled</span>
+              Szilvásvárad legjobb helye a <span className="font-semibold text-[var(--accent2)]">kikapcsolódáshoz</span>
             </h1>
             <p className="mt-5 text-sm text-[var(--nav-text)]/75 leading-relaxed max-w-sm">
-              Három tágas szoba saját fürdőszobával, sóbarlang, finn szauna, infraszauna,
-              dézsafürdő – mindössze pár percre a Szalajka-völgytől, a Bükk lábánál.
+              Három különálló szoba saját fürdőszobával, sóbarlang, finn szauna,
+              infraszauna és dézsafürdő – egy percre a Szalajka-völgytől, a Bükk
+              lábánál. Összesen 12 fő részére.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link

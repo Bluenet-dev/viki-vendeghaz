@@ -8,9 +8,9 @@ import { GalleryGrid } from "./gallery-grid";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Galéria",
+  title: "Galéria | Viki Vendégház Szilvásvárad – Szobák, wellness, kert",
   description:
-    "Képek a Viki Vendégházból: szobák, sóbarlang, wellness, kert és Szilvásvárad.",
+    "Képek a Viki Vendégházból: szobák, sóbarlang, finn szauna, dézsafürdő, kert és udvar Szilvásváradon. Nézze meg, mire számíthat nálunk!",
 };
 
 export default async function GaleriaPage() {

@@ -1,9 +1,9 @@
 ﻿import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Szilvásvárad – látnivalók és programok",
+  title: "Szilvásvárad látnivalók & programok | Viki Vendégház – 1 percre mindentől",
   description:
-    "Szilvásváradi látnivalók: Szalajka-völgy, Fátyol-vízesés, Lipicai Ménes, Erdei Vasút, kalandpark és még sok más. Fedezze fel a Bükki Nemzeti Park gyöngyszemét!",
+    "Szalajka-völgy, Fátyol-vízesés, Lipicai Ménes, Erdei Vasút, kalandpark – a Viki Vendégháztól egy percre. Töltsön aktív napokat Szilvásváradon, és pihenjen nálunk esténként.",
 };
 
 const latnivalok = [
@@ -78,8 +78,9 @@ export default function SzilvasvaradPage() {
           </h1>
           <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
             A Viki Vendégház mindössze egy perc sétára van a Szalajka-völgy
-            bejáratától. Programban nem lesz hiány – természet, kultúra és
-            kaland egy helyen.
+            bejáratától – tökéletes kiindulópont Szilvásvárad összes
+            látnivalójához. Természet, kultúra, kaland és lovas programok:
+            napközben felfedezés, esténként pihenés nálunk.
           </p>
         </div>
       </section>

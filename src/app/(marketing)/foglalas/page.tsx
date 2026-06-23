@@ -17,9 +17,9 @@ import type { PricingData } from "@/lib/pricing";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Foglalás",
+  title: "Foglalás | Viki Vendégház Szilvásvárad – Közvetlen online foglalás",
   description:
-    "Foglaljon szobát a Viki Vendégházban Szilvásváradon. Ellenőrizze az elérhetőséget és küldjön foglalási kérést.",
+    "Foglaljon közvetlenül – ellenőrizze a szabad napokat, válasszon szobát vagy bérelje az egész házat. Azonnali visszaigazolás, ingyenes lemondás 24 h-ig. +36 70 410-8282.",
 };
 
 export default async function FoglalasPage() {
@@ -88,7 +88,6 @@ export default async function FoglalasPage() {
             <a href="tel:+36704108282" className="text-2xl text-[var(--text)] hover:text-[var(--accent)] transition-colors">
               +36 70 410-8282
             </a>
-            <p className="text-sm text-[var(--text3)] mt-1">24 órás ügyelet</p>
           </div>
         </div>
       </section>

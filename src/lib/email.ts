@@ -60,7 +60,7 @@ export async function sendBookingNotification(data: BookingEmailData) {
         <tr><td style="padding:6px 12px;font-weight:bold">Éjszakák száma:</td><td style="padding:6px 12px">${nights}</td></tr>
         <tr><td style="padding:6px 12px;font-weight:bold">Vendégek száma:</td><td style="padding:6px 12px">${data.guests} fő</td></tr>
       </table>
-      <p style="margin-top:24px">Kérdés esetén hívjon minket: <strong>+36 70 410-8282</strong> (24 h)</p>
+      <p style="margin-top:24px">Kérdés esetén hívjon minket: <strong>+36 70 410-8282</strong></p>
       <p>Üdvözlettel,<br><strong>Viki Vendégház</strong><br>3348 Szilvásvárad, Dózsa György utca 45.</p>
     `,
   });

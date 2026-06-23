@@ -6,9 +6,9 @@ import Link from "next/link";
 import Image from "next/image";
 
 export const metadata: Metadata = {
-  title: "Blog – Szilvásvárad tippek & élmények",
+  title: "Blog | Szilvásvárad tippek, túrák, wellness – Viki Vendégház",
   description:
-    "Túra-útmutatók, wellness-tippek és szilvásváradi élmények a Viki Vendégház blogjából. Szalajka-völgy, Bükki Nemzeti Park, sóbarlang.",
+    "Túra-útmutatók a Szalajka-völgybe, sóbarlang-tippek és szilvásváradi élmények a Viki Vendégház blogjából. Bükki Nemzeti Park, Fátyol-vízesés, helyi programok.",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -32,7 +32,7 @@ export default async function BlogPage() {
         <div className="mx-auto max-w-4xl">
           <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Blog</p>
           <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
-            Tippek & szilvásvárad
+            Tippek & Szilvásvárad
           </h1>
           <p className="text-[var(--nav-text)]/80 text-lg max-w-xl">
             Túra-útmutatók, wellness-tippek és szilvásváradi élmények –

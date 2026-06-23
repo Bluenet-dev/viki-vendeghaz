@@ -7,11 +7,21 @@ import { sendBookingNotification } from "@/lib/email";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, phone, roomSlug, checkIn, checkOut, guests, message } = body;
+    const { name, email, phone, roomSlug, checkIn, checkOut, guests, message, felpanzio, felpanzioFo } = body;
 
     if (!name || !email || !roomSlug || !checkIn || !checkOut || !guests) {
       return NextResponse.json({ error: "Hiányzó kötelező mezők." }, { status: 400 });
     }
+
+    const FELPANZIO_LABELS: Record<string, string> = {
+      reggeli: "Reggeli",
+      vacsora: "Vacsora",
+      mindketto: "Félpanzió (reggeli + vacsora)",
+    };
+    const felpanzioNote = felpanzio
+      ? `Étkezés: ${FELPANZIO_LABELS[felpanzio] ?? felpanzio}, ${felpanzioFo ?? 1} fő`
+      : null;
+    const fullMessage = [message || null, felpanzioNote].filter(Boolean).join("\n\n") || null;
 
     // DB mentés
     await db.insert(messages).values({
@@ -19,7 +29,7 @@ export async function POST(req: NextRequest) {
       name,
       email,
       phone: phone || null,
-      message: message || null,
+      message: fullMessage,
       roomSlug,
       checkIn,
       checkOut,
@@ -37,7 +47,7 @@ export async function POST(req: NextRequest) {
         checkIn,
         checkOut,
         guests: Number(guests),
-        message,
+        message: fullMessage ?? undefined,
       });
     }
 

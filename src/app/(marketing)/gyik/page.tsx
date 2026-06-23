@@ -4,9 +4,9 @@ import { faq } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 
 export const metadata: Metadata = {
-  title: "GYIK – Gyakran Ismételt Kérdések",
+  title: "GYIK | Viki Vendégház Szilvásvárad – Foglalási tudnivalók",
   description:
-    "Bejelentkezés, kisállat, dohányzás, szauna, csendrendelet – minden fontos tudnivaló a Viki Vendégházról.",
+    "Mikor lehet bejelentkezni? Hozható kisállat? Mikor zár a szauna? Minden fontos kérdésre válasz a Viki Vendégházzal kapcsolatban. Ha más kérdése van, készségesen segítünk.",
 };
 
 export default async function GyikPage() {
@@ -25,8 +25,8 @@ export default async function GyikPage() {
             Gyakran ismételt kérdések
           </h1>
           <p className="text-[var(--nav-text)]/80 text-lg max-w-2xl">
-            Ha kérdése nem szerepel itt, hívjon minket vagy írjon emailt – 24 órás
-            ügyeleten elérhető vagyunk.
+            Ha kérdése nem szerepel itt, hívjon minket vagy írjon emailt –
+            készségesen segítünk.
           </p>
         </div>
       </section>

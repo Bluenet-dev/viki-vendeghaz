@@ -2,9 +2,9 @@
 import { ContactForm } from "./contact-form";
 
 export const metadata: Metadata = {
-  title: "Kapcsolat",
+  title: "Kapcsolat & foglalás | Viki Vendégház Szilvásvárad",
   description:
-    "Viki Vendégház – 3348 Szilvásvárad, Dózsa György utca 45. Telefon: +36 70 410-8282. Email: vikivendeghaz@gmail.com.",
+    "Lépjen kapcsolatba a Viki Vendégházzal: +36 70 410-8282, vikivendeghaz@gmail.com. 3348 Szilvásvárad, Dózsa György utca 45. Foglalási kérdés, egyedi ajánlat – szívesen segítünk.",
 };
 
 export default function KapcsolatPage() {
@@ -17,8 +17,8 @@ export default function KapcsolatPage() {
             Írjon vagy hívjon!
           </h1>
           <p className="text-[var(--nav-text)]/80 text-lg max-w-xl">
-            24 órás ügyeleten elérhető vagyunk – foglalási kérdésben, egyedi
-            ajánlatkérésnél vagy bármilyen információra van szüksége.
+            Foglalási kérdésben, egyedi ajánlatkérésnél vagy bármilyen
+            információra van szüksége – szívesen segítünk.
           </p>
         </div>
       </section>
@@ -34,7 +34,7 @@ export default function KapcsolatPage() {
                 <dd className="text-[var(--text)]/70">3348 Szilvásvárad, Dózsa György utca 45.</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-1">Telefon (24 h)</dt>
+                <dt className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-1">Telefon</dt>
                 <dd>
                   <a href="tel:+36704108282" className="text-[var(--text)] font-medium hover:text-[var(--accent)] transition-colors">
                     +36 70 410-8282

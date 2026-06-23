@@ -12,9 +12,9 @@ type GalleryImage = { url: string; alt: string | null };
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Szobák & árak",
+  title: "Szobák & árak | Viki Vendégház Szilvásvárad",
   description:
-    "3 külön bejáratú szoba saját fürdőszobával Szilvásváradon. 1-es szoba, 2-es szoba, Superior franciaágyas szoba. Összesen 12 fő részére.",
+    "3 külön bejáratú szoba saját fürdőszobával Szilvásváradon: Komfort Kétágyas, Komfort Franciaágyas és Superior szoba (infraszaunával). Összesen 12 főnek, -tól 16 000 Ft/éj.",
 };
 
 export default async function SzobakPage() {
@@ -57,9 +57,10 @@ export default async function SzobakPage() {
             Szobáink
           </h1>
           <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
-            3 külön bejáratú, tágas szoba saját fürdőszobával – összesen 12 fő
-            elhelyezésére alkalmas. Ideális családoknak, baráti társaságoknak és
-            pároknak egyaránt.
+            Három különálló, tágas szoba – mindegyik saját bejárattal és
+            fürdőszobával. Foglaljon egy szobát, kettőt, vagy bérelje az egész
+            vendégházat akár 12 fő részére. Nyári szezonban (június–augusztus)
+            kizárólag az egész ház foglalható.
           </p>
         </div>
       </section>

@@ -5,9 +5,9 @@ import { wellnessServices } from "@/db/schema";
 import { asc } from "drizzle-orm";
 
 export const metadata: Metadata = {
-  title: "Wellness",
+  title: "Wellness Szilvásváradon | Sóbarlang, szauna, dézsafürdő – Viki Vendégház",
   description:
-    "Sóbarlang, finn szauna, infraszauna, dézsafürdő és kültéri medence Szilvásváradon. Komplex wellness élmény a Bükki Nemzeti Park szívében.",
+    "Sóbarlang (ingyenes szállóvendégeknek), finn szauna, infraszauna, dézsafürdő és kültéri medence – mind egy helyen, Szilvásváradon. Foglaljon szobát és élvezze a teljes wellness-kínálatot.",
 };
 
 const descriptions: Record<string, string> = {
@@ -34,9 +34,10 @@ export default async function WellnessPage() {
             Megújulás, öt irányból
           </h1>
           <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
-            A Viki Vendégház wellness-kínálata nemcsak pihenést, hanem valódi
-            testi-lelki megújulást nyújt. Sóbarlang, szaunák, dézsafürdő és
-            kert – minden egy helyen, a Szalajka-völgy szomszédságában.
+            Öt wellness-élmény – mind a vendégház telkén belül, kizárólag
+            szállóvendégeinknek. Sóbarlang, finn szauna, infraszauna, dézsafürdő
+            és kültéri medence: nem kell sehova menni, a pihenés itt kezdődik
+            és itt ér véget.
           </p>
         </div>
       </section>

@@ -1,9 +1,9 @@
 ﻿import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Rólunk",
+  title: "Rólunk | Viki Vendégház Szilvásvárad – 2015 óta",
   description:
-    "Megismerheti a Viki Vendégház történetét. 2015 tavaszán nyitottuk meg kapuinkat Szilvásváradon, a Szalajka-völgy szomszédságában.",
+    "A Viki Vendégház 2015 óta várja vendégeit Szilvásváradon, a Szalajka-völgy kapujánál. Ismerje meg történetünket és azt, ami megkülönböztet minket.",
 };
 
 export default function RolunkPage() {
@@ -30,10 +30,10 @@ export default function RolunkPage() {
             álmok valóra váltak: megnyílt a Viki Vendégház.
           </p>
           <p>
-            A szálláshelyet nemhiába nevezik luxus vendégháznak – a legjobb
-            szakemberek segítségével lett megtervezve és berendezve. A lehető
-            legjobb minőségű bútorok és felszerelések szolgálják a zavartalan
-            pihenést.
+            Minőségi bútorok, gondosan kialakított szobák, saját fürdőszoba
+            minden szobához – és olyan részletek, amelyek csak akkor tűnnek fel,
+            amikor valóban jól érzi magát. Büszkék vagyunk arra, hogy
+            vendégeink évről évre visszatérnek.
           </p>
           <p>
             Vendégházunk Szilvásvárad központjában helyezkedik el, csupán egy

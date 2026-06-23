@@ -28,6 +28,13 @@ const MONTHS_HU = ["Január","Február","Március","Április","Május","Június"
 const DAYS_HU = ["H","K","Sze","Cs","P","Szo","V"];
 const MAX_GUESTS = 12;
 
+const FELPANZIO_PRICES = {
+  reggeli: 3800,
+  vacsora: 5200,
+  mindketto: 9000,
+} as const;
+type FelpanzioOption = keyof typeof FELPANZIO_PRICES | null;
+
 // Az alapágyak melletti pótágy/kanapé szöveges feltüntetése (a kapacitás-szám már ezt tartalmazza).
 const CAPACITY_NOTE: Record<string, string> = {
   "szoba-1": "2 fő + 1 pótágy",
@@ -67,6 +74,8 @@ export function BookingForm({
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<Status>("idle");
+  const [felpanzio, setFelpanzio] = useState<FelpanzioOption>(null);
+  const [felpanzioFo, setFelpanzioFo] = useState<number>(1);
 
   const activeSlugs = wholeHouse ? new Set(rooms.map((r) => r.slug ?? "")) : selectedSlugs;
 
@@ -128,7 +137,8 @@ export function BookingForm({
     return { nights, basePrice, extraGuestFee, totalPrice, priceOnRequest, allAvailable };
   }, [checkIn, checkOut, nights, wholeHouse, guests, activeSlugs, pricingData]);
 
-  const estimatedPrice = priceResult?.totalPrice ?? null;
+  const felpanzioTotal = felpanzio && nights > 0 ? FELPANZIO_PRICES[felpanzio] * felpanzioFo * nights : 0;
+  const estimatedPrice = priceResult?.totalPrice != null ? priceResult.totalPrice + felpanzioTotal : null;
 
   // Szoba-választó kártyák ár-felirata: ha már van kiválasztott dátum, az adott
   // időszakra számolt tényleges ár jelenik meg; ha még nincs, a legalacsonyabb
@@ -250,7 +260,10 @@ export function BookingForm({
       const res = await fetch("/api/booking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone, roomSlug, checkIn, checkOut, guests, message }),
+        body: JSON.stringify({
+          name, email, phone, roomSlug, checkIn, checkOut, guests, message,
+          ...(felpanzio && { felpanzio, felpanzioFo }),
+        }),
       });
       if (!res.ok) throw new Error();
       setStatus("success");
@@ -452,6 +465,15 @@ export function BookingForm({
                   <strong className="text-[var(--text)]">{priceResult.extraGuestFee.toLocaleString("hu")} Ft</strong>
                 </div>
               )}
+              {felpanzio && felpanzioTotal > 0 && (
+                <div className="flex justify-between border-b border-[var(--border)] pb-2">
+                  <span className="text-[var(--text2)]">
+                    {felpanzio === "reggeli" ? "Reggeli" : felpanzio === "vacsora" ? "Vacsora" : "Félpanzió"}
+                    {" "}· {felpanzioFo} fő · {nights} éj
+                  </span>
+                  <strong className="text-[var(--text)]">{felpanzioTotal.toLocaleString("hu")} Ft</strong>
+                </div>
+              )}
               {priceResult?.priceOnRequest ? (
                 <div className="pt-1">
                   <p className="text-sm font-semibold text-[var(--text)]">Egyedi ajánlat – hívjon: +36 70 410-8282</p>
@@ -467,6 +489,50 @@ export function BookingForm({
             <p className="text-sm text-[var(--text3)]">Válasszon dátumot a naptárban az ár megtekintéséhez.</p>
           )}
         </div>
+
+        {checkIn && checkOut && nights > 0 && (
+          <div className="border border-[var(--border)] rounded-lg p-4 bg-[var(--surface2)]">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)] mb-3">
+              Étkezés – opcionális
+            </p>
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {(["reggeli","vacsora","mindketto"] as const).map((opt) => (
+                <button key={opt} type="button"
+                  onClick={() => setFelpanzio(felpanzio === opt ? null : opt)}
+                  className={`text-xs py-2 px-1 rounded-lg border transition-colors text-center ${
+                    felpanzio === opt
+                      ? "border-[var(--accent)] bg-[var(--accent-bg)] text-[var(--accent)] font-semibold"
+                      : "border-[var(--border)] bg-[var(--surface)] text-[var(--text2)] hover:border-[var(--accent)]"
+                  }`}>
+                  {opt === "reggeli" && <><span className="block">Reggeli</span><span className="text-[10px] opacity-70">3 800 Ft/fő</span></>}
+                  {opt === "vacsora" && <><span className="block">Vacsora</span><span className="text-[10px] opacity-70">5 200 Ft/fő</span></>}
+                  {opt === "mindketto" && <><span className="block">Félpanzió</span><span className="text-[10px] opacity-70">9 000 Ft/fő</span></>}
+                </button>
+              ))}
+            </div>
+            {felpanzio && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-[var(--text2)]">Létszám:</span>
+                <div className="flex items-center gap-2">
+                  <button type="button"
+                    onClick={() => setFelpanzioFo(Math.max(1, felpanzioFo - 1))}
+                    className="w-7 h-7 rounded-full border border-[var(--border)] flex items-center justify-center text-sm hover:border-[var(--accent)]">−</button>
+                  <span className="text-sm font-medium w-6 text-center">{felpanzioFo}</span>
+                  <button type="button"
+                    onClick={() => setFelpanzioFo(Math.min(guests || 12, felpanzioFo + 1))}
+                    className="w-7 h-7 rounded-full border border-[var(--border)] flex items-center justify-center text-sm hover:border-[var(--accent)]">+</button>
+                </div>
+                <span className="text-xs text-[var(--text3)] ml-auto">
+                  {(FELPANZIO_PRICES[felpanzio] * felpanzioFo * nights).toLocaleString("hu-HU")} Ft
+                </span>
+              </div>
+            )}
+            <a href="/etkezes" target="_blank"
+              className="mt-3 block text-xs text-[var(--accent)] hover:underline">
+              Részletek a Gasthaus-együttműködésről →
+            </a>
+          </div>
+        )}
 
         {/* 3. Vendégek száma */}
         <div>

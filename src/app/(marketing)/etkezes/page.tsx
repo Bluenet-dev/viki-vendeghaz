@@ -1,9 +1,10 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
+import { BentoGallery } from "@/components/bento-gallery";
 
 export const metadata: Metadata = {
-  title: "Étkezés",
+  title: "Étkezés & félpanzió | Viki Vendégház Szilvásvárad",
   description:
-    "Kültéri konyha, BBQ, bográcsos hely, kemence, szalonnasütő és grillező a Viki Vendégházban. Friss levegőn, közösen főzve.",
+    "Reggeli és vacsora (félpanzió) igény szerint, kültéri konyha, BBQ, bográcsos hely, kemence és grillező Szilvásváradon. Friss levegőn, otthonos hangulatban.",
 };
 
 const facilities = [
@@ -26,9 +27,9 @@ export default function EtekezesPage() {
             Főzés a friss levegőn
           </h1>
           <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
-            Amennyiben szívesen főz a szabadban, vagy szeretne közösen időt
-            tölteni családjával, barátaival a friss levegőn, a Viki Vendégház
-            kültéri közösségi terei kiváló lehetőséget kínálnak.
+            A Viki Vendégházban az étkezés is élmény – akár friss levegőn
+            grilleznek a vendégek, akár reggeli mellé ülnek le pihenni.
+            Igény esetén reggelit és vacsorát is biztosítunk.
           </p>
         </div>
       </section>
@@ -49,14 +50,48 @@ export default function EtekezesPage() {
             ))}
           </div>
 
-          {/* Reggeli / félpanzió placeholder */}
+          {/* Reggeli & félpanzió */}
           <div className="mt-12 bg-[var(--nav-bg)] rounded-2xl p-8">
-            <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-3">Hamarosan</p>
-            <h3 className="text-2xl text-white mb-3">Reggeli & félpanzió</h3>
-            <p className="text-[var(--nav-text)]/80 leading-relaxed">
-              Hamarosan részletes tájékoztatót adunk reggelizési és félpanzió
-              lehetőségeinkről. Érdeklődjön a foglaláskor!
+            <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-3">
+              Étkezési lehetőség
             </p>
+            <h3 className="text-2xl text-white mb-4">Reggeli & félpanzió</h3>
+            <p className="text-[var(--nav-text)]/80 leading-relaxed mb-8 max-w-2xl">
+              A Viki Vendégháztól fél percre, a Gasthaus étteremben reggelizhet
+              és vacsorázhat – egy hangulatos, helyi étteremben, ahol nem kell
+              sem autó, sem előre tervezés. Séta le, foglaljon asztalt, és élvezze
+              a friss, meleg ételt a Bükk lábánál. Közvetlen partnerünk.
+            </p>
+
+            <div className="grid sm:grid-cols-3 gap-4 mb-6">
+              <div className="bg-white/5 rounded-xl p-5">
+                <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-2">Reggeli</p>
+                <p className="text-white text-lg font-semibold mb-1">3 800 Ft / fő</p>
+                <p className="text-[var(--nav-text)]/60 text-sm">08:00 – 10:00</p>
+                <p className="text-[var(--nav-text)]/60 text-sm">3 meleg étel, naponta változó</p>
+              </div>
+              <div className="bg-white/5 rounded-xl p-5">
+                <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-2">Vacsora</p>
+                <p className="text-white text-lg font-semibold mb-1">5 200 Ft / fő</p>
+                <p className="text-[var(--nav-text)]/60 text-sm">17:00 – 19:30</p>
+                <p className="text-[var(--nav-text)]/60 text-sm">Meleg vacsora</p>
+              </div>
+              <div className="bg-[var(--accent2)]/15 border border-[var(--accent2)]/30 rounded-xl p-5">
+                <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-2">Félpanzió</p>
+                <p className="text-white text-lg font-semibold mb-1">9 000 Ft / fő / nap</p>
+                <p className="text-[var(--nav-text)]/60 text-sm">Reggeli + vacsora együtt</p>
+              </div>
+            </div>
+
+            <p className="text-[var(--nav-text)]/50 text-sm">
+              Az étkezést a foglaláskor vagy legkésőbb egy nappal érkezés előtt kérjük jelezni.
+              Érdeklődjön az aktuális menüről!
+            </p>
+
+            <div className="mt-10">
+              <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Gasthaus – képek</p>
+              <BentoGallery />
+            </div>
           </div>
         </div>
       </section>
