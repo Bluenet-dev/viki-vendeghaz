@@ -1,11 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // @vercel/blob kliens-feltöltés: ne próbálkozzon újra 10x exponenciális
-  // backoff-fal nem-átmeneti (pl. hálózat által blokkolt) hibák esetén –
-  // így a feltöltési hiba azonnal látszik, nem percekig "lóg" a kérés.
+  // @vercel/blob kliens-feltöltés: alapból 10x próbálkozik exponenciális
+  // backoff-fal (percekig tarthat) – 3-ra csökkentve gyorsabb visszajelzés,
+  // de az átmeneti (pl. "service_unavailable") hibákra így is van pár
+  // automatikus újrapróbálkozás.
   env: {
-    VERCEL_BLOB_RETRIES: "0",
+    VERCEL_BLOB_RETRIES: "3",
   },
 
   // 1. React Compiler
