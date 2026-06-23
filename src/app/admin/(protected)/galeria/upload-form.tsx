@@ -48,11 +48,19 @@ export function UploadForm() {
       const file = files[i];
       setProgress((prev) => prev.map((p, idx) => (idx === i ? { ...p, status: "uploading" } : p)));
       try {
-        const blob = await upload(`gallery/${category}/${file.name}`, file, {
-          access: "public",
-          handleUploadUrl: "/api/gallery/upload",
-          clientPayload: JSON.stringify({ category }),
-        });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30_000);
+        let blob;
+        try {
+          blob = await upload(`gallery/${category}/${file.name}`, file, {
+            access: "public",
+            handleUploadUrl: "/api/gallery/upload",
+            clientPayload: JSON.stringify({ category }),
+            abortSignal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timeout);
+        }
         const alt = files.length > 1 ? (altBase ? `${altBase} ${i + 1}` : "") : altBase;
         const res = await saveUploadedImage({ url: blob.url, alt, category });
         if (res?.error) {
@@ -62,7 +70,10 @@ export function UploadForm() {
           setDoneCount((c) => c + 1);
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "ismeretlen hiba";
+        const isAbort = err instanceof Error && err.name === "AbortError";
+        const msg = isAbort
+          ? "időtúllépés (30mp) – a kapcsolat elakadt a tárhellyel, próbáld más hálózatról/böngészőből"
+          : err instanceof Error ? err.message : "ismeretlen hiba";
         setProgress((prev) => prev.map((p, idx) => (idx === i ? { ...p, status: "error", error: msg } : p)));
       }
     }
