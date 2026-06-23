@@ -26,7 +26,7 @@ export default async function EtekezesPage() {
   const gasthausImages = await db
     .select({ url: gallery.url, alt: gallery.alt })
     .from(gallery)
-    .where(eq(gallery.category, "etkezes"))
+    .where(eq(gallery.category, "gasthaus"))
     .orderBy(asc(gallery.sortOrder), asc(gallery.id));
 
   return (

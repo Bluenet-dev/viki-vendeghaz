@@ -12,7 +12,8 @@ export const GALLERY_CATEGORIES = [
   { value: "kert-medence", label: "Kert & medence" },
   { value: "udvar", label: "Udvar & kert" },
   { value: "termeszet", label: "Természet" },
-  { value: "etkezes", label: "Étkezés" },
+  { value: "etkezes", label: "Étkezés (saját konyha, grill, sütés-főzés)" },
+  { value: "gasthaus", label: "Gasthaus étterem (félpanzió)" },
   { value: "wellness", label: "Wellness (általános)" },
 ] as const;
 
