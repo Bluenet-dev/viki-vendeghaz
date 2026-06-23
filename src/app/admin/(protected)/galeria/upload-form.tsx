@@ -57,6 +57,10 @@ export function UploadForm() {
             handleUploadUrl: "/api/gallery/upload",
             clientPayload: JSON.stringify({ category }),
             abortSignal: controller.signal,
+            // Egyetlen PUT kérésben csak limitált méretig fogadja a Blob API;
+            // afölött (pl. telefonos fotók 5-8+ MB) kötelező a multipart mód,
+            // különben 400 Bad Request jön vissza (ezt diagnosztizáltuk élesben).
+            multipart: true,
           });
         } finally {
           clearTimeout(timeout);
