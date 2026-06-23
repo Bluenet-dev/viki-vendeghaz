@@ -92,9 +92,10 @@ export default async function BlogPostPage({
             </p>
           )}
           {post.content && (
-            <div className="prose prose-stone max-w-none text-[var(--text)]/80 leading-relaxed whitespace-pre-wrap">
-              {post.content}
-            </div>
+            <div
+              className="text-base leading-relaxed text-[var(--text)]/80 [&_strong]:font-semibold [&_b]:font-semibold [&_strong]:text-[var(--text)] [&_b]:text-[var(--text)] [&_em]:italic [&_i]:italic [&_u]:underline [&_p]:mb-4"
+              dangerouslySetInnerHTML={{ __html: post.content }}
+            />
           )}
         </div>
       </article>

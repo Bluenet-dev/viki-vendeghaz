@@ -58,8 +58,10 @@ export function Sidebar() {
         className="px-5 py-5"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
       >
-        <div className="text-[15px] font-semibold text-white leading-tight">Viki Admin</div>
-        <div className="text-[12px] mt-0.5 text-[rgba(216,221,215,0.55)]">Vendégház kezelő</div>
+        <div className="text-[15px] font-semibold text-white leading-tight">
+          BlueNet CMS <span className="text-[var(--accent2)] font-normal">v1.0</span>
+        </div>
+        <div className="text-[12px] mt-0.5 text-[rgba(216,221,215,0.55)]">Viki Vendégház · Szilvásvárad · Szállás</div>
       </div>
 
       {/* Nav */}

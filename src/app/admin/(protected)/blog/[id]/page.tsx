@@ -3,6 +3,7 @@ import { posts } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { BlogContentField } from "@/components/blog-content-field";
 
 export const dynamic = "force-dynamic";
 
@@ -75,9 +76,7 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
         <Field label="Borítókép URL (Vercel Blob)">
           <input name="coverImageUrl" defaultValue={post.coverImageUrl ?? ""} placeholder="https://..." className={input} />
         </Field>
-        <Field label="Tartalom (Markdown vagy egyszerű szöveg)">
-          <textarea name="content" defaultValue={post.content ?? ""} rows={16} className={`${input} font-mono text-xs`} />
-        </Field>
+        <BlogContentField defaultValue={post.content ?? ""} />
         <Field label="">
           <label className="flex items-center gap-2 text-sm text-[var(--text)]">
             <input type="checkbox" name="published" defaultChecked={post.published ?? false} />

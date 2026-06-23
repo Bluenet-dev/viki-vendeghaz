@@ -63,10 +63,17 @@ export default function KapcsolatPage() {
               </div>
             </dl>
 
-            <div className="mt-8 rounded-2xl overflow-hidden bg-[var(--surface2)] border border-[var(--border)] h-48 flex items-center justify-center">
-              <p className="text-xs uppercase tracking-widest text-[var(--text2)]/40">
-                Google Maps – hamarosan
-              </p>
+            <div className="mt-8 rounded-2xl overflow-hidden border border-[var(--border)]" style={{ height: 400 }}>
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2664.5941719926072!2d20.386680613185973!3d48.09877277111925!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x474086ca60ca450f%3A0x764d76a437708b7c!2zU3ppbHbDoXN2w6FyYWQsIETDs3pzYSBHecO2cmd5IHUuIDQ1LCAzMzQ4!5e0!3m2!1shu!2shu!4v1782232631403!5m2!1shu!2shu"
+                width="100%"
+                height="400"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Viki Vendégház – Szilvásvárad, Dózsa György utca 45."
+              />
             </div>
           </div>
 

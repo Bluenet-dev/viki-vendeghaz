@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { posts } from "@/db/schema";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { BlogContentField } from "@/components/blog-content-field";
 
 export const dynamic = "force-dynamic";
 
@@ -58,9 +59,7 @@ export default function NewPostPage() {
         <Field label="Borítókép URL">
           <input name="coverImageUrl" placeholder="https://..." className={input} />
         </Field>
-        <Field label="Tartalom">
-          <textarea name="content" rows={16} className={`${input} font-mono text-xs`} placeholder="A cikk szövege..." />
-        </Field>
+        <BlogContentField />
         <Field label="">
           <label className="flex items-center gap-2 text-sm text-[var(--text)]">
             <input type="checkbox" name="published" />
