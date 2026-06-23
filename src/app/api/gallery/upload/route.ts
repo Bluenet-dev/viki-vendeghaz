@@ -12,6 +12,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     const jsonResponse = await handleUpload({
       body,
       request,
+      // Az új, Public hozzáférésű Blob store "BLOB1_" előtaggal lett csatlakoztatva
+      // (mert már volt egy Private store a projekten) – explicit ennek a tokenjét
+      // használjuk, hogy ne a régi (Private) store alapértelmezett BLOB_READ_WRITE_TOKEN-jét
+      // próbálja meg felhasználni.
+      token: process.env.BLOB1_READ_WRITE_TOKEN ?? process.env.BLOB_READ_WRITE_TOKEN,
       onBeforeGenerateToken: async () => {
         const session = await getSession();
         if (!session.isLoggedIn) {
