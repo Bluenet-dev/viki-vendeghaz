@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { packages } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Csomagajánlatok",
   description:
@@ -71,6 +73,7 @@ export default async function CsomagokPage() {
                         <p className="text-xs uppercase tracking-widest text-[var(--text2)]/50 mb-0.5">ártól</p>
                         <p className="text-2xl text-[var(--text)]">
                           {pkg.price.toLocaleString("hu-HU")} Ft
+                          <span className="text-sm text-[var(--text2)] font-normal"> / éj</span>
                         </p>
                       </div>
                     ) : (

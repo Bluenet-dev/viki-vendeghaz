@@ -19,6 +19,7 @@ async function createPackage(formData: FormData) {
     active: true,
   });
   revalidatePath("/admin/csomagok");
+  revalidatePath("/csomagok");
   redirect("/admin/csomagok");
 }
 
@@ -26,6 +27,7 @@ async function deletePackage(formData: FormData) {
   "use server";
   await db.delete(packages).where(eq(packages.id, Number(formData.get("id"))));
   revalidatePath("/admin/csomagok");
+  revalidatePath("/csomagok");
 }
 
 export default async function AdminCsomagokPage() {
@@ -64,7 +66,7 @@ export default async function AdminCsomagokPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={label}>Ár (Ft)</label>
+              <label className={label}>Ár (Ft / éjszaka)</label>
               <input name="price" type="number" className={input} />
             </div>
             <div>
@@ -91,7 +93,7 @@ export default async function AdminCsomagokPage() {
               <p className="text-[var(--text2)] text-xs mt-0.5">{pkg.slug} · {pkg.season ?? "—"}</p>
               {pkg.description && <p className="text-[var(--text2)] text-sm mt-1">{pkg.description}</p>}
               {pkg.price && (
-                <p className="text-[var(--accent)] text-sm mt-1 font-medium">{pkg.price.toLocaleString("hu")} Ft/fő</p>
+                <p className="text-[var(--accent)] text-sm mt-1 font-medium">{pkg.price.toLocaleString("hu")} Ft/éj</p>
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
