@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
+import { db } from "@/db";
+import { gallery } from "@/db/schema";
+import { asc, eq } from "drizzle-orm";
 import { BentoGallery } from "@/components/bento-gallery";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Étkezés & félpanzió | Viki Vendégház Szilvásvárad",
@@ -17,7 +22,13 @@ const facilities = [
   { name: "Grillező", desc: "Gyors kerti grill vacsorákhoz" },
 ];
 
-export default function EtekezesPage() {
+export default async function EtekezesPage() {
+  const gasthausImages = await db
+    .select({ url: gallery.url, alt: gallery.alt })
+    .from(gallery)
+    .where(eq(gallery.category, "etkezes"))
+    .orderBy(asc(gallery.sortOrder), asc(gallery.id));
+
   return (
     <div className="pt-16 bg-[var(--bg)] min-h-screen">
       <section className="bg-[var(--nav-bg)] py-20 px-6">
@@ -88,10 +99,12 @@ export default function EtekezesPage() {
               Érdeklődjön az aktuális menüről!
             </p>
 
-            <div className="mt-10">
-              <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Gasthaus – képek</p>
-              <BentoGallery />
-            </div>
+            {gasthausImages.length > 0 && (
+              <div className="mt-10">
+                <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Gasthaus – képek</p>
+                <BentoGallery images={gasthausImages} />
+              </div>
+            )}
           </div>
         </div>
       </section>
