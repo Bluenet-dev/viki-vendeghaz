@@ -2,8 +2,7 @@ import Link from "next/link";
 import { db } from "@/db";
 import { messages, availability, rooms } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
-import nextDynamic from "next/dynamic";
-const StatsCharts = nextDynamic(() => import("./charts").then((m) => m.StatsCharts), { ssr: false });
+import { StatsCharts } from "./charts";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Statisztikák" };
