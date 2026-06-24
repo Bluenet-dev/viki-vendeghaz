@@ -5,6 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { RoomGalleryLightbox } from "@/components/room-gallery-lightbox";
 
+const ROOM_DETAIL_URLS: Record<string, string> = {
+  "szoba-1": "/szobak/komfort-ketagyas",
+  "szoba-2": "/szobak/komfort-franciaagyas",
+  "superior": "/szobak/superior",
+};
+
 interface Room {
   id: number;
   slug: string | null;
@@ -103,10 +109,10 @@ export function RoomCards({
                 )}
 
                 <Link
-                  href="/foglalas"
+                  href={ROOM_DETAIL_URLS[room.slug ?? ""] ?? "/szobak"}
                   className="mt-4 block text-center w-full py-2 rounded-full border border-[var(--border)] text-sm text-[var(--text)] hover:border-[var(--accent)] transition-colors"
                 >
-                  Részletek & foglalás
+                  Részletek megtekintése →
                 </Link>
               </div>
             </div>

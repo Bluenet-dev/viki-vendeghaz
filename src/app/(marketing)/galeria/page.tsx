@@ -30,6 +30,7 @@ export default async function GaleriaPage() {
 
   const sections = orderedCategories.map((category) => ({
     label: GALLERY_CATEGORY_LABELS[category] ?? category,
+    category,
     images: byCategory[category].map((img) => ({ url: img.url, alt: img.alt })),
   }));
 

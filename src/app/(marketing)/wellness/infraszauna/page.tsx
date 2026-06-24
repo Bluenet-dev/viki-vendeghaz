@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { wellnessServices } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { WellnessHeroImage } from "@/components/wellness-hero-image";
+import { WellnessImageGrid } from "@/components/wellness-image-grid";
 
 export const metadata: Metadata = {
   title: "Infraszauna Szilvásvárad",
@@ -63,6 +64,8 @@ export default async function InfraszaunaPage() {
           </div>
         </div>
       </section>
+
+      <WellnessImageGrid category="infraszauna" />
 
       <section className="bg-[var(--nav-bg)] py-14 px-6 text-center">
         <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-3">Tipp</p>

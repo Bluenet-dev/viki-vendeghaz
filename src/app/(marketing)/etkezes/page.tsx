@@ -98,6 +98,9 @@ export default async function EtekezesPage() {
               Az étkezést a foglaláskor vagy legkésőbb egy nappal érkezés előtt kérjük jelezni.
               Érdeklődjön az aktuális menüről!
             </p>
+            <a href="/felpanzio" className="inline-flex items-center gap-2 text-[var(--accent2)] hover:underline text-sm font-medium mt-4">
+              Részletes félpanzió oldal megtekintése →
+            </a>
 
             {gasthausImages.length > 0 && (
               <div className="mt-10">

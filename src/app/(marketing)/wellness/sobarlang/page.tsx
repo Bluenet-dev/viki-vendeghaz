@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { wellnessServices, wellnessPriceTiers } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { WellnessHeroImage } from "@/components/wellness-hero-image";
+import { WellnessImageGrid } from "@/components/wellness-image-grid";
 
 export const metadata: Metadata = {
   title: "Sóbarlang Szilvásvárad",
@@ -137,6 +138,8 @@ export default async function SobarlangPage() {
           </div>
         </div>
       </section>
+
+      <WellnessImageGrid category="sobarlang" />
 
       {/* CTA */}
       <section className="bg-[var(--nav-bg)] py-14 px-6 text-center">

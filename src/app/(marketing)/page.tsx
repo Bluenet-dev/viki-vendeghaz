@@ -17,6 +17,12 @@ import {
 import { asc, eq, inArray } from "drizzle-orm";
 import { getLowestPriceForScope, type PricingData, type RoomScope } from "@/lib/pricing";
 import { ROOM_CATEGORIES } from "@/lib/gallery-categories";
+
+const ROOM_DETAIL_URLS: Record<string, string> = {
+  "szoba-1": "/szobak/komfort-ketagyas",
+  "szoba-2": "/szobak/komfort-franciaagyas",
+  "superior": "/szobak/superior",
+};
 import { MiniCalendar } from "./mini-calendar";
 
 export const dynamic = "force-dynamic";
@@ -146,32 +152,51 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* Jobb oszlop: foglalás-kártya + mini naptár */}
-          <div className="bg-[var(--surface)] rounded-xl p-4">
-            <p className="font-semibold text-sm text-[var(--text)]">Elérhetőség ellenőrzése</p>
-            <p className="text-[12px] text-[var(--text3)] mt-0.5 mb-4">
-              Azonnali visszaigazolás · ingyenes lemondás 24 h-ig
-            </p>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between border-b border-[var(--border)] pb-2">
-                <span className="text-[var(--text2)]">Legalacsonyabb ár</span>
-                <strong className="text-[var(--text)]">
-                  {wholeHouseLowest != null ? `${wholeHouseLowest.toLocaleString("hu")} Ft / éj` : "Hamarosan"}
-                </strong>
-              </div>
-              <div className="flex justify-between pb-1">
-                <span className="text-[var(--text2)]">Szobák</span>
-                <strong className="text-[var(--text)]">3 szoba + egész ház</strong>
-              </div>
+          {/* Jobb oszlop: videó + foglalás-kártya */}
+          <div className="flex flex-col gap-4">
+            {/* Videó blokk */}
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video bg-[var(--nav-bg)]">
+              <video
+                src="/videos/hero.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-[var(--nav-bg)]/10 rounded-2xl pointer-events-none" />
             </div>
-            <Link
-              href="/foglalas"
-              className="mt-4 block w-full text-center py-3 rounded-lg bg-[var(--nav-bg)] text-white font-semibold text-sm hover:opacity-90 transition-opacity"
-            >
-              Foglalási kérés küldése
-            </Link>
 
-            <MiniCalendar blockedDates={blockedDates} />
+            {/* Foglalás-kártya */}
+            <div className="bg-[var(--surface)] rounded-xl p-4">
+              <p className="font-semibold text-sm text-[var(--text)]">Elérhetőség ellenőrzése</p>
+              <p className="text-[12px] text-[var(--text3)] mt-0.5 mb-4">
+                Azonnali visszaigazolás · ingyenes lemondás 24 h-ig
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between border-b border-[var(--border)] pb-2">
+                  <span className="text-[var(--text2)]">Legalacsonyabb ár</span>
+                  <strong className="text-[var(--text)]">
+                    {wholeHouseLowest != null ? `${wholeHouseLowest.toLocaleString("hu")} Ft / éj` : "Hamarosan"}
+                  </strong>
+                </div>
+                <div className="flex justify-between pb-1">
+                  <span className="text-[var(--text2)]">Szobák</span>
+                  <strong className="text-[var(--text)]">3 szoba + egész ház</strong>
+                </div>
+              </div>
+              <Link
+                href="/foglalas"
+                className="mt-4 block w-full text-center py-3 rounded-lg bg-[var(--nav-bg)] text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+              >
+                Foglalási kérés küldése
+              </Link>
+            </div>
+
+            {/* Mini naptár – rejtett, kódban marad */}
+            <div className="hidden" aria-hidden="true" data-component="mini-calendar">
+              <MiniCalendar blockedDates={blockedDates} />
+            </div>
           </div>
         </div>
       </section>
@@ -227,10 +252,10 @@ export default async function Home() {
                       </ul>
                     )}
                     <Link
-                      href="/szobak"
+                      href={ROOM_DETAIL_URLS[room.slug ?? ""] ?? "/szobak"}
                       className="mt-4 block text-center w-full py-2 rounded-full border border-[var(--border)] text-sm text-[var(--text)] hover:border-[var(--accent)] transition-colors"
                     >
-                      Részletek & foglalás
+                      Részletek megtekintése →
                     </Link>
                   </div>
                 </div>
