@@ -30,7 +30,19 @@
       "Bash(ls src/components)",
       "Bash(ls src/components/cookie-banner.tsx)",
       "Bash(ls next.config.*)",
-      "Bash(cat next.config.*)"
+      "Bash(cat next.config.*)",
+      "mcp__e1591169-a569-46e0-8abd-586af6c35b65__list_projects",
+      "mcp__e1591169-a569-46e0-8abd-586af6c35b65__list_teams",
+      "mcp__e1591169-a569-46e0-8abd-586af6c35b65__get_project",
+      "mcp__e1591169-a569-46e0-8abd-586af6c35b65__get_runtime_logs",
+      "Bash(cd \"/c/Users/vona2/Desktop/Vállalkozás/BlueNet/Web Projektek/Viki Vendégház\" && sed -n '740,840p' node_modules/@vercel/blob/dist/chunk-3D2SZ6M2.js)",
+      "Bash(xargs grep -l \"blob\" -i)",
+      "Bash(grep -o \"getRetries[^;]\\\\{0,150\\\\}\" .next/static/chunks/109a3d057a08b1f2.js)",
+      "Bash(grep -o \"process\\\\.env\\\\.VERCEL_BLOB_RETRIES[^|]\\\\{0,40\\\\}\" .next/static/chunks/109a3d057a08b1f2.js)",
+      "Bash(python3 -c ' *)",
+      "Bash(node -e ' *)",
+      "mcp__e1591169-a569-46e0-8abd-586af6c35b65__search_vercel_documentation",
+      "Bash(cd \"/c/Users/vona2/Desktop/Vállalkozás/BlueNet/Web Projektek/Viki Vendégház\" && find src -path \"*csomagok*\")"
     ]
   }
 }
