@@ -77,7 +77,7 @@ export default async function KertMedencePage() {
       <WellnessImageGrid category="kert-medence" />
 
       <section className="bg-[var(--nav-bg)] py-14 px-6 text-center">
-        <h2 className="text-3xl text-white mb-6">Töltsön nyáron nálunk!</h2>
+        <h2 className="text-3xl text-white mb-6">Töltse a nyarat nálunk!</h2>
         <Link href="/foglalas" className="inline-flex px-8 py-3 rounded-full bg-[var(--accent2)] text-[var(--text)] font-sans font-medium hover:bg-[var(--accent2)]/90 transition-colors">
           Foglalás
         </Link>
