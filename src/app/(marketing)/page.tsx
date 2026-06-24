@@ -161,6 +161,7 @@ export default async function Home() {
           loop
           muted
           playsInline
+          preload="metadata"
           className="w-full h-full object-cover"
         />
         {/* Felső átfadás a nav-bg-ből */}
