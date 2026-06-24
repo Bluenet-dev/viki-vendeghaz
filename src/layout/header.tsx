@@ -20,6 +20,7 @@ const nav: NavItem[] = [
       { name: "Komfort Kétágyas", href: "/szobak/komfort-ketagyas" },
       { name: "Komfort Franciaágyas", href: "/szobak/komfort-franciaagyas" },
       { name: "Superior", href: "/szobak/superior" },
+      { name: "Csomagajánlatok", href: "/csomagok" },
     ],
     allHref: "/szobak",
     allLabel: "Összes szoba & árak",
