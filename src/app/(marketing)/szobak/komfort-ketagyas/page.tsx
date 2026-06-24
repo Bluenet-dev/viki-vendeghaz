@@ -5,6 +5,7 @@ import { rooms, pricingRules, gallery } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { getLowestPriceForScope } from "@/lib/pricing";
 import { RoomDetailGallery } from "@/components/room-detail-gallery";
+import { RoomPricingTable } from "@/components/room-pricing-table";
 
 export const dynamic = "force-dynamic";
 
@@ -99,6 +100,11 @@ export default async function KomfortKetagyasPage() {
               <p className="text-xs uppercase tracking-widest text-[var(--accent)] mb-1">Szállóvendégeknek</p>
               <p className="text-sm font-semibold text-[var(--text)]">Sóbarlang ingyenes – 45 perc / fő / nap</p>
               <p className="text-xs text-[var(--text2)] mt-0.5">Finn szauna, infraszauna és dézsafürdő szintén elérhető</p>
+            </div>
+
+            {/* Árazás részletesen */}
+            <div className="mb-6">
+              <RoomPricingTable roomScope="szoba-1" />
             </div>
 
             {/* CTA */}

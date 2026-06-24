@@ -5,6 +5,7 @@ import { rooms, pricingRules, gallery } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { getLowestPriceForScope } from "@/lib/pricing";
 import { RoomDetailGallery } from "@/components/room-detail-gallery";
+import { RoomPricingTable } from "@/components/room-pricing-table";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +105,11 @@ export default async function SuperiorPage() {
               <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-1">Exkluzív</p>
               <p className="text-sm font-semibold text-[var(--text)]">Infraszauna közvetlenül a szobában</p>
               <p className="text-xs text-[var(--text2)] mt-0.5">Nem kell megosztani – csak Öné az egész este</p>
+            </div>
+
+            {/* Árazás részletesen */}
+            <div className="mb-6">
+              <RoomPricingTable roomScope="superior" />
             </div>
 
             {/* CTA */}
