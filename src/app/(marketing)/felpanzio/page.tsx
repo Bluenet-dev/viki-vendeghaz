@@ -31,7 +31,7 @@ export default async function FelpanzioPage() {
           </h1>
           <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
             A Viki Vendégháztól fél percre, egy hangulatos helyi étteremben reggelizhet és
-            vacsorázhat – sétatávolságra, előre tervezés nélkül.
+            vacsorázhat – sétatávolságra.
           </p>
         </div>
       </section>
