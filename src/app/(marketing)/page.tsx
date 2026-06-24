@@ -107,98 +107,86 @@ export default async function Home() {
   return (
     <>
       {/* ─── Hero ─── */}
-      <section className="bg-[var(--nav-bg)] px-6 pt-28 pb-16">
-        <div className="mx-auto max-w-7xl grid lg:grid-cols-[1.1fr_1fr] gap-10 items-stretch">
-          {/* Bal oszlop */}
-          <div>
-            <p className="text-[12px] uppercase tracking-widest text-[var(--accent2)] font-semibold mb-4">
-              Szilvásvárad · Bükki Nemzeti Park · Szalajka-völgy
-            </p>
-            <h1 className="text-[clamp(34px,5vw,52px)] font-light text-white leading-[1.12] max-w-lg">
-              Szilvásvárad legjobb helye a <span className="font-semibold text-[var(--accent2)]">kikapcsolódáshoz</span>
-            </h1>
-            <p className="mt-5 text-sm text-[var(--nav-text)]/75 leading-relaxed max-w-sm">
-              Három különálló szoba saját fürdőszobával, sóbarlang, finn szauna,
-              infraszauna és dézsafürdő – egy percre a Szalajka-völgytől, a Bükk
-              lábánál. Összesen 12 fő részére.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/foglalas"
-                className="px-6 py-3 rounded-full bg-[var(--accent2)] text-white font-semibold text-sm hover:opacity-90 transition-opacity"
-              >
-                Szabad napok →
-              </Link>
-              <Link
-                href="/szobak"
-                className="px-6 py-3 rounded-full border border-white/35 text-[var(--nav-text)] font-semibold text-sm hover:bg-white/5 transition-colors"
-              >
-                Szobák & árak
-              </Link>
-            </div>
-            <div className="mt-12 flex items-center gap-8">
-              <div>
-                <p className="text-lg font-bold text-white">9,9</p>
-                <p className="text-[11px] uppercase tracking-widest text-[var(--nav-text)]/50">Szállás.hu</p>
-              </div>
-              <div>
-                <p className="text-lg font-bold text-white">9,5</p>
-                <p className="text-[11px] uppercase tracking-widest text-[var(--nav-text)]/50">Booking.com</p>
-              </div>
-              <div>
-                <p className="text-lg font-bold text-white">12 fő</p>
-                <p className="text-[11px] uppercase tracking-widest text-[var(--nav-text)]/50">Max kapacitás</p>
-              </div>
-            </div>
+      <section className="bg-[var(--nav-bg)] pt-28 pb-10 px-6">
+        {/* Szöveg – középre igazítva */}
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-[12px] uppercase tracking-widest text-[var(--accent2)] font-semibold mb-4">
+            Szilvásvárad · Bükki Nemzeti Park · Szalajka-völgy
+          </p>
+          <h1 className="text-[clamp(34px,5vw,56px)] font-light text-white leading-[1.12]">
+            Szilvásvárad legjobb helye a{" "}
+            <span className="font-semibold text-[var(--accent2)]">kikapcsolódáshoz</span>
+          </h1>
+          <p className="mt-5 text-sm text-[var(--nav-text)]/75 leading-relaxed max-w-xl mx-auto">
+            Három különálló szoba saját fürdőszobával, sóbarlang, finn szauna,
+            infraszauna és dézsafürdő – egy percre a Szalajka-völgytől, a Bükk
+            lábánál. Összesen 12 fő részére.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/foglalas"
+              className="px-6 py-3 rounded-full bg-[var(--accent2)] text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+            >
+              Szabad napok →
+            </Link>
+            <Link
+              href="/szobak"
+              className="px-6 py-3 rounded-full border border-white/35 text-[var(--nav-text)] font-semibold text-sm hover:bg-white/5 transition-colors"
+            >
+              Szobák & árak
+            </Link>
           </div>
-
-          {/* Jobb oszlop: teljes magasságú videó */}
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl min-h-[420px] lg:h-full bg-[var(--nav-bg)]">
-            <video
-              src="/videos/hero.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-[var(--nav-bg)]/10 pointer-events-none" />
-          </div>
-
-          {/* Foglalás-kártya – rejtett, kódban marad */}
-          <div className="hidden">
-            <div className="bg-[var(--surface)] rounded-xl p-4">
-              <p className="font-semibold text-sm text-[var(--text)]">Elérhetőség ellenőrzése</p>
-              <p className="text-[12px] text-[var(--text3)] mt-0.5 mb-4">
-                Azonnali visszaigazolás · ingyenes lemondás 24 h-ig
-              </p>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between border-b border-[var(--border)] pb-2">
-                  <span className="text-[var(--text2)]">Legalacsonyabb ár</span>
-                  <strong className="text-[var(--text)]">
-                    {wholeHouseLowest != null ? `${wholeHouseLowest.toLocaleString("hu")} Ft / éj` : "Hamarosan"}
-                  </strong>
-                </div>
-                <div className="flex justify-between pb-1">
-                  <span className="text-[var(--text2)]">Szobák</span>
-                  <strong className="text-[var(--text)]">3 szoba + egész ház</strong>
-                </div>
-              </div>
-              <Link
-                href="/foglalas"
-                className="mt-4 block w-full text-center py-3 rounded-lg bg-[var(--nav-bg)] text-white font-semibold text-sm hover:opacity-90 transition-opacity"
-              >
-                Foglalási kérés küldése
-              </Link>
+          <div className="mt-10 flex items-center justify-center gap-10">
+            <div>
+              <p className="text-lg font-bold text-white">9,9</p>
+              <p className="text-[11px] uppercase tracking-widest text-[var(--nav-text)]/50">Szállás.hu</p>
             </div>
-
-            {/* Mini naptár – rejtett, kódban marad */}
-            <div className="hidden" aria-hidden="true" data-component="mini-calendar">
-              <MiniCalendar blockedDates={blockedDates} />
+            <div>
+              <p className="text-lg font-bold text-white">9,5</p>
+              <p className="text-[11px] uppercase tracking-widest text-[var(--nav-text)]/50">Booking.com</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-white">12 fő</p>
+              <p className="text-[11px] uppercase tracking-widest text-[var(--nav-text)]/50">Max kapacitás</p>
             </div>
           </div>
         </div>
       </section>
+
+      {/* ─── Videó – teljes szélesség, átfadással ─── */}
+      <div className="relative bg-[var(--nav-bg)] overflow-hidden" style={{ height: "clamp(220px, 40vw, 520px)" }}>
+        <video
+          src="/videos/hero.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+        />
+        {/* Felső átfadás a nav-bg-ből */}
+        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[var(--nav-bg)] to-transparent pointer-events-none" />
+        {/* Alsó átfadás a következő szekció bg színébe */}
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[var(--bg)] to-transparent pointer-events-none" />
+      </div>
+
+      {/* Foglalás-kártya + mini naptár – rejtett, kódban marad */}
+      <div className="hidden" aria-hidden="true">
+        <div className="bg-[var(--surface)] rounded-xl p-4">
+          <p className="font-semibold text-sm text-[var(--text)]">Elérhetőség ellenőrzése</p>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between border-b border-[var(--border)] pb-2">
+              <span className="text-[var(--text2)]">Legalacsonyabb ár</span>
+              <strong className="text-[var(--text)]">
+                {wholeHouseLowest != null ? `${wholeHouseLowest.toLocaleString("hu")} Ft / éj` : "Hamarosan"}
+              </strong>
+            </div>
+          </div>
+          <Link href="/foglalas" className="mt-4 block w-full text-center py-3 rounded-lg bg-[var(--nav-bg)] text-white font-semibold text-sm">
+            Foglalási kérés küldése
+          </Link>
+        </div>
+        <MiniCalendar blockedDates={blockedDates} />
+      </div>
 
       {/* ─── Szobák szekció ─── */}
       <section className="bg-[var(--bg)] py-16 px-6">
