@@ -8,9 +8,9 @@ import { BentoGallery } from "@/components/bento-gallery";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Félpanzió | Viki Vendégház Szilvásvárad – Reggeli & vacsora a Gasthaus étteremben",
+  title: "Félpanzió | Viki Vendégház Szilvásvárad – Reggeli & vacsora partnerétteremben",
   description:
-    "Reggeli (3 800 Ft/fő) és vacsora (5 200 Ft/fő) igény szerint, a vendégháztól fél percre lévő Gasthaus étteremben. Félpanzió csomag: 9 000 Ft/fő/nap.",
+    "Reggeli (3 800 Ft/fő) és vacsora (5 200 Ft/fő) igény szerint, a vendégháztól fél percre lévő partnerétteremben. Félpanzió csomag: 9 000 Ft/fő/nap.",
 };
 
 export default async function FelpanzioPage() {
@@ -27,11 +27,11 @@ export default async function FelpanzioPage() {
         <div className="mx-auto max-w-4xl">
           <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Étkezés</p>
           <h1 className="text-5xl sm:text-6xl text-white font-light mb-6">
-            Reggeli & vacsora a Gasthaus étteremben
+            Reggeli & vacsora partnerétteremben
           </h1>
           <p className="text-[var(--nav-text)]/80 text-lg leading-relaxed max-w-2xl">
-            A Viki Vendégháztól fél percre, a Gasthaus étteremben reggelizhet és vacsorázhat –
-            hangulatos, helyi étteremben, sétatávolságra.
+            A Viki Vendégháztól fél percre, egy hangulatos helyi étteremben reggelizhet és
+            vacsorázhat – sétatávolságra, előre tervezés nélkül.
           </p>
         </div>
       </section>
@@ -93,7 +93,7 @@ export default async function FelpanzioPage() {
           {/* Galéria */}
           {gasthausImages.length > 0 && (
             <div className="mb-12">
-              <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Gasthaus – képek</p>
+              <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Étterem – képek</p>
               <BentoGallery images={gasthausImages} />
             </div>
           )}

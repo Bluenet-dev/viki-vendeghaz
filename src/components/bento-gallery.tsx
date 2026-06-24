@@ -32,7 +32,7 @@ export function BentoGallery({ images }: { images: BentoImage[] }) {
             className={`relative overflow-hidden rounded-xl cursor-pointer group ${SPAN_CLASSES[i % SPAN_CLASSES.length]}`}
             onClick={() => setLightbox(i)}
           >
-            <Image src={img.url} alt={img.alt ?? "Gasthaus étterem"} fill
+            <Image src={img.url} alt={img.alt ?? "Étterem"} fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               sizes="(max-width: 768px) 50vw, 33vw" />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors" />
@@ -48,7 +48,7 @@ export function BentoGallery({ images }: { images: BentoImage[] }) {
             onClick={(e) => { e.stopPropagation(); setLightbox((lightbox - 1 + images.length) % images.length); }}>‹</button>
           <div className="relative max-w-3xl w-full max-h-[85vh] aspect-[4/3]"
             onClick={(e) => e.stopPropagation()}>
-            <Image src={images[lightbox].url} alt={images[lightbox].alt ?? "Gasthaus étterem"} fill
+            <Image src={images[lightbox].url} alt={images[lightbox].alt ?? "Étterem"} fill
               className="object-contain" sizes="90vw" />
           </div>
           <button className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-3xl px-3 hover:text-[var(--accent2)]"

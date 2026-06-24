@@ -529,7 +529,7 @@ export function BookingForm({
             )}
             <a href="/etkezes" target="_blank"
               className="mt-3 block text-xs text-[var(--accent)] hover:underline">
-              Részletek a Gasthaus-együttműködésről →
+              Részletek a félpanzió lehetőségről →
             </a>
           </div>
         )}

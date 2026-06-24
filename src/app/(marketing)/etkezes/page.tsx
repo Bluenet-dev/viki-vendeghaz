@@ -68,10 +68,10 @@ export default async function EtekezesPage() {
             </p>
             <h3 className="text-2xl text-white mb-4">Reggeli & félpanzió</h3>
             <p className="text-[var(--nav-text)]/80 leading-relaxed mb-8 max-w-2xl">
-              A Viki Vendégháztól fél percre, a Gasthaus étteremben reggelizhet
-              és vacsorázhat – egy hangulatos, helyi étteremben, ahol nem kell
-              sem autó, sem előre tervezés. Séta le, foglaljon asztalt, és élvezze
-              a friss, meleg ételt a Bükk lábánál. Közvetlen partnerünk.
+              A Viki Vendégháztól fél percre, egy hangulatos helyi étteremben
+              reggelizhet és vacsorázhat – ahol nem kell sem autó, sem előre
+              tervezés. Séta le, foglaljon asztalt, és élvezze a friss, meleg
+              ételt a Bükk lábánál. Közvetlen partnerünk.
             </p>
 
             <div className="grid sm:grid-cols-3 gap-4 mb-6">
@@ -104,7 +104,7 @@ export default async function EtekezesPage() {
 
             {gasthausImages.length > 0 && (
               <div className="mt-10">
-                <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Gasthaus – képek</p>
+                <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">Étterem – képek</p>
                 <BentoGallery images={gasthausImages} />
               </div>
             )}
