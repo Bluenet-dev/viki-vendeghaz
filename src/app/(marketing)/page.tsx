@@ -108,7 +108,7 @@ export default async function Home() {
     <>
       {/* ─── Hero ─── */}
       <section className="bg-[var(--nav-bg)] px-6 pt-28 pb-16">
-        <div className="mx-auto max-w-7xl grid lg:grid-cols-[1.1fr_1fr] gap-10 items-start">
+        <div className="mx-auto max-w-7xl grid lg:grid-cols-[1.1fr_1fr] gap-10 items-stretch">
           {/* Bal oszlop */}
           <div>
             <p className="text-[12px] uppercase tracking-widest text-[var(--accent2)] font-semibold mb-4">
@@ -152,23 +152,22 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* Jobb oszlop: videó + foglalás-kártya */}
-          <div className="flex flex-col gap-4">
-            {/* Videó blokk */}
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video bg-[var(--nav-bg)]">
-              <video
-                src="/videos/hero.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-[var(--nav-bg)]/10 rounded-2xl pointer-events-none" />
-            </div>
+          {/* Jobb oszlop: teljes magasságú videó */}
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl min-h-[420px] lg:h-full bg-[var(--nav-bg)]">
+            <video
+              src="/videos/hero.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-[var(--nav-bg)]/10 pointer-events-none" />
+          </div>
 
-            {/* Foglalás-kártya */}
-            <div className="hidden bg-[var(--surface)] rounded-xl p-4">
+          {/* Foglalás-kártya – rejtett, kódban marad */}
+          <div className="hidden">
+            <div className="bg-[var(--surface)] rounded-xl p-4">
               <p className="font-semibold text-sm text-[var(--text)]">Elérhetőség ellenőrzése</p>
               <p className="text-[12px] text-[var(--text3)] mt-0.5 mb-4">
                 Azonnali visszaigazolás · ingyenes lemondás 24 h-ig
