@@ -141,6 +141,23 @@ export default async function SobarlangPage() {
 
       <WellnessImageGrid category="sobarlang" />
 
+      {/* Videó */}
+      <section className="py-14 px-6">
+        <div className="mx-auto max-w-4xl">
+          <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-3">Videó</p>
+          <h2 className="text-2xl text-[var(--text)] mb-6">Nézze meg a sóbarlangot</h2>
+          <div className="relative w-full rounded-2xl overflow-hidden" style={{ paddingBottom: "56.25%" }}>
+            <iframe
+              src="https://www.youtube.com/embed/sdn62qxg0k4"
+              title="Viki Vendégház – Sóbarlang"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            />
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="bg-[var(--nav-bg)] py-14 px-6 text-center">
         <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-3">Foglaljon szobát</p>

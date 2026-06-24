@@ -76,6 +76,23 @@ export default async function KertMedencePage() {
 
       <WellnessImageGrid category="kert-medence" />
 
+      {/* Videó */}
+      <section className="py-14 px-6">
+        <div className="mx-auto max-w-4xl">
+          <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-3">Videó</p>
+          <h2 className="text-2xl text-[var(--text)] mb-6">Nézze meg a kertet és medencét</h2>
+          <div className="relative w-full rounded-2xl overflow-hidden" style={{ paddingBottom: "56.25%" }}>
+            <iframe
+              src="https://www.youtube.com/embed/KIYRV-zCU68"
+              title="Viki Vendégház – Kert & medence"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            />
+          </div>
+        </div>
+      </section>
+
       <section className="bg-[var(--nav-bg)] py-14 px-6 text-center">
         <h2 className="text-3xl text-white mb-6">Töltse a nyarat nálunk!</h2>
         <Link href="/foglalas" className="inline-flex px-8 py-3 rounded-full bg-[var(--accent2)] text-[var(--text)] font-sans font-medium hover:bg-[var(--accent2)]/90 transition-colors">
