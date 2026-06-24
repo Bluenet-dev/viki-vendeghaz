@@ -168,7 +168,7 @@ export default async function Home() {
             </div>
 
             {/* Foglalás-kártya */}
-            <div className="bg-[var(--surface)] rounded-xl p-4">
+            <div className="hidden bg-[var(--surface)] rounded-xl p-4">
               <p className="font-semibold text-sm text-[var(--text)]">Elérhetőség ellenőrzése</p>
               <p className="text-[12px] text-[var(--text3)] mt-0.5 mb-4">
                 Azonnali visszaigazolás · ingyenes lemondás 24 h-ig
