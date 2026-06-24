@@ -13,15 +13,14 @@ interface BookingEmailData {
 
 export async function sendBookingNotification(data: BookingEmailData) {
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const nights =
-    Math.round(
-      (new Date(data.checkOut).getTime() - new Date(data.checkIn).getTime()) /
-        (1000 * 60 * 60 * 24)
-    );
+  const nights = Math.round(
+    (new Date(data.checkOut).getTime() - new Date(data.checkIn).getTime()) /
+      (1000 * 60 * 60 * 24),
+  );
 
   // Email a tulajdonosnak
-  // TODO: domain hitelesítés után visszaállítani: noreply@vikivendeghaz.hu
-  const fromAddress = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
+  const fromAddress =
+    process.env.RESEND_FROM_EMAIL ?? "noreply@vikivendeghaz.hu";
   await resend.emails.send({
     from: `Viki Vendégház <${fromAddress}>`,
     to: "vikivendeghaz@gmail.com",
