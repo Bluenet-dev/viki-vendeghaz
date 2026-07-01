@@ -26,7 +26,7 @@ export default function ImpresszumPage() {
               { label: "NTAK regisztrációs szám", value: "MA22031772" },
               { label: "Bankszámlaszám", value: "50462779-10005659" },
               { label: "IBAN", value: "HU07-5046-2779-1000-5659-0000-0000" },
-              { label: "Bank", value: "Takarékbank Zrt." },
+              { label: "Bank", value: "MBH Bank Nyrt." },
               { label: "Telefon", value: "+36 70 410-8282" },
               { label: "Email", value: "vikivendeghaz@gmail.com" },
               { label: "Tárhelyszolgáltató", value: "Vercel Inc., 340 Pine Street Suite 701, San Francisco, CA 94104" },

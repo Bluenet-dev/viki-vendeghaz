@@ -63,6 +63,32 @@ export default function KapcsolatPage() {
               </div>
             </dl>
 
+            {/* Banki utalási adatok */}
+            <div className="mt-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+              <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-1">Banki utalási adatok</p>
+              <p className="text-sm text-[var(--text2)] mb-5">
+                Előleg vagy foglaló banki átutalással az alábbi számlára rendezhető.
+              </p>
+              <dl className="space-y-4">
+                <div>
+                  <dt className="text-[11px] uppercase tracking-widest text-[var(--text3)] mb-0.5">Kedvezményezett</dt>
+                  <dd className="text-[var(--text)] font-medium">Kiss Józsefné</dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] uppercase tracking-widest text-[var(--text3)] mb-0.5">Bankszámlaszám</dt>
+                  <dd className="text-[var(--text)] font-medium tracking-wide">50462779-10005659</dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] uppercase tracking-widest text-[var(--text3)] mb-0.5">IBAN</dt>
+                  <dd className="text-[var(--text)] font-medium tracking-wide break-all">HU07 5046 2779 1000 5659 0000 0000</dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] uppercase tracking-widest text-[var(--text3)] mb-0.5">Bank</dt>
+                  <dd className="text-[var(--text)] font-medium">MBH Bank Nyrt.</dd>
+                </div>
+              </dl>
+            </div>
+
             <div className="mt-8 rounded-2xl overflow-hidden border border-[var(--border)]" style={{ height: 400 }}>
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2664.5941719926072!2d20.386680613185973!3d48.09877277111925!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x474086ca60ca450f%3A0x764d76a437708b7c!2zU3ppbHbDoXN2w6FyYWQsIETDs3pzYSBHecO2cmd5IHUuIDQ1LCAzMzQ4!5e0!3m2!1shu!2shu!4v1782232631403!5m2!1shu!2shu"
