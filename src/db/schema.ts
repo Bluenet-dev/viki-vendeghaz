@@ -83,9 +83,13 @@ export const messages = pgTable("messages", {
   phone: text("phone"),
   message: text("message"),
   roomSlug: text("room_slug"),
+  roomLabel: text("room_label"), // olvasható tárgy: szoba neve(i) vagy "Egész ház"
   checkIn: date("check_in"),
   checkOut: date("check_out"),
   guests: integer("guests"),
+  totalPrice: integer("total_price"), // a form által számolt végösszeg (Ft), null ha egyedi ajánlat
+  felpanzio: text("felpanzio"), // "reggeli" | "vacsora" | "mindketto" | null
+  felpanzioFo: integer("felpanzio_fo"),
   read: boolean("read").default(false),
   archivedAt: timestamp("archived_at"),
   createdAt: timestamp("created_at").defaultNow(),

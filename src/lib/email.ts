@@ -9,6 +9,9 @@ interface BookingEmailData {
   checkOut: string;
   guests: number;
   message?: string;
+  totalPrice?: number | null;
+  felpanzioLabel?: string;
+  felpanzioFo?: number;
 }
 
 export async function sendBookingNotification(data: BookingEmailData) {
@@ -17,6 +20,14 @@ export async function sendBookingNotification(data: BookingEmailData) {
     (new Date(data.checkOut).getTime() - new Date(data.checkIn).getTime()) /
       (1000 * 60 * 60 * 24),
   );
+
+  const priceLabel =
+    data.totalPrice != null
+      ? `${data.totalPrice.toLocaleString("hu-HU")} Ft`
+      : "Egyedi ajánlat (telefonos egyeztetés)";
+  const felpanzioText = data.felpanzioLabel
+    ? `${data.felpanzioLabel} – ${data.felpanzioFo ?? 1} fő`
+    : "Nincs";
 
   // Email a tulajdonosnak
   const fromAddress =
@@ -36,6 +47,8 @@ export async function sendBookingNotification(data: BookingEmailData) {
         <tr><td style="padding:6px 12px;font-weight:bold">Távozás:</td><td style="padding:6px 12px">${data.checkOut}</td></tr>
         <tr><td style="padding:6px 12px;font-weight:bold">Éjszakák:</td><td style="padding:6px 12px">${nights}</td></tr>
         <tr><td style="padding:6px 12px;font-weight:bold">Vendégek:</td><td style="padding:6px 12px">${data.guests} fő</td></tr>
+        <tr><td style="padding:6px 12px;font-weight:bold">Étkezés:</td><td style="padding:6px 12px">${felpanzioText}</td></tr>
+        <tr><td style="padding:6px 12px;font-weight:bold">Végösszeg:</td><td style="padding:6px 12px"><strong>${priceLabel}</strong></td></tr>
         ${data.message ? `<tr><td style="padding:6px 12px;font-weight:bold;vertical-align:top">Megjegyzés:</td><td style="padding:6px 12px">${data.message}</td></tr>` : ""}
       </table>
       <p style="margin-top:24px;color:#666">Ez az üzenet a vikivendeghaz.hu foglalási rendszeréből érkezett.</p>
@@ -58,7 +71,10 @@ export async function sendBookingNotification(data: BookingEmailData) {
         <tr><td style="padding:6px 12px;font-weight:bold">Távozás:</td><td style="padding:6px 12px">${data.checkOut}</td></tr>
         <tr><td style="padding:6px 12px;font-weight:bold">Éjszakák száma:</td><td style="padding:6px 12px">${nights}</td></tr>
         <tr><td style="padding:6px 12px;font-weight:bold">Vendégek száma:</td><td style="padding:6px 12px">${data.guests} fő</td></tr>
+        <tr><td style="padding:6px 12px;font-weight:bold">Étkezés:</td><td style="padding:6px 12px">${felpanzioText}</td></tr>
+        <tr><td style="padding:6px 12px;font-weight:bold">Végösszeg:</td><td style="padding:6px 12px"><strong>${priceLabel}</strong></td></tr>
       </table>
+      <p style="margin-top:12px;color:#666;font-size:13px">A végösszeg tájékoztató jellegű, a foglalás megerősítésekor véglegesítjük.</p>
       <p style="margin-top:24px">Kérdés esetén hívjon minket: <strong>+36 70 410-8282</strong></p>
       <p>Üdvözlettel,<br><strong>Viki Vendégház</strong><br>3348 Szilvásvárad, Dózsa György utca 45.</p>
     `,

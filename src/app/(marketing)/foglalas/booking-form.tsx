@@ -257,11 +257,15 @@ export function BookingForm({
     setStatus("sending");
     try {
       const roomSlug = wholeHouse ? "egész vendégház" : Array.from(activeSlugs).join(",");
+      const roomLabel = wholeHouse
+        ? "Egész ház"
+        : selectedRoomsData.map((r) => r.name).join(", ");
       const res = await fetch("/api/booking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name, email, phone, roomSlug, checkIn, checkOut, guests, message,
+          name, email, phone, roomSlug, roomLabel, checkIn, checkOut, guests, message,
+          totalPrice: estimatedPrice,
           ...(felpanzio && { felpanzio, felpanzioFo }),
         }),
       });
