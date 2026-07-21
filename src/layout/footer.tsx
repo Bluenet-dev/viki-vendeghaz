@@ -36,6 +36,8 @@ const cols = [
     links: [
       { name: "Adatvédelem", href: "/adatvedelem" },
       { name: "Impresszum", href: "/impresszum" },
+      { name: "ÁSZF", href: "/aszf" },
+      { name: "Házirend", href: "/hazirend" },
     ],
   },
 ];

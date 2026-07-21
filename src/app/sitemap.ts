@@ -31,6 +31,8 @@ const staticRoutes: MetadataRoute.Sitemap = [
   { url: `${BASE_URL}/gyik`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
   { url: `${BASE_URL}/foglalas`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
   { url: `${BASE_URL}/kapcsolat`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+  { url: `${BASE_URL}/aszf`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
+  { url: `${BASE_URL}/hazirend`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
