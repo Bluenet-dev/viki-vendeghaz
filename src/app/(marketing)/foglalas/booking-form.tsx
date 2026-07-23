@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   calculateBookingPrice,
   getLowestPriceForScope,
@@ -42,6 +42,32 @@ const CAPACITY_NOTE: Record<string, string> = {
   superior: "2 fő + 2 fő pótágy (kihúzható kanapé)",
 };
 
+// A naptár-sávok fix sorrendje. A DB sort_order-től függetlenül mindig
+// 1-es · 2-es · Superior, hogy a sávok pozíciója megtanulható legyen.
+const BAR_ORDER = ["szoba-1", "szoba-2", "superior"] as const;
+
+const ROOM_DISPLAY: Record<string, { short: string; long: string }> = {
+  "szoba-1": { short: "1-es", long: "1-es szoba (Komfort Kétágyas)" },
+  "szoba-2": { short: "2-es", long: "2-es szoba (Komfort Franciaágyas)" },
+  superior: { short: "Superior", long: "Superior szoba" },
+};
+
+const FREE_COLOR = "var(--accent)";
+const BUSY_COLOR = "#E24B4A";
+
+function toISO(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatHuDate(dateStr: string): string {
+  return new Date(dateStr + "T00:00:00").toLocaleDateString("hu-HU", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  });
+}
+
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
 }
@@ -61,8 +87,8 @@ export function BookingForm({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Multi-room selection: set of slugs. "egész vendégház" = összes szoba
-  const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set([rooms[0]?.slug ?? ""]));
+  // Multi-room selection: set of slugs. Üres halmaz = áttekintő nézet (sávos naptár).
+  const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
   const [wholeHouse, setWholeHouse] = useState(false);
   const [checkIn, setCheckIn] = useState<string | null>(null);
   const [checkOut, setCheckOut] = useState<string | null>(null);
@@ -76,23 +102,90 @@ export function BookingForm({
   const [status, setStatus] = useState<Status>("idle");
   const [felpanzio, setFelpanzio] = useState<FelpanzioOption>(null);
   const [felpanzioFo, setFelpanzioFo] = useState<number>(1);
+  const [hoverDay, setHoverDay] = useState<string | null>(null);
+  const [rangeMsg, setRangeMsg] = useState<string | null>(null);
 
   const activeSlugs = wholeHouse ? new Set(rooms.map((r) => r.slug ?? "")) : selectedSlugs;
+  const noRoomSelected = !wholeHouse && selectedSlugs.size === 0;
 
-  // Egy nap blokkolt, ha bármelyik kijelölt szoba foglalt azon a napon
+  // A sávok fix sorrendben, csak a ténylegesen létező szobákra.
+  const orderedRooms = useMemo(
+    () => BAR_ORDER.map((slug) => rooms.find((r) => r.slug === slug)).filter((r): r is Room => Boolean(r)),
+    [rooms]
+  );
+
+  // Szobánkénti foglaltság: slug -> foglalt dátumok halmaza
+  const blockedByRoom = useMemo(() => {
+    const m: Record<string, Set<string>> = {};
+    for (const r of rooms) m[r.slug ?? ""] = new Set<string>();
+    for (const b of blockedDays) {
+      (m[b.roomSlug] ??= new Set<string>()).add(b.date);
+    }
+    return m;
+  }, [blockedDays, rooms]);
+
+  // Egy adott napra: mely szobák foglaltak, és egész házas-e a nap.
+  const dayInfo = useCallback(
+    (dateStr: string) => {
+      const blocked = orderedRooms.filter((r) => blockedByRoom[r.slug ?? ""]?.has(dateStr));
+      const wholeHouseOnly = isWholeHouseOnlyForDate(new Date(dateStr + "T00:00:00"), pricingData);
+      return {
+        blockedSlugs: new Set(blocked.map((r) => r.slug ?? "")),
+        blockedCount: blocked.length,
+        freeCount: orderedRooms.length - blocked.length,
+        wholeHouseOnly,
+      };
+    },
+    [orderedRooms, blockedByRoom, pricingData]
+  );
+
+  // Egy nap "nem választható"-e a jelenlegi módban:
+  //  – egész ház (vagy egész házas időszak): elég 1 foglalt szoba
+  //  – konkrét szoba(k): a kijelöltek közül bármelyik foglalt
+  //  – áttekintő nézet: csak akkor, ha MIND a 3 foglalt (telt ház)
+  const isBlockedForMode = useCallback(
+    (dateStr: string) => {
+      const { blockedSlugs, blockedCount, wholeHouseOnly } = dayInfo(dateStr);
+      if (wholeHouse || wholeHouseOnly) return blockedCount > 0;
+      if (selectedSlugs.size > 0) {
+        for (const s of selectedSlugs) if (blockedSlugs.has(s)) return true;
+        return false;
+      }
+      return blockedCount === orderedRooms.length && orderedRooms.length > 0;
+    },
+    [dayInfo, wholeHouse, selectedSlugs, orderedRooms.length]
+  );
+
   const blockedSet = useMemo(() => {
     const s = new Set<string>();
     for (const b of blockedDays) {
-      if (activeSlugs.has(b.roomSlug)) s.add(b.date);
+      if (isBlockedForMode(b.date)) s.add(b.date);
     }
     return s;
-  }, [blockedDays, activeSlugs]);
+  }, [blockedDays, isBlockedForMode]);
+
+  // Egy időszak (éjszakák: checkIn … checkOut-1) elérhető-e az adott kijelöléssel.
+  const rangeAvailable = useCallback(
+    (ci: string, co: string, slugs: Set<string>, wh: boolean) => {
+      const end = new Date(co + "T00:00:00");
+      for (const d = new Date(ci + "T00:00:00"); d < end; d.setDate(d.getDate() + 1)) {
+        const ds = toISO(d);
+        const { blockedSlugs, blockedCount, wholeHouseOnly } = dayInfo(ds);
+        if (wh || wholeHouseOnly) {
+          if (blockedCount > 0) return false;
+        } else {
+          for (const s of slugs) if (blockedSlugs.has(s)) return false;
+        }
+      }
+      return true;
+    },
+    [dayInfo]
+  );
 
   const selectedRoomsData = rooms.filter((r) => activeSlugs.has(r.slug ?? ""));
-  const totalCapacity = wholeHouse ? MAX_GUESTS : Math.min(
-    selectedRoomsData.reduce((sum, r) => sum + (r.capacity ?? 2), 0),
-    MAX_GUESTS
-  );
+  const totalCapacity = wholeHouse || noRoomSelected
+    ? MAX_GUESTS
+    : Math.min(selectedRoomsData.reduce((sum, r) => sum + (r.capacity ?? 2), 0), MAX_GUESTS);
 
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0;
@@ -158,25 +251,36 @@ export function BookingForm({
 
   const wholeHousePriceLabel = getCardPriceLabel("egesz_haz");
 
+  // Szoba-váltáskor a már kijelölt időszakot megtartjuk, ha az új kijelöléssel is
+  // elérhető; ha nem, töröljük és jelezzük a felhasználónak.
+  function applySelectionChange(nextSlugs: Set<string>, nextWholeHouse: boolean) {
+    if (checkIn && checkOut && !rangeAvailable(checkIn, checkOut, nextSlugs, nextWholeHouse)) {
+      setCheckIn(null);
+      setCheckOut(null);
+      setRangeMsg("A kiválasztott időszak ennél a szobánál nem elérhető.");
+    } else {
+      setRangeMsg(null);
+    }
+  }
+
   function toggleRoom(slug: string) {
     if (wholeHouse) return;
     const next = new Set(selectedSlugs);
-    if (next.has(slug) && next.size > 1) {
-      next.delete(slug);
-    } else if (!next.has(slug)) {
-      next.add(slug);
-    }
+    if (next.has(slug)) next.delete(slug);
+    else next.add(slug);
     setSelectedSlugs(next);
-    setCheckIn(null);
-    setCheckOut(null);
-    setGuests(Math.min(guests, totalCapacity));
+    applySelectionChange(next, false);
+    const cap = next.size === 0
+      ? MAX_GUESTS
+      : Math.min(rooms.filter((r) => next.has(r.slug ?? "")).reduce((s, r) => s + (r.capacity ?? 2), 0), MAX_GUESTS);
+    setGuests(Math.min(guests, cap));
   }
 
   function toggleWholeHouse() {
-    setWholeHouse(!wholeHouse);
-    setCheckIn(null);
-    setCheckOut(null);
-    if (!wholeHouse) setGuests(Math.min(guests, MAX_GUESTS));
+    const next = !wholeHouse;
+    setWholeHouse(next);
+    applySelectionChange(next ? new Set(rooms.map((r) => r.slug ?? "")) : selectedSlugs, next);
+    if (next) setGuests(Math.min(guests, MAX_GUESTS));
   }
 
   // Egy blokkolt nap checkout-ként használható, ha nincs blokkolt nap
@@ -203,6 +307,10 @@ export function BookingForm({
   function handleDayClick(dateStr: string) {
     const d = new Date(dateStr);
     if (d < today) return;
+    setRangeMsg(null);
+    // Mobilon az érintés nem mindig vált ki focus-t, ezért a részletsávot
+    // kattintásra is frissítjük – így foglalt napnál is látszik az indok.
+    setHoverDay(dateStr);
 
     const isBlocked = blockedSet.has(dateStr);
 
@@ -362,11 +470,15 @@ export function BookingForm({
 
           {/* Összesítő */}
           <div className="mt-3 flex items-center gap-3 text-sm text-[var(--text2)] bg-[var(--surface2)] rounded-lg px-4 py-2.5">
-            <span>
-              {wholeHouse ? "Egész vendégház" : `${activeSlugs.size} szoba`} kijelölve
-            </span>
-            <span className="text-[var(--text3)]">·</span>
-            <span>max. {totalCapacity} fő</span>
+            {noRoomSelected ? (
+              <span>Nincs szoba kijelölve – áttekintő nézet, minden nap foglaltsága látszik</span>
+            ) : (
+              <>
+                <span>{wholeHouse ? "Egész vendégház" : `${activeSlugs.size} szoba`} kijelölve</span>
+                <span className="text-[var(--text3)]">·</span>
+                <span>max. {totalCapacity} fő</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -388,6 +500,13 @@ export function BookingForm({
                 <div key={d} className="text-center text-xs text-[var(--text3)] py-1">{d}</div>
               ))}
             </div>
+            {/* Egész házas figyelmeztetés */}
+            {wholeHouse && !checkInForcesWholeHouse && (
+              <p className="text-xs text-[var(--text2)] bg-[var(--surface2)] px-3 py-2 rounded-lg mb-3">
+                Egész házas foglalásnál csak azok a napok választhatók, amikor mind a három szoba szabad.
+              </p>
+            )}
+
             {/* Napok */}
             <div className="grid grid-cols-7">
               {Array.from({ length: firstDay }).map((_, i) => <div key={`e-${i}`} />)}
@@ -395,6 +514,13 @@ export function BookingForm({
                 const day = i + 1;
                 const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                 const state = dayState(dateStr);
+                const info = dayInfo(dateStr);
+                const isPast = state === "past";
+                // Sávok csak áttekintő nézetben, nem múltbeli és nem egész házas napon.
+                const showBars = noRoomSelected && !isPast && !info.wholeHouseOnly && orderedRooms.length > 0;
+                const fullHouseBlocked =
+                  !isPast && info.blockedCount === orderedRooms.length && orderedRooms.length > 0;
+
                 const cls: Record<string, string> = {
                   past: "text-[var(--text3)]/60 cursor-default",
                   blocked: "text-[#C45252] cursor-not-allowed line-through bg-[#FEE9E9]",
@@ -404,20 +530,133 @@ export function BookingForm({
                   inrange: "bg-[var(--accent-bg)] text-[var(--text)]",
                   available: "hover:bg-[var(--accent2-bg)] text-[var(--text)] cursor-pointer",
                 };
+                // Áttekintő nézetben a telt házas nap kapja a piros tintát.
+                const tint = showBars && fullHouseBlocked ? " bg-[#FEE9E9]" : "";
+
+                const freeNames = orderedRooms
+                  .filter((r) => !info.blockedSlugs.has(r.slug ?? ""))
+                  .map((r) => ROOM_DISPLAY[r.slug ?? ""]?.long ?? r.name);
+                const aria = isPast
+                  ? `${formatHuDate(dateStr)}, elmúlt nap`
+                  : info.freeCount === 0
+                    ? `${formatHuDate(dateStr)}, nincs szabad szoba`
+                    : `${formatHuDate(dateStr)}, ${info.freeCount} szoba szabad: ${freeNames.join(", ")}`;
+
                 return (
-                  <div key={day} onClick={() => handleDayClick(dateStr)}
-                    className={`text-center text-sm py-2 transition-colors ${cls[state]}`}>
-                    {day}
-                  </div>
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => handleDayClick(dateStr)}
+                    onMouseEnter={() => setHoverDay(dateStr)}
+                    onFocus={() => setHoverDay(dateStr)}
+                    disabled={isPast}
+                    aria-label={aria}
+                    className={`relative w-full min-h-[40px] flex items-center justify-center text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${cls[state]}${tint}`}
+                  >
+                    <span className={showBars ? "-translate-y-[3px]" : ""}>{day}</span>
+                    {showBars && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute bottom-[5px] left-1/2 -translate-x-1/2 flex gap-[2px]"
+                      >
+                        {orderedRooms.map((r) => (
+                          <span
+                            key={r.slug}
+                            className="h-[4px] w-[9px] rounded-[1px]"
+                            style={{
+                              backgroundColor: info.blockedSlugs.has(r.slug ?? "")
+                                ? BUSY_COLOR
+                                : FREE_COLOR,
+                            }}
+                          />
+                        ))}
+                      </span>
+                    )}
+                  </button>
                 );
               })}
             </div>
+
             {/* Jelmagyarázat */}
-            <div className="flex gap-4 mt-3 pt-3 border-t border-[var(--border)]">
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-[var(--border)]">
               <span className="flex items-center gap-1.5 text-xs text-[var(--text3)]"><span className="w-3 h-3 rounded-full bg-[var(--accent)] inline-block" />Kijelölt</span>
               <span className="flex items-center gap-1.5 text-xs text-[var(--text3)]"><span className="w-3 h-3 rounded-full bg-[#FEE9E9] inline-block" />Foglalt</span>
+              {noRoomSelected && (
+                <>
+                  <span className="flex items-center gap-1.5 text-xs text-[var(--text3)]">
+                    <span className="h-[4px] w-[9px] rounded-[1px] inline-block" style={{ backgroundColor: FREE_COLOR }} />
+                    Szabad
+                  </span>
+                  <span className="flex items-center gap-1.5 text-xs text-[var(--text3)]">
+                    <span className="h-[4px] w-[9px] rounded-[1px] inline-block" style={{ backgroundColor: BUSY_COLOR }} />
+                    Foglalt szoba
+                  </span>
+                  <span className="text-xs text-[var(--text3)] basis-full sm:basis-auto">
+                    Sávok balról jobbra: 1-es · 2-es · Superior
+                  </span>
+                </>
+              )}
             </div>
           </div>
+
+          {/* Részletsáv – fix magasság, hogy ne ugráljon a layout */}
+          <div
+            className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 min-h-[136px]"
+            aria-live="polite"
+          >
+            {hoverDay ? (
+              (() => {
+                const info = dayInfo(hoverDay);
+                return (
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--text)] mb-2 first-letter:uppercase">
+                      {formatHuDate(hoverDay)}
+                    </p>
+                    <ul className="space-y-1">
+                      {orderedRooms.map((r) => {
+                        const busy = info.blockedSlugs.has(r.slug ?? "");
+                        return (
+                          <li key={r.slug} className="flex items-center gap-2 text-sm">
+                            <span style={{ color: busy ? BUSY_COLOR : FREE_COLOR }}>{busy ? "●" : "○"}</span>
+                            <span className="text-[var(--text2)]">
+                              {ROOM_DISPLAY[r.slug ?? ""]?.long ?? r.name}
+                            </span>
+                            <span className="text-[var(--text3)]">—</span>
+                            <span style={{ color: busy ? BUSY_COLOR : "var(--accent)" }}>
+                              {busy ? "foglalt" : "szabad"}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <p className="text-sm mt-2 pt-2 border-t border-[var(--border)] text-[var(--text2)]">
+                      {info.wholeHouseOnly && info.blockedCount === 0 ? (
+                        <>Ebben az időszakban csak egész ház foglalható.</>
+                      ) : info.blockedCount === 0 ? (
+                        <>Egész ház: <span style={{ color: "var(--accent)" }}>foglalható</span></>
+                      ) : (
+                        <>
+                          Egész ház:{" "}
+                          <span style={{ color: BUSY_COLOR }}>nem foglalható</span>{" "}
+                          ({info.blockedCount} szoba foglalt)
+                        </>
+                      )}
+                    </p>
+                  </div>
+                );
+              })()
+            ) : (
+              <p className="text-sm text-[var(--text3)]">
+                <span className="hidden sm:inline">Vigye az egeret egy napra a részletekért</span>
+                <span className="sm:hidden">Érintsen meg egy napot a részletekért</span>
+              </p>
+            )}
+          </div>
+          {rangeMsg && (
+            <p className="mt-2 text-sm text-amber-700 bg-amber-50 px-4 py-2.5 rounded-lg">
+              {rangeMsg}
+            </p>
+          )}
           {minNightsError && (
             <p className="mt-2 text-sm text-amber-700 bg-amber-50 px-4 py-2.5 rounded-lg">
               A kiválasztott időszakban minimum {minNightsRequired} éjszakát kell foglalni.
@@ -440,6 +679,12 @@ export function BookingForm({
           {checkInForcesWholeHouse && (
             <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg mb-3">
               Ebben az időszakban csak egész ház foglalható.
+            </p>
+          )}
+
+          {noRoomSelected && (
+            <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg mb-3">
+              Válasszon szobát vagy az egész vendégházat a foglaláshoz.
             </p>
           )}
 
@@ -575,7 +820,7 @@ export function BookingForm({
 
         <button
           type="submit"
-          disabled={!checkIn || !checkOut || !name || !email || status === "sending" || minNightsError || unavailableError}
+          disabled={noRoomSelected || !checkIn || !checkOut || !name || !email || status === "sending" || minNightsError || unavailableError}
           className="w-full py-4 rounded-full bg-[var(--nav-bg)] text-white font-sans font-semibold text-base hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {status === "sending" ? "Küldés..." : "Foglalási kérés elküldése →"}
