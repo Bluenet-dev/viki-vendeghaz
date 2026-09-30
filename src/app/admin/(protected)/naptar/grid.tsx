@@ -97,14 +97,16 @@ export function CalendarGrid({
           const key = `${room}|${d}`;
           const past = d < today;
           const c = closed[key];
-          // "Csak egész ház" napon a szabad szoba üres szürke cella (szobánként nem foglalható,
-          // lezárni az egész ház cellájával lehet); a lezárt szoba viszont mindig lakatot mutat.
-          if (houseOnly(d) && !c) {
-            return <td key={d} title="Csak egész ház" className={`${cellBase} bg-[var(--surface2)]`} />;
-          }
-          const title = c?.bookingId ? `${c.name ?? "Foglalás"} – megnyitás` : c ? "Lezárva – kattintásra feloldja" : "Szabad – kattintásra lezárja";
+          // "Csak egész ház" napon is szobánként lezárható/feloldható; a halvány szürke
+          // háttér csak jelzi, hogy aznap a weboldalon szobánként nem foglalható.
+          const whole = houseOnly(d);
+          const title = c?.bookingId
+            ? `${c.name ?? "Foglalás"} – megnyitás`
+            : c
+              ? "Lezárva – kattintásra feloldja"
+              : `${whole ? "Csak egész ház · " : ""}Szabad – kattintásra lezárja`;
           return (
-            <td key={d} className={`${cellBase} ${c ? "bg-[#F3C7C7]" : colBg(d)} ${past ? "opacity-40" : ""}`}>
+            <td key={d} className={`${cellBase} ${c ? "bg-[#F3C7C7]" : whole ? "bg-[var(--surface2)]" : colBg(d)} ${past ? "opacity-40" : ""}`}>
               <button
                 type="button"
                 disabled={past || pending}
@@ -131,9 +133,8 @@ export function CalendarGrid({
           const past = d < today;
           const data = cells[`${scope}|${d}`];
           const value = field === "price" ? data?.price : data?.extra;
-          if (scope !== "egesz_haz" && houseOnly(d)) {
-            return <td key={d} title="Csak egész ház" className={`${cellBase} bg-[var(--surface2)]`} />;
-          }
+          // "Csak egész ház" napon a szoba ára is szerkeszthető, csak szürke háttér jelzi a szabályt.
+          const whole = scope !== "egesz_haz" && houseOnly(d);
           if (editing === key) {
             return (
               <td key={d} className={`${cellBase} bg-white`}>
@@ -156,14 +157,14 @@ export function CalendarGrid({
             );
           }
           return (
-            <td key={d} className={`${cellBase} ${colBg(d)} ${past ? "opacity-40" : ""}`}>
+            <td key={d} title={whole ? "Csak egész ház" : undefined} className={`${cellBase} ${whole ? "bg-[var(--surface2)]" : colBg(d)} ${past ? "opacity-40" : ""}`}>
               <button
                 type="button"
                 disabled={past}
                 onClick={() => startEdit(key, value ?? null)}
                 className={`h-9 w-full px-1 ${past ? "cursor-default" : "cursor-text hover:bg-white hover:outline hover:outline-1 hover:outline-[var(--text3)]"} ${value == null ? "text-[var(--text3)]" : "text-[var(--text)]"}`}
               >
-                {value == null ? (field === "price" && data ? "egyedi" : "") : fmt(value)}
+                {value == null ? (field === "price" && data && !whole ? "egyedi" : "") : fmt(value)}
               </button>
             </td>
           );
