@@ -1,125 +1,158 @@
-export const dynamic = "force-dynamic";
-
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+import { and, asc, eq, inArray, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
-import { messages, availability, posts, gallery } from "@/db/schema";
-import { and, eq, gte, lte } from "drizzle-orm";
-import {
-  IconLayoutDashboard,
-  IconBed,
-  IconCurrencyForint,
-  IconLeaf,
-  IconGift,
-  IconCalendar,
-  IconChartBar,
-  IconPencil,
-  IconHelpCircle,
-  IconPhoto,
-  IconMessageCircle,
-  type IconProps,
-} from "@tabler/icons-react";
-import type { ComponentType } from "react";
+import { bookings, closures } from "@/db/schema";
+import { ROOM_SCOPES, SCOPE_LABEL, formatFt, type Scope } from "@/lib/booking/constants";
+import { addDays, diffDays, fmtLong, fmtRange, todayBudapest } from "@/lib/booking/dates";
+import { getSettings } from "@/lib/booking/server";
+import { SourceBadge } from "./foglalasok/badges";
+import { ConfirmButton, ReleaseButton } from "./foglalasok/buttons";
 
-const quickLinks: { href: string; label: string; icon: ComponentType<IconProps> }[] = [
-  { href: "/admin/szobak", label: "Szobák", icon: IconBed },
-  { href: "/admin/arazas", label: "Árazás", icon: IconCurrencyForint },
-  { href: "/admin/wellness", label: "Wellness", icon: IconLeaf },
-  { href: "/admin/csomagok", label: "Csomagok", icon: IconGift },
-  { href: "/admin/naptar", label: "Naptár", icon: IconCalendar },
-  { href: "/admin/statisztikak", label: "Statisztikák", icon: IconChartBar },
-  { href: "/admin/blog", label: "Blog", icon: IconPencil },
-  { href: "/admin/gyik", label: "GYIK", icon: IconHelpCircle },
-  { href: "/admin/galeria", label: "Galéria", icon: IconPhoto },
-  { href: "/admin/uzenetek", label: "Üzenetek", icon: IconMessageCircle },
-  { href: "/admin", label: "Áttekintés", icon: IconLayoutDashboard },
-];
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Áttekintés" };
 
-export default async function AdminPage() {
-  const session = await getSession();
-  if (!session.isLoggedIn) redirect("/admin/login");
+const ACTIVE = ["elfogadva", "visszaigazolt"];
 
-  const year = new Date().getFullYear();
-  const yearStart = `${year}-01-01`;
-  const yearEnd = `${year}-12-31`;
+function Card({ label, value, warn }: { label: string; value: string | number; warn?: boolean }) {
+  return (
+    <div
+      className={`rounded-[10px] border p-5 ${
+        warn ? "border-[#F0D98A] bg-[#FFF6DB]" : "border-[0.5px] border-[var(--border)] bg-[var(--surface)]"
+      }`}
+    >
+      <div className={`text-[30px] font-semibold leading-none ${warn ? "text-[#7A5B00]" : "text-[var(--text)]"}`}>{value}</div>
+      <div className={`mt-2 text-[13px] ${warn ? "text-[#7A5B00]" : "text-[var(--text2)]"}`}>{label}</div>
+    </div>
+  );
+}
 
-  const [unreadMessages, blockedThisYear, activePosts, galleryImages] = await Promise.all([
-    db.$count(messages, eq(messages.read, false)),
-    db.$count(
-      availability,
-      and(
-        eq(availability.status, "blocked"),
-        gte(availability.date, yearStart),
-        lte(availability.date, yearEnd),
-      ),
-    ),
-    db.$count(posts, eq(posts.published, true)),
-    db.$count(gallery),
+export default async function AttekintesPage({ searchParams }: { searchParams: Promise<{ nap?: string }> }) {
+  const { nap } = await searchParams;
+  const tomorrow = nap === "holnap";
+  const today = todayBudapest();
+  const day = tomorrow ? addDays(today, 1) : today;
+  const word = tomorrow ? "Holnap" : "Ma";
+  const s = await getSettings();
+
+  const [arrivals, departures, waiting, closedToday, acceptedNoDeposit] = await Promise.all([
+    db.select().from(bookings).where(and(eq(bookings.checkIn, day), inArray(bookings.status, ACTIVE))).orderBy(asc(bookings.name)),
+    db.select().from(bookings).where(and(eq(bookings.checkOut, day), inArray(bookings.status, ACTIVE))).orderBy(asc(bookings.name)),
+    db.select().from(bookings).where(eq(bookings.status, "valaszra_var")).orderBy(asc(bookings.createdAt)),
+    db.selectDistinct({ room: closures.roomScope }).from(closures).where(eq(closures.date, day)),
+    db
+      .select()
+      .from(bookings)
+      .where(and(eq(bookings.status, "elfogadva"), isNull(bookings.depositReceivedAt), lte(bookings.acceptedAt, new Date(Date.now() - s.depositDueDays * 86_400_000))))
+      .orderBy(asc(bookings.checkIn)),
   ]);
 
-  const kpis: { label: string; value: number; icon: ComponentType<IconProps> }[] = [
-    { label: "Beérkező üzenetek", value: unreadMessages, icon: IconMessageCircle },
-    { label: `Blokkolt napok (${year})`, value: blockedThisYear, icon: IconCalendar },
-    { label: "Aktív blog cikkek", value: activePosts, icon: IconPencil },
-    { label: "Galéria képek", value: galleryImages, icon: IconPhoto },
-  ];
-
-  const todayLabel = new Date().toLocaleDateString("hu", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const bookedRooms = closedToday.filter((c) => (ROOM_SCOPES as readonly string[]).includes(c.room)).length;
 
   return (
     <div className="max-w-5xl">
-      {/* Fejléc */}
-      <div className="flex items-end justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--text)]">Viki Vendégház</h1>
-          <p className="text-xs text-[var(--text2)] mt-1">Admin felület</p>
-        </div>
-        <p className="text-xs text-[var(--text2)]">{todayLabel}</p>
-      </div>
-
-      {/* KPI kártyák */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {kpis.map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <div
-              key={kpi.label}
-              className="bg-[var(--surface)] border-[0.5px] border-[var(--border)] rounded-[10px] p-5"
-            >
-              <Icon size={24} stroke={1.6} className="text-[var(--accent)]" />
-              <div className="text-[28px] font-semibold leading-none mt-3 text-[var(--text)]">
-                {kpi.value}
-              </div>
-              <div className="text-xs text-[var(--text2)] mt-1.5">{kpi.label}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Gyors navigáció */}
-      <h2 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--text2)] mb-3">
-        Gyors navigáció
-      </h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {quickLinks.map((item) => {
-          const Icon = item.icon;
-          return (
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <h1 className="text-xl font-semibold text-[var(--text)]">
+          {word}, {fmtLong(day)}
+        </h1>
+        <div className="flex rounded-md border border-[var(--border)] bg-[var(--surface)] p-0.5 text-[14px]">
+          {[
+            { href: "/admin", label: "Ma", active: !tomorrow },
+            { href: "/admin?nap=holnap", label: "Holnap", active: tomorrow },
+          ].map((t) => (
             <Link
-              key={item.href + item.label}
-              href={item.href}
-              className="flex items-center gap-3 bg-[var(--surface)] border-[0.5px] border-[var(--border)] rounded-lg p-4 transition-all hover:border-[var(--accent)] hover:scale-[1.01]"
+              key={t.label}
+              href={t.href}
+              className={`rounded px-4 py-1.5 ${t.active ? "bg-[var(--nav-bg)] text-white" : "text-[var(--text2)] hover:text-[var(--text)]"}`}
             >
-              <Icon size={20} stroke={1.6} className="text-[var(--accent)] shrink-0" />
-              <span className="text-[14px] font-medium text-[var(--text)]">{item.label}</span>
+              {t.label}
             </Link>
-          );
-        })}
+          ))}
+        </div>
       </div>
+
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Card label="Érkezik" value={arrivals.length} />
+        <Card label="Távozik" value={departures.length} />
+        <Card label="Válaszra vár" value={waiting.length} warn={waiting.length > 0} />
+        <Card label={`Foglalt szoba ${word.toLowerCase()}`} value={`${bookedRooms}/${ROOM_SCOPES.length}`} />
+      </div>
+
+      {acceptedNoDeposit.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-3 text-[15px] font-semibold text-[var(--text)]">Előleg nem érkezett</h2>
+          <div className="space-y-2">
+            {acceptedNoDeposit.map((b) => (
+              <div key={b.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-[#F0D98A] bg-[#FFF6DB] px-4 py-3">
+                <div className="text-[14px] text-[var(--text)]">
+                  <Link href={`/admin/foglalasok/${b.id}`} className="font-medium hover:underline">{b.name}</Link>
+                  <span className="text-[var(--text2)]"> · {SCOPE_LABEL[b.roomScope as Scope]} · {fmtRange(b.checkIn, b.checkOut)}</span>
+                  {b.depositAmount != null && <span className="text-[var(--text2)]"> · előleg {formatFt(b.depositAmount)}</span>}
+                </div>
+                <ReleaseButton id={b.id} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="mb-8">
+        <h2 className="mb-3 text-[15px] font-semibold text-[var(--text)]">Válaszra vár</h2>
+        {waiting.length === 0 ? (
+          <p className="rounded-[10px] border-[0.5px] border-[var(--border)] bg-[var(--surface)] px-4 py-5 text-[14px] text-[var(--text3)]">
+            Nincs megválaszolatlan kérés.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {waiting.map((b) => (
+              <div key={b.id} className="flex flex-wrap items-start justify-between gap-3 rounded-[10px] border border-[#F0D98A] bg-[#FFFBEA] px-4 py-3">
+                <div className="min-w-0 text-[14px]">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-[var(--text)]">{b.name}</span>
+                    <span className="text-[var(--text2)]">{b.guests} fő</span>
+                    <SourceBadge source={b.source} />
+                  </div>
+                  <div className="mt-0.5 text-[var(--text2)]">
+                    {fmtRange(b.checkIn, b.checkOut)} · {SCOPE_LABEL[b.roomScope as Scope]} · {b.total != null ? formatFt(b.total) : "egyedi ár"}
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Link
+                    href={`/admin/foglalasok/${b.id}`}
+                    className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[14px] text-[var(--text)] hover:border-[var(--text3)]"
+                  >
+                    Részletek
+                  </Link>
+                  <ConfirmButton id={b.id} compact />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-[15px] font-semibold text-[var(--text)]">{word} érkezik</h2>
+        {arrivals.length === 0 ? (
+          <p className="rounded-[10px] border-[0.5px] border-[var(--border)] bg-[var(--surface)] px-4 py-5 text-[14px] text-[var(--text3)]">
+            {word} nem érkezik vendég.
+          </p>
+        ) : (
+          <div className="overflow-hidden rounded-[10px] border-[0.5px] border-[var(--border)] bg-[var(--surface)]">
+            {arrivals.map((b) => (
+              <Link
+                key={b.id}
+                href={`/admin/foglalasok/${b.id}`}
+                className="flex flex-wrap items-center justify-between gap-2 border-b-[0.5px] border-[var(--border)] px-4 py-3 text-[14px] last:border-b-0 hover:bg-[var(--surface2)]"
+              >
+                <span className="font-medium text-[var(--text)]">{b.name}</span>
+                <span className="text-[var(--text2)]">
+                  {SCOPE_LABEL[b.roomScope as Scope]} · {diffDays(b.checkIn, b.checkOut)} éj · {b.phone ?? "nincs telefon"}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

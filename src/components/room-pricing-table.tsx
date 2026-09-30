@@ -1,196 +1,136 @@
+import { and, eq, gte, lte } from "drizzle-orm";
 import { db } from "@/db";
-import {
-  seasons,
-  pricingRules,
-  roomCapacityPricing,
-  pricingSettings,
-  holidayOverrides,
-  holidayPrices,
-} from "@/db/schema";
-import { eq, asc } from "drizzle-orm";
-import type { RoomScope } from "@/lib/pricing";
+import { dayRates } from "@/db/schema";
+import { BASE_GUESTS, type Scope } from "@/lib/booking/constants";
+import { addDays, monthLabel, todayBudapest, weekday } from "@/lib/booking/dates";
+import { getSettings } from "@/lib/booking/server";
 
 function fmt(n: number) {
   return n.toLocaleString("hu-HU") + " Ft";
 }
 
-export async function RoomPricingTable({ roomScope }: { roomScope: RoomScope }) {
-  const [allSeasons, allRules, capacityRows, settingsRows, allHolidays, allHolidayPrices] =
-    await Promise.all([
-      db.select().from(seasons).where(eq(seasons.active, true)).orderBy(asc(seasons.sortOrder)),
-      db.select().from(pricingRules),
-      db.select().from(roomCapacityPricing),
-      db.select().from(pricingSettings).limit(1),
-      db.select().from(holidayOverrides).where(eq(holidayOverrides.active, true)).orderBy(asc(holidayOverrides.sortOrder)),
-      db.select().from(holidayPrices),
-    ]);
+// A leggyakoribb érték (így az ünnepnapi különár nem torzítja a havi árat).
+function mode(values: number[]): number | null {
+  if (!values.length) return null;
+  const count = new Map<number, number>();
+  for (const v of values) count.set(v, (count.get(v) ?? 0) + 1);
+  return [...count.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0];
+}
 
-  const settings = settingsRows[0] ?? null;
-  const capacityRow = capacityRows.find((c) => c.roomScope === roomScope);
-  const baseCapacity = capacityRow?.baseCapacity ?? 2;
-  const extraFee = capacityRow?.extraGuestFeePerNight ?? 7000;
+// Havi árak a következő 12 hónapra a naptár (day_rates) alapján.
+export async function RoomPricingTable({ roomScope }: { roomScope: Scope }) {
+  const today = todayBudapest();
+  const [rows, settings] = await Promise.all([
+    db
+      .select()
+      .from(dayRates)
+      .where(and(eq(dayRates.roomScope, roomScope), gte(dayRates.date, today), lte(dayRates.date, addDays(today, 365)))),
+    getSettings(),
+  ]);
+  if (!rows.length) return null;
 
-  // Szezonos árak ennél a szobánál
-  const seasonRows = allSeasons
-    .map((s) => {
-      const weekday = allRules.find(
-        (r) => r.seasonId === s.id && r.dayType === "weekday" && r.roomScope === roomScope
-      );
-      const weekend = allRules.find(
-        (r) => r.seasonId === s.id && r.dayType === "weekend" && r.roomScope === roomScope
-      );
-      return { season: s, weekday, weekend };
-    })
-    .filter((r) => r.weekday || r.weekend);
+  const months = new Map<string, typeof rows>();
+  for (const r of rows) {
+    const key = r.date.slice(0, 7);
+    if (!months.has(key)) months.set(key, []);
+    months.get(key)!.push(r);
+  }
 
-  // Ünnepnapi különárak
-  const holidayRows = allHolidays
-    .filter((h) => !h.wholeHouseOnly)
-    .map((h) => {
-      const price = allHolidayPrices.find(
-        (p) => p.holidayId === h.id && p.roomScope === roomScope
-      );
-      return { holiday: h, price };
-    })
-    .filter((r) => r.price?.pricePerNight != null || r.holiday.priceOnRequest);
+  const table = [...months.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(0, 12)
+    .map(([key, list]) => {
+      const sellable = roomScope === "egesz_haz" ? list : list.filter((r) => !r.wholeHouseOnly);
+      const priced = sellable.filter((r) => r.price != null);
+      // Péntek és szombat éjszaka = hétvége
+      const weekend = priced.filter((r) => [5, 6].includes(weekday(r.date))).map((r) => r.price!);
+      const weekdays = priced.filter((r) => ![5, 6].includes(weekday(r.date))).map((r) => r.price!);
+      const [y, m] = key.split("-").map(Number);
+      return {
+        key,
+        label: monthLabel(y, m - 1).replace(/^\d{4}\. /, ""),
+        year: y,
+        wholeOnly: sellable.length === 0,
+        onRequest: sellable.length > 0 && priced.length === 0,
+        weekday: mode(weekdays),
+        weekend: mode(weekend),
+        minNights: mode(sellable.map((r) => r.minNights)),
+      };
+    });
 
-  if (seasonRows.length === 0 && holidayRows.length === 0) return null;
+  const extra = mode(rows.filter((r) => r.extraPersonPrice != null).map((r) => r.extraPersonPrice!));
+  const base = BASE_GUESTS[roomScope];
+  const extraFee = roomScope === "egesz_haz" ? settings.over10FeePerNight : extra;
+  const cell = "px-4 py-3 text-right";
 
   return (
     <div className="space-y-6">
-      {/* Szezonos árak táblázat */}
-      {seasonRows.length > 0 && (
-        <div>
-          <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-3">Szezonos árak</p>
-          <div className="rounded-xl border border-[var(--border)] overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-[var(--surface2)] border-b border-[var(--border)]">
-                  <th className="text-left px-4 py-2.5 font-medium text-[var(--text2)] text-xs uppercase tracking-wide">Szezon</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-[var(--text2)] text-xs uppercase tracking-wide">Hétköznap</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-[var(--text2)] text-xs uppercase tracking-wide">Hétvége / péntek</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-[var(--text2)] text-xs uppercase tracking-wide hidden sm:table-cell">Min. éj</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)]">
-                {seasonRows.map(({ season, weekday, weekend }) => {
-                  const wholeHouseOnly = season.wholeHouseOnly;
-                  return (
-                    <tr key={season.id} className="bg-[var(--surface)]">
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-[var(--text)]">{season.name}</p>
-                        {wholeHouseOnly && (
-                          <p className="text-[11px] text-[var(--accent2)] mt-0.5">Csak egész ház</p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right text-[var(--text)]">
-                        {wholeHouseOnly ? (
-                          <span className="text-[var(--text3)] text-xs">–</span>
-                        ) : weekday?.priceOnRequest ? (
-                          <span className="text-[var(--text2)] text-xs">Érdeklődjön</span>
-                        ) : weekday?.pricePerNight != null ? (
-                          <span className="font-semibold">{fmt(weekday.pricePerNight)}</span>
-                        ) : (
-                          <span className="text-[var(--text3)] text-xs">–</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right text-[var(--text)]">
-                        {wholeHouseOnly ? (
-                          <span className="text-[var(--text3)] text-xs">–</span>
-                        ) : weekend?.priceOnRequest ? (
-                          <span className="text-[var(--text2)] text-xs">Érdeklődjön</span>
-                        ) : weekend?.pricePerNight != null ? (
-                          <span className="font-semibold">{fmt(weekend.pricePerNight)}</span>
-                        ) : (
-                          <span className="text-[var(--text3)] text-xs">–</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right text-[var(--text2)] text-xs hidden sm:table-cell">
-                        {season.minStayNights} éj
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-[11px] text-[var(--text3)] mt-2">Az árak {baseCapacity} főre szólnak / éjszaka.</p>
-        </div>
-      )}
-
-      {/* Ünnepnapi árak */}
-      {holidayRows.length > 0 && (
-        <div>
-          <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-3">Ünnepnapok & hosszú hétvégék</p>
-          <div className="rounded-xl border border-[var(--border)] overflow-hidden">
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-[var(--border)]">
-                {holidayRows.map(({ holiday, price }) => (
-                  <tr key={holiday.id} className="bg-[var(--surface)]">
-                    <td className="px-4 py-3 text-[var(--text)]">{holiday.name}</td>
-                    <td className="px-4 py-3 text-right font-semibold text-[var(--text)]">
-                      {holiday.priceOnRequest ? (
-                        <span className="text-[var(--text2)] font-normal text-xs">Érdeklődjön</span>
-                      ) : price?.pricePerNight != null ? (
-                        fmt(price.pricePerNight)
-                      ) : (
-                        <span className="text-[var(--text3)] text-xs">–</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right text-[var(--text2)] text-xs hidden sm:table-cell">
-                      min. {holiday.minStayNights} éj
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Létszám & pótágy */}
       <div>
-        <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-3">Létszám & pótágy</p>
-        <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] divide-y divide-[var(--border)]">
-          <div className="flex justify-between items-center px-4 py-3 text-sm">
-            <span className="text-[var(--text2)]">Alaplétszám (árban benne)</span>
-            <span className="font-semibold text-[var(--text)]">{baseCapacity} fő</span>
-          </div>
-          <div className="flex justify-between items-center px-4 py-3 text-sm">
-            <span className="text-[var(--text2)]">Pótágy / extra fő felár</span>
-            <span className="font-semibold text-[var(--text)]">{fmt(extraFee)} / fő / éj</span>
-          </div>
-          {settings && (
-            <div className="flex justify-between items-center px-4 py-3 text-sm">
-              <span className="text-[var(--text2)]">IFA (idegenforgalmi adó, 18+ év)</span>
-              <span className="font-semibold text-[var(--text)]">{fmt(settings.ifaPerPersonPerNight)} / fő / éj</span>
-            </div>
-          )}
+        <p className="mb-3 text-xs uppercase tracking-widest text-[var(--accent2)]">Árak havonta</p>
+        <div className="overflow-hidden rounded-xl border border-[var(--border)]">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[var(--border)] bg-[var(--surface2)]">
+                <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-[var(--text2)]">Hónap</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-[var(--text2)]">Hétköznap</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-[var(--text2)]">Péntek, szombat</th>
+                <th className="hidden px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-[var(--text2)] sm:table-cell">Min. éj</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border)]">
+              {table.map((t) => (
+                <tr key={t.key} className="bg-[var(--surface)]">
+                  <td className="px-4 py-3 font-medium capitalize text-[var(--text)]">
+                    {t.label} <span className="font-normal text-[var(--text3)]">{t.year}</span>
+                  </td>
+                  {t.wholeOnly ? (
+                    <td colSpan={3} className={`${cell} text-xs text-[var(--accent2)]`}>Csak egész ház foglalható</td>
+                  ) : t.onRequest ? (
+                    <td colSpan={3} className={`${cell} text-xs text-[var(--text2)]`}>Érdeklődjön</td>
+                  ) : (
+                    <>
+                      <td className={`${cell} font-semibold text-[var(--text)]`}>{t.weekday != null ? fmt(t.weekday) : "–"}</td>
+                      <td className={`${cell} font-semibold text-[var(--text)]`}>{t.weekend != null ? fmt(t.weekend) : "–"}</td>
+                      <td className={`${cell} hidden text-xs text-[var(--text2)] sm:table-cell`}>{t.minNights ?? 1} éj</td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+        <p className="mt-2 text-[11px] text-[var(--text3)]">
+          Az árak {base} főre szólnak / éjszaka. Ünnepnapokon eltérő ár lehet – a pontos árat a foglalásnál látja.
+        </p>
       </div>
 
-      {/* Check-in / check-out */}
-      {settings && (
-        <div>
-          <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-3">Érkezés & távozás</p>
-          <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] divide-y divide-[var(--border)]">
-            <div className="flex justify-between items-center px-4 py-3 text-sm">
-              <span className="text-[var(--text2)]">Check-in</span>
-              <span className="font-semibold text-[var(--text)]">{settings.checkInFrom} – {settings.checkInTo}</span>
+      <div>
+        <p className="mb-3 text-xs uppercase tracking-widest text-[var(--accent2)]">Létszám, adó, érkezés</p>
+        <div className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+          <div className="flex items-center justify-between px-4 py-3 text-sm">
+            <span className="text-[var(--text2)]">Az árban benne</span>
+            <span className="font-semibold text-[var(--text)]">{base} fő</span>
+          </div>
+          {extraFee != null && (
+            <div className="flex items-center justify-between px-4 py-3 text-sm">
+              <span className="text-[var(--text2)]">{roomScope === "egesz_haz" ? "10 fő feletti felár" : "Pótágy / további fő"}</span>
+              <span className="font-semibold text-[var(--text)]">{fmt(extraFee)} / fő / éj</span>
             </div>
-            <div className="flex justify-between items-center px-4 py-3 text-sm">
-              <span className="text-[var(--text2)]">Check-out</span>
-              <span className="font-semibold text-[var(--text)]">{settings.checkOutUntil}-ig</span>
-            </div>
-            {settings.depositPercent > 0 && (
-              <div className="flex justify-between items-center px-4 py-3 text-sm">
-                <span className="text-[var(--text2)]">Foglaló</span>
-                <span className="font-semibold text-[var(--text)]">{settings.depositPercent}%</span>
-              </div>
-            )}
+          )}
+          <div className="flex items-center justify-between px-4 py-3 text-sm">
+            <span className="text-[var(--text2)]">Idegenforgalmi adó (helyszínen)</span>
+            <span className="font-semibold text-[var(--text)]">{fmt(settings.ifaPerPersonPerNight)} / fő / éj</span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3 text-sm">
+            <span className="text-[var(--text2)]">Érkezés / távozás</span>
+            <span className="font-semibold text-[var(--text)]">{settings.checkInFrom}-tól / {settings.checkOutUntil}-ig</span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3 text-sm">
+            <span className="text-[var(--text2)]">Előleg</span>
+            <span className="font-semibold text-[var(--text)]">{settings.depositPercent}%</span>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -3,24 +3,28 @@ import { messages } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import clsx from "clsx";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Üzenetek" };
 
 async function markRead(formData: FormData) {
   "use server";
+  await requireAdmin();
   await db.update(messages).set({ read: true }).where(eq(messages.id, Number(formData.get("id"))));
   revalidatePath("/admin/uzenetek");
 }
 
 async function deleteMessage(formData: FormData) {
   "use server";
+  await requireAdmin();
   await db.delete(messages).where(eq(messages.id, Number(formData.get("id"))));
   revalidatePath("/admin/uzenetek");
 }
 
 export default async function AdminUzenetekPage() {
-  const allMessages = await db.select().from(messages).orderBy(desc(messages.createdAt));
+  // A foglalási kérések a Foglalások menüben vannak; itt csak a kapcsolati üzenetek.
+  const allMessages = await db.select().from(messages).where(eq(messages.type, "contact")).orderBy(desc(messages.createdAt));
 
   const unread = allMessages.filter((m) => !m.read).length;
 
@@ -33,7 +37,7 @@ export default async function AdminUzenetekPage() {
             <span className="bg-[var(--accent2-bg)] text-[#8A4A22] text-[12px] font-medium px-2 py-0.5 rounded-full">{unread} új</span>
           )}
         </div>
-        <p className="text-sm text-[var(--text2)] mt-1">Beérkező kapcsolatfelvételek és foglalási igények.</p>
+        <p className="text-sm text-[var(--text2)] mt-1">A kapcsolati űrlapon érkezett üzenetek.</p>
       </div>
 
       <div className="space-y-3">

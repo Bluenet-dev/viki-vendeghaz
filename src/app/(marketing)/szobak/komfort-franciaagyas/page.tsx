@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/db";
-import { rooms, pricingRules, gallery } from "@/db/schema";
+import { rooms, gallery } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
-import { getLowestPriceForScope } from "@/lib/pricing";
+import { lowestPrices } from "@/lib/booking/server";
 import { RoomDetailGallery } from "@/components/room-detail-gallery";
 import { RoomPricingTable } from "@/components/room-pricing-table";
 
@@ -17,9 +17,7 @@ export const metadata: Metadata = {
 
 export default async function KomfortFranciaagyasPage() {
   const [room] = await db.select().from(rooms).where(eq(rooms.slug, "szoba-2"));
-  const allRules = await db.select().from(pricingRules);
-  const pricingData = { seasons: [], rules: allRules, holidays: [], holidayPrices: [], settings: null, roomCapacities: [] };
-  const lowest = getLowestPriceForScope("szoba-2", pricingData);
+  const lowest = (await lowestPrices())["szoba-2"];
 
   const images = await db
     .select({ url: gallery.url, alt: gallery.alt })
@@ -60,8 +58,8 @@ export default async function KomfortFranciaagyasPage() {
                 <span className="text-base font-normal text-[var(--text2)]"> / éj</span>
               </p>
               <p className="text-xs text-[var(--text3)] mt-1">Szezon és vendégszám szerint változik</p>
-              <Link href="/szobak#arak" className="text-xs text-[var(--accent)] hover:underline mt-1 inline-block">
-                Árak megtekintése →
+              <Link href="/foglalas" className="text-xs text-[var(--accent)] hover:underline mt-1 inline-block">
+                Szabad napok és pontos ár →
               </Link>
             </div>
 

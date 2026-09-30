@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { db } from "@/db";
-import { messages, availability, rooms } from "@/db/schema";
+import { messages, bookings, closures, rooms } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { StatsCharts } from "./charts";
 
@@ -17,7 +17,7 @@ const MONTHS_SHORT = ["jan", "feb", "márc", "ápr", "máj", "jún", "júl", "au
 
 function normalizeRoomLabel(roomSlug: string | null): string {
   if (!roomSlug) return "Ismeretlen";
-  if (roomSlug === "egész vendégház") return "Egész ház";
+  if (roomSlug === "egész vendégház" || roomSlug === "egesz_haz") return "Egész ház";
   if (roomSlug.includes(",")) return "Több szoba";
   return ROOM_LABELS[roomSlug] ?? roomSlug;
 }
@@ -154,7 +154,29 @@ export default async function AdminStatisztikakPage({
     (p) => toDateInputValue(p.from) === toDateInputValue(rangeStart) && toDateInputValue(p.to) === toDateInputValue(addDays(rangeEnd, -1))
   )?.key;
 
-  const allMessages = await db.select().from(messages);
+  const [contactRows, bookingRows] = await Promise.all([
+    db.select().from(messages).where(eq(messages.type, "contact")),
+    db.select().from(bookings),
+  ]);
+  // Egységes lista: foglalások (bookings tábla) + kapcsolati üzenetek.
+  const allMessages = [
+    ...contactRows.map((m) => ({
+      type: "contact",
+      createdAt: m.createdAt,
+      roomSlug: null as string | null,
+      checkIn: null as string | null,
+      checkOut: null as string | null,
+      guests: null as number | null,
+    })),
+    ...bookingRows.map((b) => ({
+      type: "booking_request",
+      createdAt: b.createdAt as Date | null,
+      roomSlug: b.roomScope as string | null,
+      checkIn: b.checkIn as string | null,
+      checkOut: b.checkOut as string | null,
+      guests: b.guests as number | null,
+    })),
+  ];
   const inRange = allMessages.filter((m) => {
     if (!m.createdAt) return false;
     const t = new Date(m.createdAt);
@@ -188,7 +210,7 @@ export default async function AdminStatisztikakPage({
   const activeRooms = await db.select().from(rooms).where(eq(rooms.active, true)).orderBy(asc(rooms.sortOrder));
   const rangeStartStr = rangeStart.toISOString().slice(0, 10);
   const rangeEndStr = rangeEnd.toISOString().slice(0, 10);
-  const blockedRows = await db.select().from(availability).where(eq(availability.status, "blocked"));
+  const blockedRows = await db.select({ roomSlug: closures.roomScope, date: closures.date }).from(closures);
   const totalDaysInRange = Math.max(1, Math.round((rangeEnd.getTime() - rangeStart.getTime()) / 86400000));
   const occupancy = activeRooms.map((r) => {
     const blockedCount = blockedRows.filter(

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { db } from "@/db";
-import { rooms, pricingRules, gallery } from "@/db/schema";
+import { rooms, gallery } from "@/db/schema";
 import { asc, eq, inArray } from "drizzle-orm";
-import { getLowestPriceForScope, type RoomScope } from "@/lib/pricing";
+import { lowestPrices } from "@/lib/booking/server";
+import type { Scope } from "@/lib/booking/constants";
 import { ROOM_CATEGORIES } from "@/lib/gallery-categories";
 import { RoomCards } from "./room-cards";
 
@@ -24,8 +25,7 @@ export default async function SzobakPage() {
     .where(eq(rooms.active, true))
     .orderBy(asc(rooms.sortOrder));
 
-  const allRules = await db.select().from(pricingRules);
-  const pricingData = { seasons: [], rules: allRules, holidays: [], holidayPrices: [], settings: null, roomCapacities: [] };
+  const lowest = await lowestPrices();
 
   const galleryRows = await db
     .select({ category: gallery.category, url: gallery.url, alt: gallery.alt })
@@ -42,10 +42,10 @@ export default async function SzobakPage() {
   const priceLabels: Record<string, string | null> = {};
   for (const room of allRooms) {
     if (!room.slug) continue;
-    const lowest = getLowestPriceForScope(room.slug as RoomScope, pricingData);
-    priceLabels[room.slug] = lowest != null ? `-tól ${lowest.toLocaleString("hu-HU")} Ft / éj` : null;
+    const roomLowest = lowest[room.slug as Scope] ?? null;
+    priceLabels[room.slug] = roomLowest != null ? `-tól ${roomLowest.toLocaleString("hu-HU")} Ft / éj` : null;
   }
-  const wholeHouseLowest = getLowestPriceForScope("egesz_haz", pricingData);
+  const wholeHouseLowest = lowest.egesz_haz;
 
   return (
     <div className="pt-16 bg-[var(--bg)] min-h-screen">

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { availability, rooms } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { closures, rooms } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { generateIcs } from "@/lib/ical-export";
 
 export async function GET(
@@ -10,20 +10,14 @@ export async function GET(
 ) {
   const { roomSlug } = await params;
 
-  // Szoba neve
   const [room] = await db.select({ name: rooms.name }).from(rooms).where(eq(rooms.slug, roomSlug));
   if (!room) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Foglalt/blokkolt napok
+  // Foglalt/lezárt napok
   const blocked = await db
-    .select({ date: availability.date, note: availability.note })
-    .from(availability)
-    .where(
-      and(
-        eq(availability.roomSlug, roomSlug),
-        eq(availability.status, "blocked")
-      )
-    );
+    .select({ date: closures.date, note: closures.note })
+    .from(closures)
+    .where(eq(closures.roomScope, roomSlug));
 
   const ics = generateIcs(room.name, blocked);
 

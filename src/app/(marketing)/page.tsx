@@ -2,21 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { db } from "@/db";
-import {
-  rooms,
-  availability,
-  seasons,
-  pricingRules,
-  holidayOverrides,
-  holidayPrices,
-  pricingSettings,
-  roomCapacityPricing,
-  wellnessServices,
-  gallery,
-} from "@/db/schema";
-import { asc, eq, inArray } from "drizzle-orm";
-import { getLowestPriceForScope, type PricingData, type RoomScope } from "@/lib/pricing";
+import { rooms, closures, wellnessServices, gallery } from "@/db/schema";
+import { asc, eq, gte, inArray } from "drizzle-orm";
 import { ROOM_CATEGORIES } from "@/lib/gallery-categories";
+import { addDays, todayBudapest } from "@/lib/booking/dates";
+import { lowestPrices } from "@/lib/booking/server";
+import type { Scope } from "@/lib/booking/constants";
+import { BookingSearch } from "@/components/booking-search";
 
 const ROOM_DETAIL_URLS: Record<string, string> = {
   "szoba-1": "/szobak/komfort-ketagyas",
@@ -64,12 +56,11 @@ export default async function Home() {
     .where(eq(rooms.active, true))
     .orderBy(asc(rooms.sortOrder));
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayBudapest();
   const blockedRows = await db
-    .select({ roomSlug: availability.roomSlug, date: availability.date })
-    .from(availability)
-    .where(eq(availability.status, "blocked"))
-    .then((rows) => rows.filter((r) => r.date >= today));
+    .select({ date: closures.date })
+    .from(closures)
+    .where(gte(closures.date, today));
   const blockedDates = Array.from(new Set(blockedRows.map((r) => r.date)));
 
   // Szoba borítóképek (kategória = szoba slug), a legkisebb sort_order az első.
@@ -83,26 +74,12 @@ export default async function Home() {
     if (!roomCovers[row.category]) roomCovers[row.category] = { url: row.url, alt: row.alt };
   }
 
-  const [allSeasons, allRules, allHolidays, allHolidayPrices, settingsRows, allRoomCapacities, allWellness] = await Promise.all([
-    db.select().from(seasons).where(eq(seasons.active, true)),
-    db.select().from(pricingRules),
-    db.select().from(holidayOverrides).where(eq(holidayOverrides.active, true)),
-    db.select().from(holidayPrices),
-    db.select().from(pricingSettings).limit(1),
-    db.select().from(roomCapacityPricing),
+  const [lowest, allWellness] = await Promise.all([
+    lowestPrices(),
     db.select().from(wellnessServices).orderBy(asc(wellnessServices.sortOrder)),
   ]);
 
-  const pricingData: PricingData = {
-    seasons: allSeasons,
-    rules: allRules,
-    holidays: allHolidays,
-    holidayPrices: allHolidayPrices,
-    settings: settingsRows[0] ?? null,
-    roomCapacities: allRoomCapacities,
-  };
-
-  const wholeHouseLowest = getLowestPriceForScope("egesz_haz", pricingData);
+  const wholeHouseLowest = lowest.egesz_haz;
 
   return (
     <>
@@ -189,6 +166,14 @@ export default async function Home() {
         <MiniCalendar blockedDates={blockedDates} />
       </div>
 
+      {/* ─── Kereső ─── */}
+      <section className="bg-[var(--bg)] px-6 pt-4">
+        <div className="mx-auto max-w-4xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm sm:p-6">
+          <p className="mb-4 text-[15px] font-semibold text-[var(--text)]">Szabad szállás keresése</p>
+          <BookingSearch minDate={addDays(today, 1)} />
+        </div>
+      </section>
+
       {/* ─── Szobák szekció ─── */}
       <section className="bg-[var(--bg)] py-16 px-6">
         <div className="mx-auto max-w-7xl">
@@ -202,7 +187,7 @@ export default async function Home() {
             {allRooms.map((room) => {
               const amenities = room.amenities ? room.amenities.split(",").map((s) => s.trim()).filter(Boolean) : [];
               const isSuperior = room.slug === "superior";
-              const lowest = room.slug ? getLowestPriceForScope(room.slug as RoomScope, pricingData) : null;
+              const roomLowest = room.slug ? lowest[room.slug as Scope] ?? null : null;
               const cover = room.slug ? roomCovers[room.slug] : null;
               return (
                 <div
@@ -229,8 +214,8 @@ export default async function Home() {
                   </div>
                   <div className="p-3.5">
                     <p className="font-semibold text-sm text-[var(--text)]">{room.name}</p>
-                    {lowest != null && (
-                      <p className="text-xs text-[var(--accent)] mt-1">-tól {lowest.toLocaleString("hu")} Ft / éj</p>
+                    {roomLowest != null && (
+                      <p className="text-xs text-[var(--accent)] mt-1">-tól {roomLowest.toLocaleString("hu")} Ft / éj</p>
                     )}
                     {amenities.length > 0 && (
                       <ul className="mt-3 flex flex-wrap gap-1.5">

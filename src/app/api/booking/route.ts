@@ -1,76 +1,83 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { messages, rooms } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { sendBookingNotification } from "@/lib/email";
+import { isMeal, isScope } from "@/lib/booking/constants";
+import { isIsoDate, todayBudapest } from "@/lib/booking/dates";
+import { computeQuote } from "@/lib/booking/quote";
+import { createBooking, getBooking, getSettings, loadBookingData } from "@/lib/booking/server";
+import { OWNER_EMAIL, sendViaResend, siteUrl } from "@/lib/mail/send";
+import { guestReceivedMail, ownerNewRequestMail } from "@/lib/mail/templates";
 
+// Weboldalas foglalási kérés. Az árat és az elérhetőséget a szerver számolja
+// újra – a kliens csak a választást küldi, az általa látott ár nem mérvadó.
+// A napok itt NEM zárnak le; a tulajdonos visszaigazolásakor zárulnak.
 export async function POST(req: NextRequest) {
+  let body: Record<string, unknown>;
   try {
-    const body = await req.json();
-    const { name, email, phone, roomSlug, roomLabel, checkIn, checkOut, guests, message, totalPrice, felpanzio, felpanzioFo } = body;
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Hibás kérés." }, { status: 400 });
+  }
 
-    if (!name || !email || !roomSlug || !checkIn || !checkOut || !guests) {
-      return NextResponse.json({ error: "Hiányzó kötelező mezők." }, { status: 400 });
-    }
+  // Honeypot: ember nem tölti ki.
+  if (typeof body.website === "string" && body.website.trim()) return NextResponse.json({ ok: true });
 
-    const FELPANZIO_LABELS: Record<string, string> = {
-      reggeli: "Reggeli",
-      vacsora: "Vacsora",
-      mindketto: "Félpanzió (reggeli + vacsora)",
-    };
-    const felpanzioLabel = felpanzio ? (FELPANZIO_LABELS[felpanzio] ?? felpanzio) : null;
-    const felpanzioNote = felpanzioLabel
-      ? `Étkezés: ${felpanzioLabel}, ${felpanzioFo ?? 1} fő`
-      : null;
-    const fullMessage = [message || null, felpanzioNote].filter(Boolean).join("\n\n") || null;
+  const name = String(body.name ?? "").trim().slice(0, 120);
+  const email = String(body.email ?? "").trim().slice(0, 200);
+  const phone = String(body.phone ?? "").trim().slice(0, 40);
+  const message = String(body.message ?? "").trim().slice(0, 2000);
+  const { scope, checkIn, checkOut, meal } = body;
+  const guests = Number(body.guests);
+  const mealGuests = Number(body.mealGuests);
 
-    const totalPriceNum =
-      totalPrice != null && Number.isFinite(Number(totalPrice)) ? Math.round(Number(totalPrice)) : null;
+  if (!name) return NextResponse.json({ error: "Kérjük, adja meg a nevét." }, { status: 400 });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: "Kérjük, adjon meg érvényes e-mail címet." }, { status: 400 });
+  if (!isScope(scope) || !isIsoDate(checkIn) || !isIsoDate(checkOut) || !Number.isInteger(guests) || guests < 1) {
+    return NextResponse.json({ error: "Hiányos foglalási adatok. Kérjük, kezdje újra a keresést." }, { status: 400 });
+  }
+  if (checkIn <= todayBudapest()) return NextResponse.json({ error: "Az érkezés legkorábban holnap lehet." }, { status: 400 });
 
-    // Olvasható tárgy: a form által küldött roomLabel, vagy fallback a szoba-táblából / slugból
-    let subject = typeof roomLabel === "string" && roomLabel.trim() ? roomLabel.trim() : null;
-    if (!subject) {
-      const [room] = await db.select({ name: rooms.name }).from(rooms).where(eq(rooms.slug, roomSlug));
-      subject = room?.name ?? roomSlug;
-    }
+  const m = isMeal(meal) ? meal : "nincs";
+  const data = await loadBookingData(checkIn, checkOut);
+  const quote = computeQuote({ scope, checkIn, checkOut, guests, meal: m, mealGuests: Number.isFinite(mealGuests) ? mealGuests : guests }, data);
 
-    // DB mentés
-    await db.insert(messages).values({
-      type: "booking_request",
+  if (!quote.ok) {
+    const closed = quote.problems.some((p) => p.kind === "closed");
+    return NextResponse.json(
+      {
+        error: closed
+          ? "Sajnos ez az időpont közben betelt. Kérjük, válasszon másik időpontot."
+          : "Ez az időszak így nem foglalható. Kérjük, kezdje újra a keresést.",
+        code: closed ? "busy" : "invalid",
+      },
+      { status: 409 },
+    );
+  }
+
+  const res = await createBooking(
+    {
       name,
       email,
       phone: phone || null,
-      message: fullMessage,
-      roomSlug,
-      roomLabel: subject,
+      scope,
       checkIn,
       checkOut,
-      guests: Number(guests),
-      totalPrice: totalPriceNum,
-      felpanzio: felpanzio || null,
-      felpanzioFo: felpanzio ? Number(felpanzioFo ?? 1) : null,
-    });
+      guests,
+      meal: m,
+      mealGuests: m === "nincs" ? null : quote.mealGuests,
+      total: quote.total,
+      source: "weboldal",
+      status: "valaszra_var",
+      guestMessage: message || null,
+    },
+    false,
+  );
+  if (!res.ok) return NextResponse.json({ error: "Nem sikerült elmenteni. Kérjük, hívjon minket." }, { status: 500 });
 
-    // Email küldés (ha van Resend API key)
-    if (process.env.RESEND_API_KEY) {
-      await sendBookingNotification({
-        name,
-        email,
-        phone,
-        roomName: subject,
-        checkIn,
-        checkOut,
-        guests: Number(guests),
-        message: message || undefined,
-        totalPrice: totalPriceNum,
-        felpanzioLabel: felpanzioLabel ?? undefined,
-        felpanzioFo: felpanzio ? Number(felpanzioFo ?? 1) : undefined,
-      });
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (e) {
-    console.error("Booking API error:", e);
-    return NextResponse.json({ error: "Szerverhiba." }, { status: 500 });
+  // Levelek: hibájuk nem akaszthatja meg a kérést.
+  const [b, s] = await Promise.all([getBooking(res.id), getSettings()]);
+  if (b) {
+    const owner = ownerNewRequestMail(b, s, `${siteUrl()}/admin/foglalasok/${b.id}`);
+    await Promise.all([sendViaResend({ ...owner, to: OWNER_EMAIL }), sendViaResend(guestReceivedMail(b, s))]);
   }
+
+  return NextResponse.json({ ok: true });
 }

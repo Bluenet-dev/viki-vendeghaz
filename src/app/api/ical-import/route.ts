@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { availability, icalSources } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { closures, icalSources } from "@/db/schema";
+import { and, eq, isNull } from "drizzle-orm";
 import { fetchAndParseIcal } from "@/lib/ical-import";
 
-// Admin jelszóval védett endpoint – admin gombból hívható
+// Admin jelszóval védett endpoint. Az iCal-szinkron jelenleg szándékosan inaktív
+// (nincs rá gomb az adminban); ha aktiválják, a closures táblába ír.
 export async function POST(req: NextRequest) {
   const { password } = await req.json().catch(() => ({}));
   if (password !== process.env.ADMIN_PASSWORD) {
@@ -19,31 +20,22 @@ export async function POST(req: NextRequest) {
   const results: string[] = [];
 
   for (const source of sources) {
+    const note = `iCal: ${source.name}`;
     try {
       const events = await fetchAndParseIcal(source.url);
 
-      // Töröljük a régi importált bejegyzéseket ehhez a szobához/forráshoz
+      // A korábban ebből a forrásból importált (foglaláshoz nem kötött) napok törlése
       await db
-        .delete(availability)
-        .where(
-          and(
-            eq(availability.roomSlug, source.roomSlug),
-            eq(availability.source, source.name)
-          )
-        );
+        .delete(closures)
+        .where(and(eq(closures.roomScope, source.roomSlug), eq(closures.note, note), isNull(closures.bookingId)));
 
-      // Írjuk be az újakat
       for (const event of events) {
-        await db.insert(availability).values({
-          roomSlug: source.roomSlug,
-          date: event.date,
-          status: "blocked",
-          source: source.name,
-          note: event.summary,
-        }).onConflictDoNothing();
+        await db
+          .insert(closures)
+          .values({ roomScope: source.roomSlug, date: event.date, note })
+          .onConflictDoNothing();
       }
 
-      // lastFetched frissítés
       await db
         .update(icalSources)
         .set({ lastFetched: new Date() })
