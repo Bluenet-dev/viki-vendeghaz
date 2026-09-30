@@ -250,13 +250,15 @@ export function CalendarGrid({
           {blocks.map((b) => (
             <tbody key={b.scope}>
               <tr className="border-t border-[var(--border)] bg-[var(--surface2)]">
+                {/* A cím a rögzített bal oszlopban van, így vízszintes görgetésnél is látszik
+                    (egy teljes szélességű cella a görgetéssel együtt kicsúszna a képből). */}
                 <th
                   scope="rowgroup"
-                  colSpan={days.length + 1}
-                  className="sticky left-0 px-3 py-2 text-left text-[14px] font-semibold text-[var(--text)]"
+                  className="sticky left-0 z-10 whitespace-nowrap border-r-[0.5px] border-[var(--border)] bg-[var(--surface2)] px-3 py-2 text-left text-[14px] font-semibold text-[var(--text)]"
                 >
                   {b.title}
                 </th>
+                <td colSpan={days.length} aria-hidden="true" />
               </tr>
               {b.scope === "egesz_haz" ? (
                 <>
