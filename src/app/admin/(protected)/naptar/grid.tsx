@@ -97,10 +97,10 @@ export function CalendarGrid({
           const key = `${room}|${d}`;
           const past = d < today;
           const c = closed[key];
-          // "Csak egész ház" napon a szabad szoba kötőjelet kap (szobánként nem foglalható,
+          // "Csak egész ház" napon a szabad szoba üres szürke cella (szobánként nem foglalható,
           // lezárni az egész ház cellájával lehet); a lezárt szoba viszont mindig lakatot mutat.
           if (houseOnly(d) && !c) {
-            return <td key={d} className={`${cellBase} bg-[var(--surface2)] text-[var(--text3)]`}>–</td>;
+            return <td key={d} title="Csak egész ház" className={`${cellBase} bg-[var(--surface2)]`} />;
           }
           const title = c?.bookingId ? `${c.name ?? "Foglalás"} – megnyitás` : c ? "Lezárva – kattintásra feloldja" : "Szabad – kattintásra lezárja";
           return (
@@ -132,7 +132,7 @@ export function CalendarGrid({
           const data = cells[`${scope}|${d}`];
           const value = field === "price" ? data?.price : data?.extra;
           if (scope !== "egesz_haz" && houseOnly(d)) {
-            return <td key={d} className={`${cellBase} bg-[var(--surface2)] text-[var(--text3)]`}>–</td>;
+            return <td key={d} title="Csak egész ház" className={`${cellBase} bg-[var(--surface2)]`} />;
           }
           if (editing === key) {
             return (
