@@ -31,7 +31,7 @@ export function BookingSearch({
     "h-12 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[16px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
 
   return (
-    <form action="/foglalas" method="get" className="grid gap-3 sm:grid-cols-[1fr_1fr_130px_auto] sm:items-end">
+    <form action="/foglalas" method="get" className="grid grid-cols-2 items-end gap-3 sm:grid-cols-[1fr_1fr_130px_auto]">
       <label className="block">
         <span className={labelCls}>Érkezés</span>
         <input

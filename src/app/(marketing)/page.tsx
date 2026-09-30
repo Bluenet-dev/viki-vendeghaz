@@ -113,6 +113,13 @@ export default async function Home() {
               Szobák & árak
             </Link>
           </div>
+
+          {/* ─── Kereső – a hero része, első képernyőn, a videó előtt ─── */}
+          <div className="mt-6 rounded-2xl bg-[var(--surface)] p-4 text-left shadow-lg sm:mt-8 sm:p-6">
+            <p className="mb-3 text-[15px] font-semibold text-[var(--text)] sm:mb-4">Szabad szállás keresése</p>
+            <BookingSearch minDate={addDays(today, 1)} />
+          </div>
+
           <div className="mt-10 flex items-center justify-center gap-10">
             <div>
               <p className="text-lg font-bold text-white">9,9</p>
@@ -166,13 +173,6 @@ export default async function Home() {
         <MiniCalendar blockedDates={blockedDates} />
       </div>
 
-      {/* ─── Kereső ─── */}
-      <section className="bg-[var(--bg)] px-6 pt-4">
-        <div className="mx-auto max-w-4xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm sm:p-6">
-          <p className="mb-4 text-[15px] font-semibold text-[var(--text)]">Szabad szállás keresése</p>
-          <BookingSearch minDate={addDays(today, 1)} />
-        </div>
-      </section>
 
       {/* ─── Szobák szekció ─── */}
       <section className="bg-[var(--bg)] py-16 px-6">

@@ -97,7 +97,9 @@ export function CalendarGrid({
           const key = `${room}|${d}`;
           const past = d < today;
           const c = closed[key];
-          if (houseOnly(d)) {
+          // "Csak egész ház" napon a szabad szoba kötőjelet kap (szobánként nem foglalható,
+          // lezárni az egész ház cellájával lehet); a lezárt szoba viszont mindig lakatot mutat.
+          if (houseOnly(d) && !c) {
             return <td key={d} className={`${cellBase} bg-[var(--surface2)] text-[var(--text3)]`}>–</td>;
           }
           const title = c?.bookingId ? `${c.name ?? "Foglalás"} – megnyitás` : c ? "Lezárva – kattintásra feloldja" : "Szabad – kattintásra lezárja";
