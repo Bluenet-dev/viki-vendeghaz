@@ -55,14 +55,20 @@ async function sendConfirmation(id: number): Promise<string | undefined> {
 export async function confirmBookingAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
   const id = Number(formData.get("id"));
-  const res = await confirmBooking(id);
+  let res: Awaited<ReturnType<typeof confirmBooking>>;
+  try {
+    res = await confirmBooking(id);
+  } catch (e) {
+    console.error("Visszaigazolási hiba:", e);
+    return { error: "Váratlan hiba történt, a foglalás nem változott. Kérjük, próbálja újra." };
+  }
   if (!res.ok) return { error: res.error === "busy" ? busyMessage(res.busy) : res.error };
   const mailError = await sendConfirmation(id);
   revalidateAll();
-  return {
-    ok: true,
-    warning: mailError ? `A foglalást visszaigazoltuk, a napok lezárultak. ${mailError}` : undefined,
-  };
+  // Ha a levél nem ment el, a részletek oldalon állandó figyelmeztetés és
+  // újraküldés gomb várja (az Áttekintés listájából a sor ilyenkor eltűnik).
+  if (mailError) redirect(`/admin/foglalasok/${id}`);
+  return { ok: true };
 }
 
 export async function resendConfirmationAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -120,25 +126,31 @@ export async function createBookingAction(_prev: ActionState, formData: FormData
   // Az OTA-k (Booking, Szállás.hu) maguk szedik a díjat – ott nincs előlegre várás.
   const status: Status = source === "booking" || source === "szallas_hu" ? "visszaigazolt" : "elfogadva";
 
-  const res = await createBooking(
-    {
-      name,
-      email: str(formData, "email") || null,
-      phone: str(formData, "phone") || null,
-      scope,
-      checkIn,
-      checkOut,
-      guests,
-      meal: meal as Meal,
-      mealGuests,
-      total,
-      depositAmount: status === "elfogadva" && total != null ? Math.round((total * s.depositPercent) / 100) : null,
-      source,
-      status,
-      note: str(formData, "note") || null,
-    },
-    true,
-  );
+  let res: Awaited<ReturnType<typeof createBooking>>;
+  try {
+    res = await createBooking(
+      {
+        name,
+        email: str(formData, "email") || null,
+        phone: str(formData, "phone") || null,
+        scope,
+        checkIn,
+        checkOut,
+        guests,
+        meal: meal as Meal,
+        mealGuests,
+        total,
+        depositAmount: status === "elfogadva" && total != null ? Math.round((total * s.depositPercent) / 100) : null,
+        source,
+        status,
+        note: str(formData, "note") || null,
+      },
+      true,
+    );
+  } catch (e) {
+    console.error("Foglalás mentési hiba:", e);
+    return { error: "Váratlan hiba történt, a foglalás nem mentődött. Kérjük, próbálja újra." };
+  }
   if (!res.ok) return { error: res.error === "busy" ? busyMessage(res.busy) : res.error };
   revalidateAll();
   redirect(`/admin/foglalasok/${res.id}`);

@@ -58,7 +58,18 @@ export default async function NaptarPage({ searchParams }: { searchParams: Promi
     if (lastRange && addDays(lastRange.to, 1) === d) lastRange.to = d;
     else ranges.push({ from: d, to: d });
   }
-  const visibleRanges = ranges.filter((r) => r.to >= first && r.from <= last);
+  const visible = ranges.filter((r) => r.to >= first && r.from <= last);
+  // A hétvégi szabály (péntek + szombat éj) minden héten ismétlődik – ezeket egy
+  // sorba vonjuk össze, a hosszabb időszakok (nyár, ünnepek) külön sort kapnak.
+  const isWeekendOnly = (r: { from: string; to: string }) => {
+    for (let d = r.from; d <= r.to; d = addDays(d, 1)) {
+      const w = new Date(`${d}T12:00:00Z`).getUTCDay();
+      if (w !== 5 && w !== 6) return false;
+    }
+    return true;
+  };
+  const hasWeekendRule = visible.some(isWeekendOnly);
+  const visibleRanges = visible.filter((r) => !isWeekendOnly(r));
 
   return (
     <div>
@@ -80,6 +91,11 @@ export default async function NaptarPage({ searchParams }: { searchParams: Promi
         ) : null}
       </div>
 
+      {hasWeekendRule && (
+        <div className="mb-3 rounded-md border border-[#C5D5C5] bg-[var(--accent-bg)] px-4 py-2 text-[14px] text-[#3A5A3C]">
+          Csak egész ház: péntek és szombat éjszaka
+        </div>
+      )}
       {visibleRanges.map((r) => (
         <div key={r.from} className="mb-3 rounded-md border border-[#C5D5C5] bg-[var(--accent-bg)] px-4 py-2 text-[14px] text-[#3A5A3C]">
           Csak egész ház: {fmtShort(r.from).replace(/\.$/, "")} – {fmtShort(r.to).replace(/\.$/, "")}

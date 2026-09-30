@@ -3,7 +3,7 @@
 // és a lezárásai egyetlen SQL utasításban jönnek létre, így két egyidejű kérés
 // sem tud ugyanarra a napra bekerülni.
 
-import { and, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { bookings, closures, dayRates, settings } from "@/db/schema";
 import { ALL_SCOPES, ROOM_SCOPES, scopeRooms, targetRooms, type Meal, type Scope, type Source, type Status, type Target } from "./constants";
@@ -119,16 +119,14 @@ async function busyDates(scope: Target, checkIn: string, checkOut: string, ignor
   return closedNights(scope, nights, closed);
 }
 
-function closureArrays(scope: Target, checkIn: string, checkOut: string) {
-  const scopes: string[] = [];
-  const dates: string[] = [];
+// A lezárandó (szoba, nap) párok EGYETLEN JSON-paraméterként – a drizzle `sql`
+// sablon a JS-tömböket rekordlistává bontaná, ezért tömbparaméter itt nem használható.
+function closurePairsJson(scope: Target, checkIn: string, checkOut: string): string {
+  const rows: { scope: string; d: string }[] = [];
   for (const d of nightsOf(checkIn, checkOut)) {
-    for (const room of targetRooms(scope)) {
-      scopes.push(room);
-      dates.push(d);
-    }
+    for (const room of targetRooms(scope)) rows.push({ scope: room, d });
   }
-  return { scopes, dates };
+  return JSON.stringify(rows);
 }
 
 export type MutationResult = { ok: true; id: number } | { ok: false; error: string; busy?: string[] };
@@ -180,7 +178,7 @@ export async function createBooking(b: NewBooking, closeDays: boolean): Promise<
   const busy = await busyDates(b.scope, b.checkIn, b.checkOut);
   if (busy.length) return { ok: false, error: "busy", busy };
 
-  const { scopes, dates } = closureArrays(b.scope, b.checkIn, b.checkOut);
+  const rows = closurePairsJson(b.scope, b.checkIn, b.checkOut);
   const acceptedAt = b.status === "valaszra_var" ? null : new Date().toISOString();
   try {
     const res = await db.execute<{ id: number }>(sql`
@@ -194,7 +192,7 @@ export async function createBooking(b: NewBooking, closeDays: boolean): Promise<
       ), nc AS (
         INSERT INTO closures (room_scope, date, booking_id)
         SELECT c.scope, c.d, nb.id FROM nb
-        CROSS JOIN unnest(${scopes}::text[], ${dates}::date[]) AS c(scope, d)
+        CROSS JOIN jsonb_to_recordset(${rows}::jsonb) AS c(scope text, d date)
       )
       SELECT id FROM nb
     `);
@@ -224,7 +222,7 @@ export async function confirmBooking(id: number): Promise<MutationResult> {
 
   const s = await getSettings();
   const deposit = b.depositAmount ?? (b.total != null ? Math.round((b.total * s.depositPercent) / 100) : null);
-  const { scopes, dates } = closureArrays(scope, b.checkIn, b.checkOut);
+  const rows = closurePairsJson(scope, b.checkIn, b.checkOut);
   try {
     // Ütközésnél az egyedi index hibát dob, és az állapotváltás is visszagördül.
     await db.execute(sql`
@@ -235,7 +233,7 @@ export async function confirmBooking(id: number): Promise<MutationResult> {
       )
       INSERT INTO closures (room_scope, date, booking_id)
       SELECT c.scope, c.d, ub.id FROM ub
-      CROSS JOIN unnest(${scopes}::text[], ${dates}::date[]) AS c(scope, d)
+      CROSS JOIN jsonb_to_recordset(${rows}::jsonb) AS c(scope text, d date)
     `);
     return { ok: true, id };
   } catch (e) {
@@ -322,7 +320,11 @@ export async function bulkFill(f: BulkFill): Promise<{ days: number; skippedBook
     for (let i = 0; i < rows.length; i += 500) await db.insert(closures).values(rows.slice(i, i + 500)).onConflictDoNothing();
   } else if (f.closure === "open" && rooms.length) {
     const range = and(inArray(closures.roomScope, rooms), gte(closures.date, f.from), lte(closures.date, f.to));
-    skippedBooked = await db.$count(closures, and(range, sql`${closures.bookingId} is not null`));
+    const [{ n }] = await db
+      .select({ n: sql<number>`count(distinct ${closures.date})::int` })
+      .from(closures)
+      .where(and(range, isNotNull(closures.bookingId)));
+    skippedBooked = Number(n);
     await db.delete(closures).where(and(range, isNull(closures.bookingId)));
   }
   return { days: days.length, skippedBooked };

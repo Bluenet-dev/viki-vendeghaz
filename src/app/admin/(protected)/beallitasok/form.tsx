@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { gmailTestAction, saveSettingsAction } from "./actions";
+import { submitKeepingValues } from "../submit-keep";
 
 type Values = Record<string, string | number>;
 
@@ -32,7 +33,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export function SettingsForm({ values }: { values: Values }) {
   const [state, action, pending] = useActionState(saveSettingsAction, {});
   return (
-    <form action={action} className="space-y-5">
+    <form onSubmit={submitKeepingValues(action)} className="space-y-5">
       <Section title="Árak">
         <Field name="breakfastPrice" label="Reggeli" suffix="Ft / fő / nap" values={values} />
         <Field name="dinnerPrice" label="Vacsora" suffix="Ft / fő / nap" values={values} />

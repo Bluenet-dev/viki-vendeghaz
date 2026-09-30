@@ -53,6 +53,12 @@ export default async function FoglalasPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
+      {(b.status === "elfogadva" || b.status === "visszaigazolt") && b.email && !b.confirmationSentAt && (
+        <div className="mb-4 rounded-md border border-[#F0D98A] bg-[#FFF6DB] px-4 py-3 text-[14px] text-[#7A5B00]">
+          A visszaigazoló levél még nem ment el a vendégnek. Ellenőrizze a Gmail-kapcsolatot a Beállításokban, majd küldje újra lent.
+        </div>
+      )}
+
       {/* Teendők */}
       {b.status !== "lemondott" && (
         <div className="mb-6 flex flex-wrap items-start gap-3 rounded-[10px] border-[0.5px] border-[var(--border)] bg-[var(--surface)] p-4">

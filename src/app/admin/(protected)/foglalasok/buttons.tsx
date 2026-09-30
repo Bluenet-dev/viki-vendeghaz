@@ -21,6 +21,7 @@ function Feedback({ state }: { state: ActionState }) {
 
 export function ConfirmButton({ id, compact }: { id: number; compact?: boolean }) {
   const [state, action, pending] = useActionState(confirmBookingAction, {});
+
   return (
     <form action={action}>
       <input type="hidden" name="id" value={id} />

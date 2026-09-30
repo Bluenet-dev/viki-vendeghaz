@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { MEALS, MEAL_LABEL, ROOM_SCOPES, SCOPE_LABEL, SOURCES, SOURCE_LABEL, normalizeTarget, targetMaxGuests, targetRooms, type RoomScope } from "@/lib/booking/constants";
 import { createBookingAction } from "../actions";
+import { submitKeepingValues } from "../../submit-keep";
 
 const input =
   "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[15px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
@@ -24,7 +25,7 @@ export function NewBookingForm({ defaults }: { defaults: { checkIn?: string; sco
   const [meal, setMeal] = useState("nincs");
 
   return (
-    <form action={action} className="space-y-5 rounded-[10px] border-[0.5px] border-[var(--border)] bg-[var(--surface)] p-5">
+    <form onSubmit={submitKeepingValues(action)} className="space-y-5 rounded-[10px] border-[0.5px] border-[var(--border)] bg-[var(--surface)] p-5">
       <div>
         <label className={label} htmlFor="name">Vendég neve *</label>
         <input id="name" name="name" required className={input} autoFocus />

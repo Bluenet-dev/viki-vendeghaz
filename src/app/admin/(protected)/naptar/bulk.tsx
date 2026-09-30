@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { ALL_SCOPES, SCOPE_LABEL } from "@/lib/booking/constants";
 import { bulkFillAction } from "./actions";
+import { submitKeepingValues } from "../submit-keep";
 
 const input =
   "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[15px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
@@ -27,7 +28,7 @@ export function BulkFillButton({ defaultFrom, defaultTo }: { defaultFrom: string
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/30 p-4 pt-16" onClick={() => setOpen(false)}>
       <form
-        action={action}
+        onSubmit={submitKeepingValues(action)}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-lg space-y-4 rounded-[12px] bg-[var(--surface)] p-6 shadow-xl"
       >
