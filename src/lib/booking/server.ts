@@ -6,7 +6,7 @@
 import { and, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { bookings, closures, dayRates, settings } from "@/db/schema";
-import { ALL_SCOPES, ROOM_SCOPES, scopeRooms, type Meal, type Scope, type Source, type Status } from "./constants";
+import { ALL_SCOPES, ROOM_SCOPES, scopeRooms, targetRooms, type Meal, type Scope, type Source, type Status, type Target } from "./constants";
 import { addDays, nightsOf, todayBudapest } from "./dates";
 import { closedNights, computeQuote, rateKey, searchOptions, type BookingData, type Quote, type RateRow } from "./quote";
 
@@ -48,7 +48,7 @@ export async function loadBookingData(from: string, to: string, s?: Settings): P
 }
 
 export async function quoteFor(input: {
-  scope: Scope;
+  scope: Target;
   checkIn: string;
   checkOut: string;
   guests: number;
@@ -108,22 +108,22 @@ function isUniqueViolation(e: unknown): boolean {
   return err?.code === "23505" || err?.cause?.code === "23505";
 }
 
-async function busyDates(scope: Scope, checkIn: string, checkOut: string, ignoreBookingId?: number): Promise<string[]> {
+async function busyDates(scope: Target, checkIn: string, checkOut: string, ignoreBookingId?: number): Promise<string[]> {
   const nights = nightsOf(checkIn, checkOut);
   const rows = await db
     .select({ roomScope: closures.roomScope, date: closures.date, bookingId: closures.bookingId })
     .from(closures)
-    .where(and(inArray(closures.roomScope, scopeRooms(scope)), gte(closures.date, checkIn), lte(closures.date, nights[nights.length - 1])));
+    .where(and(inArray(closures.roomScope, targetRooms(scope)), gte(closures.date, checkIn), lte(closures.date, nights[nights.length - 1])));
   const closed = new Map<string, number | null>();
   for (const r of rows) if (ignoreBookingId == null || r.bookingId !== ignoreBookingId) closed.set(rateKey(r.roomScope, r.date), r.bookingId);
   return closedNights(scope, nights, closed);
 }
 
-function closureArrays(scope: Scope, checkIn: string, checkOut: string) {
+function closureArrays(scope: Target, checkIn: string, checkOut: string) {
   const scopes: string[] = [];
   const dates: string[] = [];
   for (const d of nightsOf(checkIn, checkOut)) {
-    for (const room of scopeRooms(scope)) {
+    for (const room of targetRooms(scope)) {
       scopes.push(room);
       dates.push(d);
     }
@@ -137,7 +137,7 @@ export interface NewBooking {
   name: string;
   email?: string | null;
   phone?: string | null;
-  scope: Scope;
+  scope: Target; // szoba, kombináció ("szoba-1,superior") vagy egész ház
   checkIn: string;
   checkOut: string;
   guests: number;
@@ -217,7 +217,7 @@ export async function confirmBooking(id: number): Promise<MutationResult> {
   const b = await getBooking(id);
   if (!b) return { ok: false, error: "A foglalás nem található." };
   if (b.status !== "valaszra_var") return { ok: false, error: "Ez a foglalás már nem vár válaszra." };
-  const scope = b.roomScope as Scope;
+  const scope: Target = b.roomScope;
 
   const busy = await busyDates(scope, b.checkIn, b.checkOut, id);
   if (busy.length) return { ok: false, error: "busy", busy };

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { isIsoDate } from "@/lib/booking/dates";
-import { isScope } from "@/lib/booking/constants";
+import { normalizeTarget } from "@/lib/booking/constants";
 import { NewBookingForm } from "./form";
 
 export const metadata = { title: "Új foglalás" };
@@ -20,7 +20,7 @@ export default async function UjFoglalasPage({
       <NewBookingForm
         defaults={{
           checkIn: isIsoDate(sp.datum) ? sp.datum : undefined,
-          scope: isScope(sp.szoba) ? sp.szoba : undefined,
+          scope: normalizeTarget(sp.szoba) ?? undefined,
         }}
       />
     </div>

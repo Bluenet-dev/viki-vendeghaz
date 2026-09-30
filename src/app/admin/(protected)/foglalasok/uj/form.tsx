@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { ALL_SCOPES, MAX_GUESTS, MEALS, MEAL_LABEL, SCOPE_LABEL, SOURCES, SOURCE_LABEL, type Scope } from "@/lib/booking/constants";
+import { MEALS, MEAL_LABEL, ROOM_SCOPES, SCOPE_LABEL, SOURCES, SOURCE_LABEL, normalizeTarget, targetMaxGuests, targetRooms, type RoomScope } from "@/lib/booking/constants";
 import { createBookingAction } from "../actions";
 
 const input =
@@ -10,7 +10,17 @@ const label = "mb-1 block text-[13px] font-medium text-[var(--text2)]";
 
 export function NewBookingForm({ defaults }: { defaults: { checkIn?: string; scope?: string } }) {
   const [state, action, pending] = useActionState(createBookingAction, {});
-  const [scope, setScope] = useState<Scope>((defaults.scope as Scope) ?? "szoba-1");
+  // Kijelölés: egy vagy több szoba, vagy az egész ház.
+  const initial = normalizeTarget(defaults.scope) ?? "szoba-1";
+  const [wholeHouse, setWholeHouse] = useState(initial === "egesz_haz");
+  const [rooms, setRooms] = useState<RoomScope[]>(initial === "egesz_haz" ? [] : targetRooms(initial));
+  const target = wholeHouse ? "egesz_haz" : normalizeTarget(rooms.join(","));
+  const max = target ? targetMaxGuests(target) : 0;
+
+  function toggleRoom(r: RoomScope) {
+    setWholeHouse(false);
+    setRooms((cur) => (cur.includes(r) ? cur.filter((x) => x !== r) : [...cur, r]));
+  }
   const [meal, setMeal] = useState("nincs");
 
   return (
@@ -32,17 +42,37 @@ export function NewBookingForm({ defaults }: { defaults: { checkIn?: string; sco
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
+        <fieldset>
+          <legend className={label}>Szoba * (több is választható)</legend>
+          <input type="hidden" name="scope" value={target ?? ""} />
+          <div className="flex flex-wrap gap-2">
+            {ROOM_SCOPES.map((r) => {
+              const on = !wholeHouse && rooms.includes(r);
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => toggleRoom(r)}
+                  className={`rounded-md border px-3 py-2 text-[14px] ${on ? "border-[var(--accent)] bg-[var(--accent-bg)] font-semibold text-[var(--text)]" : "border-[var(--border)] text-[var(--text2)] hover:border-[var(--text3)]"}`}
+                >
+                  {on ? "✓ " : ""}{SCOPE_LABEL[r]}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              aria-pressed={wholeHouse}
+              onClick={() => { setWholeHouse(true); setRooms([]); }}
+              className={`rounded-md border px-3 py-2 text-[14px] ${wholeHouse ? "border-[var(--accent)] bg-[var(--accent-bg)] font-semibold text-[var(--text)]" : "border-[var(--border)] text-[var(--text2)] hover:border-[var(--text3)]"}`}
+            >
+              {wholeHouse ? "✓ " : ""}Egész ház
+            </button>
+          </div>
+        </fieldset>
         <div>
-          <label className={label} htmlFor="scope">Szoba *</label>
-          <select id="scope" name="scope" value={scope} onChange={(e) => setScope(e.target.value as Scope)} className={input}>
-            {ALL_SCOPES.map((s) => (
-              <option key={s} value={s}>{SCOPE_LABEL[s]}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={label} htmlFor="guests">Létszám * (legfeljebb {MAX_GUESTS[scope]} fő)</label>
-          <input id="guests" name="guests" type="number" min={1} max={MAX_GUESTS[scope]} required defaultValue={2} className={input} />
+          <label className={label} htmlFor="guests">Létszám *{max ? ` (legfeljebb ${max} fő)` : ""}</label>
+          <input id="guests" name="guests" type="number" min={1} max={max || undefined} required defaultValue={2} className={input} />
         </div>
       </div>
 

@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { bookings } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-auth";
-import { isMeal, isScope, isSource, MAX_GUESTS, type Meal, type Status } from "@/lib/booking/constants";
+import { isMeal, isSource, normalizeTarget, targetMaxGuests, type Meal, type Status } from "@/lib/booking/constants";
 import { fmtShort, isIsoDate } from "@/lib/booking/dates";
 import {
   cancelBooking,
@@ -93,7 +93,7 @@ export async function createBookingAction(_prev: ActionState, formData: FormData
   const name = str(formData, "name");
   const checkIn = str(formData, "checkIn");
   const checkOut = str(formData, "checkOut");
-  const scope = str(formData, "scope");
+  const scope = normalizeTarget(str(formData, "scope"));
   const guests = Number(str(formData, "guests"));
   const source = str(formData, "source");
   const meal = str(formData, "meal") || "nincs";
@@ -102,9 +102,9 @@ export async function createBookingAction(_prev: ActionState, formData: FormData
   if (!name) return { error: "Adja meg a vendég nevét." };
   if (!isIsoDate(checkIn) || !isIsoDate(checkOut)) return { error: "Adja meg az érkezés és a távozás napját." };
   if (checkOut <= checkIn) return { error: "A távozás napja legyen későbbi, mint az érkezésé." };
-  if (!isScope(scope)) return { error: "Válassza ki a szobát." };
+  if (!scope) return { error: "Válasszon ki legalább egy szobát, vagy az egész házat." };
   if (!Number.isInteger(guests) || guests < 1) return { error: "Adja meg a létszámot." };
-  if (guests > MAX_GUESTS[scope]) return { error: `Ide legfeljebb ${MAX_GUESTS[scope]} fő fér.` };
+  if (guests > targetMaxGuests(scope)) return { error: `Ide legfeljebb ${targetMaxGuests(scope)} fő fér.` };
   if (!isSource(source)) return { error: "Válassza ki, honnan jött a foglalás." };
   if (!isMeal(meal)) return { error: "Érvénytelen étkezés." };
   if (totalRaw && !/^\d+$/.test(totalRaw)) return { error: "Az összeg csak szám lehet (pl. 64000)." };

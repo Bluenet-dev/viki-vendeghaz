@@ -5,7 +5,7 @@ import { asc, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { gallery } from "@/db/schema";
 import { BookingSearch } from "@/components/booking-search";
-import { MAX_GUESTS, formatFt, isScope, type Scope } from "@/lib/booking/constants";
+import { SCOPE_LABEL, formatFt, isCombo, normalizeTarget, targetMaxGuests, targetRooms, type Scope, type Target } from "@/lib/booking/constants";
 import { addDays, diffDays, fmtLong, fmtRange, isIsoDate, todayBudapest } from "@/lib/booking/dates";
 import { computeQuote, searchOptions } from "@/lib/booking/quote";
 import { findNearestFreeWindows, getSettings, loadBookingData } from "@/lib/booking/server";
@@ -42,7 +42,7 @@ async function loadPhotos(): Promise<Partial<Record<Scope, { url: string; alt: s
   return out;
 }
 
-function searchHref(checkIn: string, checkOut: string, guests: number, choice?: Scope) {
+function searchHref(checkIn: string, checkOut: string, guests: number, choice?: Target) {
   const q = new URLSearchParams({ erkezes: checkIn, tavozas: checkOut, fo: String(guests) });
   if (choice) q.set("valasztas", choice);
   return `/foglalas?${q.toString()}`;
@@ -85,7 +85,7 @@ export default async function FoglalasPage({
     } else {
       const [data, photos, settings] = await Promise.all([loadBookingData(ci, co), loadPhotos(), getSettings()]);
       const { options, minNights } = searchOptions(ci, co, guests, data);
-      const choice = isScope(sp.valasztas) ? sp.valasztas : undefined;
+      const choice = normalizeTarget(sp.valasztas) ?? undefined;
       const chosen = choice ? options.find((o) => o.scope === choice) : undefined;
 
       if (chosen) {
@@ -161,7 +161,7 @@ export default async function FoglalasPage({
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               {options.map((o) => {
-                const photo = photos[o.scope];
+                const photo = photos[(isCombo(o.scope) ? targetRooms(o.scope)[0] : o.scope) as Scope];
                 return (
                   <div key={o.scope} className="flex flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
                     <div className="relative h-48 bg-[var(--surface2)]">
@@ -171,7 +171,11 @@ export default async function FoglalasPage({
                     </div>
                     <div className="flex flex-1 flex-col p-5">
                       <p className="text-lg font-semibold text-[var(--text)]">{o.label}</p>
-                      <p className="text-[14px] text-[var(--text2)]">legfeljebb {MAX_GUESTS[o.scope]} fő</p>
+                      <p className="text-[14px] text-[var(--text2)]">
+                        {o.split
+                          ? `${targetRooms(o.scope).length} szoba: ${targetRooms(o.scope).map((r) => `${SCOPE_LABEL[r]} ${o.split![r]} fő`).join(", ")}`
+                          : `legfeljebb ${targetMaxGuests(o.scope)} fő`}
+                      </p>
                       <div className="mt-4 flex flex-1 items-end justify-between gap-3">
                         <div>
                           <p className="text-2xl font-bold text-[var(--text)]">{o.total != null ? formatFt(o.total) : "Egyedi ár"}</p>

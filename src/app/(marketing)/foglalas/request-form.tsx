@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MEAL_LABEL, formatFt, type Meal, type Scope } from "@/lib/booking/constants";
+import { MEAL_LABEL, formatFt, type Meal, type Target } from "@/lib/booking/constants";
 
 type Line = { label: string; amount: number };
 
@@ -10,7 +10,7 @@ const input =
   "w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-[16px] text-[var(--text)] placeholder-[var(--text3)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
 
 export function RequestForm(props: {
-  scope: Scope;
+  scope: Target;
   checkIn: string;
   checkOut: string;
   guests: number;

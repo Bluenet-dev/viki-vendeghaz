@@ -2,7 +2,7 @@ import Link from "next/link";
 import { and, asc, eq, inArray, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import { bookings, closures } from "@/db/schema";
-import { ROOM_SCOPES, SCOPE_LABEL, formatFt, type Scope } from "@/lib/booking/constants";
+import { ROOM_SCOPES, formatFt, targetLabel } from "@/lib/booking/constants";
 import { addDays, diffDays, fmtLong, fmtRange, todayBudapest } from "@/lib/booking/dates";
 import { getSettings } from "@/lib/booking/server";
 import { SourceBadge } from "./foglalasok/badges";
@@ -85,7 +85,7 @@ export default async function AttekintesPage({ searchParams }: { searchParams: P
               <div key={b.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-[#F0D98A] bg-[#FFF6DB] px-4 py-3">
                 <div className="text-[14px] text-[var(--text)]">
                   <Link href={`/admin/foglalasok/${b.id}`} className="font-medium hover:underline">{b.name}</Link>
-                  <span className="text-[var(--text2)]"> · {SCOPE_LABEL[b.roomScope as Scope]} · {fmtRange(b.checkIn, b.checkOut)}</span>
+                  <span className="text-[var(--text2)]"> · {targetLabel(b.roomScope)} · {fmtRange(b.checkIn, b.checkOut)}</span>
                   {b.depositAmount != null && <span className="text-[var(--text2)]"> · előleg {formatFt(b.depositAmount)}</span>}
                 </div>
                 <ReleaseButton id={b.id} />
@@ -112,7 +112,7 @@ export default async function AttekintesPage({ searchParams }: { searchParams: P
                     <SourceBadge source={b.source} />
                   </div>
                   <div className="mt-0.5 text-[var(--text2)]">
-                    {fmtRange(b.checkIn, b.checkOut)} · {SCOPE_LABEL[b.roomScope as Scope]} · {b.total != null ? formatFt(b.total) : "egyedi ár"}
+                    {fmtRange(b.checkIn, b.checkOut)} · {targetLabel(b.roomScope)} · {b.total != null ? formatFt(b.total) : "egyedi ár"}
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
@@ -146,7 +146,7 @@ export default async function AttekintesPage({ searchParams }: { searchParams: P
               >
                 <span className="font-medium text-[var(--text)]">{b.name}</span>
                 <span className="text-[var(--text2)]">
-                  {SCOPE_LABEL[b.roomScope as Scope]} · {diffDays(b.checkIn, b.checkOut)} éj · {b.phone ?? "nincs telefon"}
+                  {targetLabel(b.roomScope)} · {diffDays(b.checkIn, b.checkOut)} éj · {b.phone ?? "nincs telefon"}
                 </span>
               </Link>
             ))}

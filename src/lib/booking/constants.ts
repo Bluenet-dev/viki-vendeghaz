@@ -71,6 +71,46 @@ export function scopeRooms(scope: Scope): RoomScope[] {
   return scope === "egesz_haz" ? [...ROOM_SCOPES] : [scope];
 }
 
+// ─── Foglalási cél: egy szoba, szobakombináció vagy egész ház ──────────────
+// Tárolás: "szoba-1" | "egesz_haz" | "szoba-1,superior" (rendezett, vesszővel).
+export type Target = string;
+
+function isRoom(v: string): v is RoomScope {
+  return (ROOM_SCOPES as readonly string[]).includes(v);
+}
+
+// Kanonikus alak (a szobák a ROOM_SCOPES sorrendjében), vagy null, ha érvénytelen.
+export function normalizeTarget(v: unknown): Target | null {
+  if (typeof v !== "string" || !v) return null;
+  if (v === "egesz_haz") return v;
+  const parts = Array.from(new Set(v.split(",").map((s) => s.trim())));
+  if (!parts.length || !parts.every(isRoom)) return null;
+  return ROOM_SCOPES.filter((r) => parts.includes(r)).join(",");
+}
+
+export function isTarget(v: unknown): v is Target {
+  return normalizeTarget(v) === v;
+}
+
+export function isCombo(t: Target): boolean {
+  return t.includes(",");
+}
+
+export function targetRooms(t: Target): RoomScope[] {
+  if (t === "egesz_haz") return [...ROOM_SCOPES];
+  return t.split(",").filter(isRoom);
+}
+
+export function targetLabel(t: Target): string {
+  if (!isCombo(t)) return SCOPE_LABEL[t as Scope] ?? t;
+  return targetRooms(t).map((r) => SCOPE_LABEL[r]).join(" + ");
+}
+
+export function targetMaxGuests(t: Target): number {
+  if (!isCombo(t)) return MAX_GUESTS[t as Scope] ?? 0;
+  return targetRooms(t).reduce((s, r) => s + MAX_GUESTS[r], 0);
+}
+
 export function formatFt(n: number): string {
   return `${n.toLocaleString("hu-HU")} Ft`;
 }

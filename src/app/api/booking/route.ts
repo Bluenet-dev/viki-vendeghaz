@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isMeal, isScope } from "@/lib/booking/constants";
+import { isMeal, isTarget } from "@/lib/booking/constants";
 import { isIsoDate, todayBudapest } from "@/lib/booking/dates";
 import { computeQuote } from "@/lib/booking/quote";
 import { createBooking, getBooking, getSettings, loadBookingData } from "@/lib/booking/server";
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   if (!name) return NextResponse.json({ error: "Kérjük, adja meg a nevét." }, { status: 400 });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: "Kérjük, adjon meg érvényes e-mail címet." }, { status: 400 });
-  if (!isScope(scope) || !isIsoDate(checkIn) || !isIsoDate(checkOut) || !Number.isInteger(guests) || guests < 1) {
+  if (!isTarget(scope) || !isIsoDate(checkIn) || !isIsoDate(checkOut) || !Number.isInteger(guests) || guests < 1) {
     return NextResponse.json({ error: "Hiányos foglalási adatok. Kérjük, kezdje újra a keresést." }, { status: 400 });
   }
   if (checkIn <= todayBudapest()) return NextResponse.json({ error: "Az érkezés legkorábban holnap lehet." }, { status: 400 });

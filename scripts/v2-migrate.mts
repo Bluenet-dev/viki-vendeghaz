@@ -15,7 +15,6 @@
 import { neon } from "@neondatabase/serverless";
 import {
   getMinStay,
-  isWholeHouseOnlyForDate,
   resolveRateForDate,
   type PricingData,
   type RoomScope as OldScope,
@@ -141,6 +140,27 @@ const data: PricingData = {
 };
 const extraFee = (scope: string) => data.roomCapacities.find((c) => c.roomScope === scope)?.extraGuestFeePerNight ?? null;
 
+// Az árakat a régi "csak egész ház" jelölők nélkül olvassuk ki (a szobaárak a
+// szabályokban megvannak); a jelölőt az üzleti szabály adja (lent).
+const priceData: PricingData = {
+  ...data,
+  seasons: data.seasons.map((s) => ({ ...s, wholeHouseOnly: false })),
+  holidays: data.holidays.map((h) => ({ ...h, wholeHouseOnly: false })),
+};
+
+// Üzleti szabály (tulajdonos, 2026-09-30):
+//  – nyár (jún 1 – aug 31), Karácsony (dec 24–26), Szilveszter (dec 29 – jan 2): minden éj csak egész ház
+//  – szezonon kívül (szept 1 – máj 31): péntek és szombat éjszaka csak egész ház, hétköznap szobánként is
+function wholeHouseOnlyRule(dateIso: string): boolean {
+  const [, m, d] = dateIso.split("-").map(Number);
+  const md = m * 100 + d;
+  if (md >= 601 && md <= 831) return true;
+  if (md >= 1224 && md <= 1226) return true;
+  if (md >= 1229 || md <= 102) return true;
+  const dow = new Date(`${dateIso}T12:00:00Z`).getUTCDay();
+  return dow === 5 || dow === 6;
+}
+
 // ─── 1. settings ────────────────────────────────────────────────────────────
 const [existingSettings] = await sql`SELECT id FROM settings LIMIT 1`;
 const old = settingsRows[0];
@@ -162,9 +182,9 @@ for (let i = 0; i < DAYS; i++) {
   const dateIso = addDaysIso(todayIso, i);
   const [y, m, d] = dateIso.split("-").map(Number);
   const date = new Date(y, m - 1, d); // helyi idő, ahogy a régi motor számolt
-  const whole = isWholeHouseOnlyForDate(date, data);
+  const whole = wholeHouseOnlyRule(dateIso);
   for (const scope of SCOPES) {
-    const rate = resolveRateForDate(date, scope, data);
+    const rate = resolveRateForDate(date, scope, priceData);
     if (rate.source === "none") {
       if (scope === "szoba-1") noSeason.push(dateIso);
       continue;
@@ -183,7 +203,7 @@ console.log(`2. day_rates: ${rows.length} sor (${DAYS} nap × ${SCOPES.length})`
 if (noSeason.length) console.log(`   FIGYELEM: ${noSeason.length} napra nincs szezon (kimarad): ${noSeason[0]} … ${noSeason[noSeason.length - 1]}`);
 
 // Ellenőrző minta a régi motorral egyező árakról
-for (const sample of ["2026-10-06", "2026-10-09", "2026-12-24", "2026-12-31", "2027-03-15", "2027-07-10"]) {
+for (const sample of ["2026-10-06", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-23", "2026-12-24", "2026-12-31", "2027-03-15", "2027-03-28", "2027-07-10", "2027-10-05"]) {
   const r = rows.filter((x) => x.date === sample);
   if (r.length) console.log(`   ${sample}: ${r.map((x) => `${x.scope}=${x.price ?? "–"}${x.whole ? "*" : ""}/min${x.min}`).join("  ")}`);
 }
@@ -224,20 +244,27 @@ if (DRY) {
 console.log(`4. bookings: ${msgs.length} régi foglalási kérés`);
 for (const m of msgs) {
   const slug: string = m.room_slug ?? "";
-  const scope = slug === "egész vendégház" || slug === "egesz_haz" ? "egesz_haz" : slug.split(",")[0];
-  if (!SCOPES.includes(scope as OldScope) || !m.check_in || !m.check_out) {
+  // "egész vendégház" → egesz_haz; több szoba → kombináció ("szoba-1,superior", ROOMS sorrendben)
+  const parts = slug.split(",").map((s) => s.trim());
+  const scope =
+    slug === "egész vendégház" || slug === "egesz_haz"
+      ? "egesz_haz"
+      : parts.every((p) => ROOMS.includes(p))
+        ? ROOMS.filter((r) => parts.includes(r)).join(",")
+        : "";
+  if (!scope || !m.check_in || !m.check_out) {
     console.log(`   #${m.id}: kihagyva (ismeretlen szoba vagy dátum: ${slug})`);
     continue;
   }
   const ci = iso(new Date(m.check_in));
   const co = iso(new Date(m.check_out));
-  const rooms = scope === "egesz_haz" ? ROOMS : [scope];
+  const rooms = scope === "egesz_haz" ? ROOMS : scope.split(",");
   const nights = nightsOf(ci, co);
   const fullyClosed = nights.length > 0 && nights.every((d) => rooms.every((r) => closedSet.has(`${r}|${d}`)));
   const past = co < todayIso;
   const status = fullyClosed ? "visszaigazolt" : past ? "lemondott" : "valaszra_var";
   const meal = m.felpanzio === "mindketto" ? "felpanzio" : m.felpanzio === "reggeli" || m.felpanzio === "vacsora" ? m.felpanzio : "nincs";
-  const note = slug.includes(",") ? `Eredetileg több szobára kérték: ${slug}` : null;
+  const note = null;
   console.log(`   #${m.id}: ${m.name} · ${scope} · ${ci}→${co} · ${m.guests} fő → ${status}${fullyClosed ? " (minden éj le volt zárva)" : ""}`);
   if (DRY) continue;
 
@@ -256,6 +283,26 @@ for (const m of msgs) {
               WHERE booking_id IS NULL AND room_scope = ANY(${rooms}::text[]) AND date = ANY(${nights}::date[])`;
   }
 }
+
+// ─── Mozgó ünnepek ──────────────────────────────────────────────────────────
+// A nem ismétlődő (fix dátumú) ünnepek – Húsvét, Pünkösd – minden évben más
+// napra esnek, ezért NEM vetítjük ki őket: csak a felvett dátumukon érvényesek,
+// a következő években azokon a napokon az alap szezonár marad.
+// Nem vetíthető: nem ismétlődő (fix dátumú), vagy ismétlődőként felvett, de dátum nélküli ünnep.
+const movable = data.holidays.filter((h) => !h.recurring || h.startMonth == null || h.startDay == null);
+if (movable.length) {
+  console.log("\nNem kivetített (mozgó) ünnepnapok – a jövő évi dátumukon alap szezonár van, a naptárban kézzel állítandó:");
+  for (const h of movable) {
+    if (h.recurring) {
+      console.log(`   ${h.name} (${h.slug}): nincs dátuma – egyik évre sem került át`);
+      continue;
+    }
+    const inWindow = h.endDate != null && h.endDate >= todayIso && h.startDate != null && h.startDate <= addDaysIso(todayIso, DAYS - 1);
+    console.log(`   ${h.name} (${h.slug}): ${h.startDate} – ${h.endDate}${inWindow ? " – a 730 napos ablakban, ez átjött" : " – az ablakon kívül, nem jött át"}`);
+  }
+}
+const recurring = data.holidays.filter((h) => !movable.includes(h)).map((h) => h.name);
+console.log(`Minden évben ismétlődő (kivetített) ünnepek: ${recurring.join(", ")}`);
 
 // ─── Összegzés ──────────────────────────────────────────────────────────────
 if (!DRY) {

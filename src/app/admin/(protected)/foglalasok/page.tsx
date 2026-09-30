@@ -2,7 +2,7 @@ import Link from "next/link";
 import { desc } from "drizzle-orm";
 import { db } from "@/db";
 import { bookings } from "@/db/schema";
-import { SCOPE_LABEL, formatFt, type Scope } from "@/lib/booking/constants";
+import { formatFt, targetLabel } from "@/lib/booking/constants";
 import { diffDays, fmtRange, todayBudapest } from "@/lib/booking/dates";
 import { SourceBadge, StatusBadge } from "./badges";
 
@@ -111,7 +111,7 @@ export default async function FoglalasokPage({ searchParams }: { searchParams: P
                       <Link href={href} className="text-[var(--text)]">{fmtRange(b.checkIn, b.checkOut)}</Link>
                       <div className="text-[12px] text-[var(--text2)]">{diffDays(b.checkIn, b.checkOut)} éj</div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-[var(--text)]">{SCOPE_LABEL[b.roomScope as Scope] ?? b.roomScope}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-[var(--text)]">{targetLabel(b.roomScope)}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-right text-[var(--text)]">{b.total != null ? formatFt(b.total) : "–"}</td>
                     <td className="px-4 py-3"><StatusBadge status={b.status} /></td>
                   </tr>

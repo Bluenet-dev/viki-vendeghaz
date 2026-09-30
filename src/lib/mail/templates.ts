@@ -1,7 +1,7 @@
 // Levélsablonok: táblázatos, inline stílusú HTML (Gmail/Outlook/mobil) + sima szöveg.
 // Minden felhasználói bevitel escape-elve kerül a HTML-be.
 
-import { MEAL_LABEL, SCOPE_LABEL, formatFt, type Meal, type Scope } from "@/lib/booking/constants";
+import { MEAL_LABEL, formatFt, targetLabel, type Meal } from "@/lib/booking/constants";
 import { addDays, diffDays, fmtLong, todayBudapest } from "@/lib/booking/dates";
 import type { Booking, Settings } from "@/lib/booking/server";
 import type { Mail } from "./send";
@@ -52,7 +52,7 @@ function mealText(meal: string, mealGuests: number | null): string {
 function stayRows(b: Booking, s: Settings): [string, string][] {
   const nights = diffDays(b.checkIn, b.checkOut);
   return [
-    ["Szállás", esc(SCOPE_LABEL[b.roomScope as Scope] ?? b.roomScope)],
+    ["Szállás", esc(targetLabel(b.roomScope))],
     ["Érkezés", `${fmtLong(b.checkIn)}, ${esc(s.checkInFrom)}-tól`],
     ["Távozás", `${fmtLong(b.checkOut)}, ${esc(s.checkOutUntil)}-ig`],
     ["Éjszakák", `${nights}`],

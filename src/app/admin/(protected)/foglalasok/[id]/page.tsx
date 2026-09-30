@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { closures } from "@/db/schema";
-import { MEAL_LABEL, SCOPE_LABEL, formatFt, type Meal, type Scope } from "@/lib/booking/constants";
+import { MEAL_LABEL, formatFt, targetLabel, type Meal } from "@/lib/booking/constants";
 import { addDays, diffDays, fmtLong, todayBudapest } from "@/lib/booking/dates";
 import { getBooking, getSettings } from "@/lib/booking/server";
 import { depositReceivedAction } from "../actions";
@@ -71,7 +71,7 @@ export default async function FoglalasPage({ params }: { params: Promise<{ id: s
       )}
 
       <dl className="rounded-[10px] border-[0.5px] border-[var(--border)] bg-[var(--surface)] px-5 py-2">
-        <Row label="Szoba">{SCOPE_LABEL[b.roomScope as Scope] ?? b.roomScope}</Row>
+        <Row label="Szoba">{targetLabel(b.roomScope)}</Row>
         <Row label="Érkezés">{fmtLong(b.checkIn)}</Row>
         <Row label="Távozás">{fmtLong(b.checkOut)}</Row>
         <Row label="Éjszakák">{nights}</Row>
