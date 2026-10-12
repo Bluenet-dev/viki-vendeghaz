@@ -3,7 +3,7 @@ import { desc } from "drizzle-orm";
 import { db } from "@/db";
 import { bookings } from "@/db/schema";
 import { formatFt, targetLabel } from "@/lib/booking/constants";
-import { diffDays, fmtRange, todayBudapest } from "@/lib/booking/dates";
+import { diffDays, fmtRange, monthLabel, todayBudapest } from "@/lib/booking/dates";
 import { SourceBadge, StatusBadge } from "./badges";
 
 export const dynamic = "force-dynamic";
@@ -16,9 +16,11 @@ const TABS = [
   { key: "lemondott", label: "Lemondott" },
 ] as const;
 
-export default async function FoglalasokPage({ searchParams }: { searchParams: Promise<{ ful?: string }> }) {
-  const { ful = "mind" } = await searchParams;
-  const all = await db.select().from(bookings).orderBy(desc(bookings.createdAt));
+export default async function FoglalasokPage({ searchParams }: { searchParams: Promise<{ ful?: string; ho?: string }> }) {
+  const { ful = "mind", ho } = await searchParams;
+  // ?ho=2027-01: csak az adott hónapban érkezők (a Bevételek oldalról)
+  const month = ho && /^\d{4}-\d{2}$/.test(ho) ? ho : null;
+  const all = (await db.select().from(bookings).orderBy(desc(bookings.createdAt))).filter((b) => !month || b.checkIn.startsWith(month));
   const today = todayBudapest();
 
   const counts = {
@@ -53,6 +55,17 @@ export default async function FoglalasokPage({ searchParams }: { searchParams: P
         </Link>
       </div>
 
+      {month && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-md bg-[var(--surface2)] px-4 py-2.5 text-[14px] text-[var(--text)]">
+          <span>
+            Érkezés: <strong>{monthLabel(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1)}</strong>
+          </span>
+          <Link href={ful === "mind" ? "/admin/foglalasok" : `/admin/foglalasok?ful=${ful}`} className="text-[var(--accent)] hover:underline">
+            Minden hónap
+          </Link>
+        </div>
+      )}
+
       <div className="mb-4 flex flex-wrap gap-1 border-b border-[var(--border)]">
         {TABS.map((t) => {
           const active = ful === t.key;
@@ -60,7 +73,7 @@ export default async function FoglalasokPage({ searchParams }: { searchParams: P
           return (
             <Link
               key={t.key}
-              href={t.key === "mind" ? "/admin/foglalasok" : `/admin/foglalasok?ful=${t.key}`}
+              href={`/admin/foglalasok${t.key === "mind" ? (month ? `?ho=${month}` : "") : `?ful=${t.key}${month ? `&ho=${month}` : ""}`}`}
               className={`-mb-px border-b-2 px-4 py-2 text-[14px] transition-colors ${
                 active
                   ? "border-[var(--accent)] font-semibold text-[var(--text)]"

@@ -9,6 +9,8 @@ import { SourceBadge } from "./foglalasok/badges";
 import { ConfirmButton, ReleaseButton } from "./foglalasok/buttons";
 import { offersEnabled } from "@/modules/offers/flag";
 import { offersByStatus } from "@/modules/offers/server";
+import { revenueReport } from "@/lib/revenue";
+import { loadRevenueInput } from "./bevetelek/data";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Áttekintés" };
@@ -52,6 +54,10 @@ export default async function AttekintesPage({ searchParams }: { searchParams: P
   // Új ajánlatkérések (ha az ajánlat modul be van kapcsolva) – ugyanúgy válaszra várnak.
   const newOffers = offersEnabled() ? await offersByStatus(["uj"]) : [];
   const waitingTotal = waiting.length + newOffers.length;
+  // Ebben a hónapban: a Bevételek oldal számításából.
+  const revInput = await loadRevenueInput();
+  const rev = revenueReport(Number(today.slice(0, 4)), revInput.bookings, revInput.offers, today);
+  const thisMonth = rev.months[Number(today.slice(5, 7)) - 1];
 
   return (
     <div className="max-w-5xl">
@@ -81,6 +87,17 @@ export default async function AttekintesPage({ searchParams }: { searchParams: P
         <Card label="Válaszra vár" value={waitingTotal} warn={waitingTotal > 0} />
         <Card label={`Foglalt szoba ${word.toLowerCase()}`} value={`${bookedRooms}/${ROOM_SCOPES.length}`} />
       </div>
+
+      <Link
+        href="/admin/bevetelek"
+        className="mb-8 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border-[0.5px] border-[var(--border)] bg-[var(--surface)] px-5 py-4 text-[15px] hover:border-[var(--accent)]"
+      >
+        <span className="text-[var(--text)]">
+          Ebben a hónapban: <strong className="text-[#3A5A3C]">{formatFt(thisMonth.befolyt)}</strong> befolyt,{" "}
+          <strong className="text-[#8A4A22]">{formatFt(thisMonth.varhato)}</strong> várható
+        </span>
+        <span className="text-[14px] text-[var(--accent)]">Bevételek →</span>
+      </Link>
 
       {acceptedNoDeposit.length > 0 && (
         <section className="mb-8">

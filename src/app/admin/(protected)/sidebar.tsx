@@ -8,6 +8,7 @@ import {
   IconClipboardList,
   IconFileInvoice,
   IconWorld,
+  IconCoins,
   IconLogout,
   type IconProps,
 } from "@tabler/icons-react";
@@ -51,6 +52,7 @@ export function Sidebar({ offersEnabled, waitingCount, newOffers }: { offersEnab
     { href: "/admin/naptar", label: "Naptár és árak", icon: IconCalendarEvent },
     ...(offersEnabled ? [{ href: "/admin/ajanlatok", label: "Ajánlatkérések", icon: IconFileInvoice, badge: newOffers }] : []),
     { href: "/admin/weboldal", label: "Weboldal", icon: IconWorld, also: WEBSITE_PATHS },
+    { href: "/admin/bevetelek", label: "Bevételek", icon: IconCoins },
   ];
 
   return (
