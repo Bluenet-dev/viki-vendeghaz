@@ -8,6 +8,7 @@ import {
   timestamp,
   uniqueIndex,
   index,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 // ─── Szobák ────────────────────────────────────────────────────────────────
@@ -209,6 +210,8 @@ export const dayRates = pgTable(
     extraPersonPrice: integer("extra_person_price"), // pótágy / fő / éj (egész háznál nem használt)
     minNights: integer("min_nights").notNull().default(1), // az adott napon érkezőkre vonatkozik
     wholeHouseOnly: boolean("whole_house_only").notNull().default(false),
+    tariffCode: text("tariff_code"), // A–H; null = 2026-os nap (régi szabály)
+    label: text("label"), // pl. "Húsvét", "Masters*"
   },
   (t) => [uniqueIndex("day_rates_scope_date_uq").on(t.roomScope, t.date)],
 );
@@ -237,6 +240,16 @@ export const bookings = pgTable(
     confirmationSentAt: timestamp("confirmation_sent_at"),
     cancelledAt: timestamp("cancelled_at"),
     legacyMessageId: integer("legacy_message_id").unique(), // migráció: messages.id
+    // 2027-es árazás: vendégbontás és tételes összesítő
+    adults: integer("adults"),
+    teens: integer("teens"), // 13–17 év
+    children: integer("children"), // 3–12 év
+    infants: integer("infants"), // 0–2 év (nem fizet, nem számít a létszámba)
+    packageSlug: text("package_slug"),
+    extras: jsonb("extras"), // { saunaDays, tubCount }
+    lines: jsonb("lines"), // tételes összesítő: [{ label, amount }]
+    depositPercent: integer("deposit_percent"),
+    pricingRegime: text("pricing_regime"), // "2026" | "2027"
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [index("bookings_status_idx").on(t.status), index("bookings_check_in_idx").on(t.checkIn)],
@@ -280,7 +293,85 @@ export const settings = pgTable("settings", {
   bankAccount: text("bank_account").notNull().default("50462779-10005659"),
   bankIban: text("bank_iban").notNull().default("HU07 5046 2779 1000 5659 0000 0000"),
   bankName: text("bank_name").notNull().default("MBH Bank Nyrt."),
+  // ─── 2027-es árazás ───
+  newPricingFrom: date("new_pricing_from").notNull().default("2027-01-01"), // ettől érkezőkre az új szabályok
+  depositPercentNew: integer("deposit_percent_new").notNull().default(30),
+  depositPercentPeak: integer("deposit_percent_peak").notNull().default(50), // ha bármely éj magas foglalójú tarifa (G, H)
+  childDiscountPercent: integer("child_discount_percent").notNull().default(50), // 3–12 év: a felár ennyi %-a jár le
+  houseLongStayNights: integer("house_long_stay_nights").notNull().default(7),
+  houseLongStayPercent: integer("house_long_stay_percent").notNull().default(10),
+  roomThirdNightPercent: integer("room_third_night_percent").notNull().default(20),
+  lastMinuteDays: integer("last_minute_days").notNull().default(7),
+  lastMinutePercent: integer("last_minute_percent").notNull().default(15),
+  houseCleaningFee: integer("house_cleaning_fee").notNull().default(15000),
+  houseCleaningUnderNights: integer("house_cleaning_under_nights").notNull().default(5),
+  roomCleaningFee: integer("room_cleaning_fee").notNull().default(5000),
+  roomCleaningUnderNights: integer("room_cleaning_under_nights").notNull().default(4),
+  saunaDayPrice: integer("sauna_day_price").notNull().default(10000),
+  tubPrice: integer("tub_price").notNull().default(10000),
+  finnSaunaPerPersonHour: integer("finn_sauna_per_person_hour").notNull().default(2000),
+  infraSharedPerPersonHour: integer("infra_shared_per_person_hour").notNull().default(1500),
+  superiorInfraPerHour: integer("superior_infra_per_hour").notNull().default(1500),
+  saltCaveFreeMinutes: integer("salt_cave_free_minutes").notNull().default(45),
+  checkInUntil: text("check_in_until").notNull().default("21:00"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// ─── 2027-es árazás: tarifák és létszám szerinti napi árak ────────────────
+
+// Tarifa (A–H): létszámárak, min. éjszaka, és hogy foglalhatók-e szobák.
+export const tariffs = pgTable("tariffs", {
+  code: text("code").primaryKey(), // "A" … "H"
+  name: text("name").notNull(),
+  minNights: integer("min_nights").notNull().default(1),
+  roomMode: text("room_mode").notNull().default("open"), // "open" | "release" | "never"
+  releaseDays: integer("release_days"), // "release": ennyi nappal az éj előtt nyílnak a szobák
+  thirdNightDiscount: boolean("third_night_discount").notNull().default(false), // szoba 3. éj kedvezmény jár
+  lastMinuteDiscount: boolean("last_minute_discount").notNull().default(false),
+  peakDeposit: boolean("peak_deposit").notNull().default(false), // magasabb foglaló
+  packageGroup: text("package_group"), // "low" | "high" | null (csomag nem választható)
+  color: text("color").notNull().default("#E2DDD7"),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+// Egész háznál guests = 8 jelenti az 1–8 főt.
+export const tariffPrices = pgTable(
+  "tariff_prices",
+  {
+    id: serial("id").primaryKey(),
+    tariffCode: text("tariff_code").notNull(),
+    roomScope: text("room_scope").notNull(),
+    guests: integer("guests").notNull(),
+    price: integer("price").notNull(),
+  },
+  (t) => [uniqueIndex("tariff_prices_uq").on(t.tariffCode, t.roomScope, t.guests)],
+);
+
+// A napi ár mindig innen jön (a tarifa csak kitölti, kézzel felülírható).
+export const dayPrices = pgTable(
+  "day_prices",
+  {
+    id: serial("id").primaryKey(),
+    roomScope: text("room_scope").notNull(),
+    date: date("date").notNull(),
+    guests: integer("guests").notNull(),
+    price: integer("price").notNull(),
+  },
+  (t) => [uniqueIndex("day_prices_uq").on(t.roomScope, t.date, t.guests)],
+);
+
+// Foglalható csomagok (csak egész ház), létszámtól független éjszakai ár.
+export const stayPackages = pgTable("stay_packages", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  includes: text("includes").notNull(),
+  priceLow: integer("price_low").notNull(), // "low" csoportú tarifán (A–D)
+  priceHigh: integer("price_high"), // "high" csoportú tarifán (E–G); null = ott nem választható
+  maxGuests: integer("max_guests").notNull().default(12),
+  months: text("months"), // pl. "11,12,1,2,3"; null = egész évben
+  active: boolean("active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
 });
 
 // ─── Wellness szolgáltatások ────────────────────────────────────────────────

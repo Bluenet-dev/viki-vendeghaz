@@ -3,18 +3,23 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { IconLock } from "@tabler/icons-react";
-import { ROOM_SCOPES, SCOPE_LABEL, type Scope } from "@/lib/booking/constants";
-import { setRateAction, toggleClosureAction, toggleHouseAction } from "./actions";
+import { MAX_GUESTS, ROOM_SCOPES, SCOPE_LABEL, type RoomScope, type Scope } from "@/lib/booking/constants";
+import { fmtShort } from "@/lib/booking/dates";
+import { setDayPriceAction, toggleClosureAction, toggleHouseAction } from "./actions";
 
-export interface CellData {
-  price: number | null;
-  extra: number | null;
-  whole: boolean;
+export interface DayInfo {
+  tariff: { code: string; name: string; color: string } | null;
+  label: string | null;
+  // open: szobánként foglalható · release: még nem nyílt (lásd opensOn) · never: soha
+  // legacyWhole: 2026-os "csak egész ház" nap
+  mode: "open" | "release" | "never" | "legacyWhole";
+  opensOn: string | null;
 }
 
 type Closed = Record<string, { bookingId: number | null; name: string | null }>;
 
 const WEEKDAYS = ["V", "H", "K", "Sze", "Cs", "P", "Szo"];
+const HOUSE_ROWS = [8, 9, 10, 11, 12];
 
 function dow(iso: string) {
   return new Date(`${iso}T12:00:00Z`).getUTCDay();
@@ -27,12 +32,14 @@ function fmt(n: number | null | undefined) {
 export function CalendarGrid({
   days,
   today,
-  cells,
+  info,
+  prices,
   closed,
 }: {
   days: string[];
   today: string;
-  cells: Record<string, CellData>;
+  info: Record<string, DayInfo>;
+  prices: Record<string, number>;
   closed: Closed;
 }) {
   const router = useRouter();
@@ -44,8 +51,7 @@ export function CalendarGrid({
 
   const weekend = (d: string) => dow(d) === 0 || dow(d) === 6;
   const colBg = (d: string) => (d === today ? "bg-[var(--accent-bg)]" : weekend(d) ? "bg-[#F4F1EC]" : "");
-  // Egy nap "csak egész ház", ha a szobák sora így jelöli.
-  const houseOnly = (d: string) => ROOM_SCOPES.some((r) => cells[`${r}|${d}`]?.whole);
+  const roomsBlocked = (d: string) => info[d]?.mode !== "open";
 
   function run(key: string, fn: () => Promise<{ bookingId: number | null }>) {
     setBusyKey(key);
@@ -63,18 +69,12 @@ export function CalendarGrid({
     });
   }
 
-  function startEdit(key: string, value: number | null) {
-    setEditing(key);
-    setDraft(value == null ? "" : String(value));
-    setError(null);
-  }
-
-  function saveEdit(scope: string, date: string, field: "price" | "extraPersonPrice") {
+  function saveEdit(scope: Scope, date: string, guests: number) {
     const key = editing;
     if (!key) return;
     setBusyKey(key);
     startTransition(async () => {
-      const res = await setRateAction(scope, date, field, draft);
+      const res = await setDayPriceAction(scope, date, guests, draft);
       setBusyKey(null);
       if (res.error) {
         setError(res.error);
@@ -87,9 +87,11 @@ export function CalendarGrid({
 
   const labelCell =
     "sticky left-0 z-10 whitespace-nowrap border-r-[0.5px] border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-left text-[13px] font-normal text-[var(--text2)]";
-  const cellBase = "h-9 min-w-[58px] border-l-[0.5px] border-[var(--border)] p-0 text-center text-[13px]";
+  const cellBase = "h-9 min-w-[62px] border-l-[0.5px] border-[var(--border)] p-0 text-center text-[13px]";
 
-  function availabilityRow(room: string) {
+  // Szoba szabad/foglalt cellája. A lezárás (piros lakat) mindig elsőbbséget élvez;
+  // "még nem nyílt" / "soha" napon szürke lakat, de kattintással ugyanúgy lezárható.
+  function availabilityRow(room: RoomScope) {
     return (
       <tr className="border-t-[0.5px] border-[var(--border)]">
         <th scope="row" className={labelCell}>Szabad / foglalt</th>
@@ -97,25 +99,35 @@ export function CalendarGrid({
           const key = `${room}|${d}`;
           const past = d < today;
           const c = closed[key];
-          // "Csak egész ház" napon is szobánként lezárható/feloldható; a halvány szürke
-          // háttér csak jelzi, hogy aznap a weboldalon szobánként nem foglalható.
-          const whole = houseOnly(d);
+          const di = info[d];
+          const grey = !c && (di?.mode === "release" || di?.mode === "never");
+          const legacy = !c && di?.mode === "legacyWhole";
           const title = c?.bookingId
             ? `${c.name ?? "Foglalás"} – megnyitás`
             : c
               ? "Lezárva – kattintásra feloldja"
-              : `${whole ? "Csak egész ház · " : ""}Szabad – kattintásra lezárja`;
+              : di?.mode === "never"
+                ? "Szobánként nem foglalható (csak egész ház) – kattintásra lezárja"
+                : di?.mode === "release"
+                  ? `${di.opensOn ? `Szobánként ${fmtShort(di.opensOn)} nyílik` : "Csak akkor nyílik, ha az egész ház szabad"} – kattintásra lezárja`
+                  : `${legacy ? "Csak egész ház · " : ""}Szabad – kattintásra lezárja`;
           return (
-            <td key={d} className={`${cellBase} ${c ? "bg-[#F3C7C7]" : whole ? "bg-[var(--surface2)]" : colBg(d)} ${past ? "opacity-40" : ""}`}>
+            <td key={d} className={`${cellBase} ${c ? "bg-[#F3C7C7]" : grey || legacy ? "bg-[var(--surface2)]" : colBg(d)} ${past ? "opacity-40" : ""}`}>
               <button
                 type="button"
                 disabled={past || pending}
                 title={past ? undefined : title}
-                aria-label={`${d}: ${c ? "foglalt" : "szabad"}`}
+                aria-label={`${d}: ${c ? "foglalt" : grey ? "szobánként még nem foglalható" : "szabad"}`}
                 onClick={() => run(key, () => toggleClosureAction(room, d))}
-                className={`flex h-9 w-full items-center justify-center ${past ? "cursor-default" : "cursor-pointer hover:outline hover:outline-1 hover:outline-[var(--text3)]"} ${busyKey === key ? "animate-pulse" : ""}`}
+                className={`flex h-9 w-full flex-col items-center justify-center leading-none ${past ? "cursor-default" : "cursor-pointer hover:outline hover:outline-1 hover:outline-[var(--text3)]"} ${busyKey === key ? "animate-pulse" : ""}`}
               >
                 {c && <IconLock size={15} stroke={1.8} className="text-[#A33A3A]" />}
+                {grey && (
+                  <>
+                    <IconLock size={13} stroke={1.8} className="text-[var(--text3)]" />
+                    {di?.opensOn && <span className="mt-0.5 text-[10px] text-[var(--text2)]">nyílik: {fmtShort(di.opensOn)}</span>}
+                  </>
+                )}
               </button>
             </td>
           );
@@ -124,17 +136,15 @@ export function CalendarGrid({
     );
   }
 
-  function priceRow(scope: Scope, field: "price" | "extraPersonPrice", label: string) {
+  function priceRow(scope: Scope, guests: number, label: string) {
     return (
-      <tr className="border-t-[0.5px] border-[var(--border)]">
+      <tr key={`${scope}-${guests}`} className="border-t-[0.5px] border-[var(--border)]">
         <th scope="row" className={labelCell}>{label}</th>
         {days.map((d) => {
-          const key = `${scope}|${d}|${field}`;
+          const key = `${scope}|${d}|${guests}`;
           const past = d < today;
-          const data = cells[`${scope}|${d}`];
-          const value = field === "price" ? data?.price : data?.extra;
-          // "Csak egész ház" napon a szoba ára is szerkeszthető, csak szürke háttér jelzi a szabályt.
-          const whole = scope !== "egesz_haz" && houseOnly(d);
+          const value = prices[key];
+          const shaded = scope !== "egesz_haz" && roomsBlocked(d);
           if (editing === key) {
             return (
               <td key={d} className={`${cellBase} bg-white`}>
@@ -144,27 +154,31 @@ export function CalendarGrid({
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") saveEdit(scope, d, field);
+                    if (e.key === "Enter") saveEdit(scope, d, guests);
                     if (e.key === "Escape") setEditing(null);
                   }}
                   onBlur={() => {
                     if (busyKey !== key) setEditing(null);
                   }}
-                  className={`h-9 w-[64px] border-2 border-[var(--accent)] bg-white px-1 text-center text-[13px] outline-none ${busyKey === key ? "opacity-50" : ""}`}
+                  className={`h-9 w-[68px] border-2 border-[var(--accent)] bg-white px-1 text-center text-[13px] outline-none ${busyKey === key ? "opacity-50" : ""}`}
                   aria-label={`${SCOPE_LABEL[scope]} ${label} ${d}`}
                 />
               </td>
             );
           }
           return (
-            <td key={d} title={whole ? "Csak egész ház" : undefined} className={`${cellBase} ${whole ? "bg-[var(--surface2)]" : colBg(d)} ${past ? "opacity-40" : ""}`}>
+            <td key={d} className={`${cellBase} ${shaded ? "bg-[var(--surface2)]" : colBg(d)} ${past ? "opacity-40" : ""}`}>
               <button
                 type="button"
                 disabled={past}
-                onClick={() => startEdit(key, value ?? null)}
-                className={`h-9 w-full px-1 ${past ? "cursor-default" : "cursor-text hover:bg-white hover:outline hover:outline-1 hover:outline-[var(--text3)]"} ${value == null ? "text-[var(--text3)]" : "text-[var(--text)]"}`}
+                onClick={() => {
+                  setEditing(key);
+                  setDraft(value == null ? "" : String(value));
+                  setError(null);
+                }}
+                className={`h-9 w-full px-1 text-[var(--text)] ${past ? "cursor-default" : "cursor-text hover:bg-white hover:outline hover:outline-1 hover:outline-[var(--text3)]"}`}
               >
-                {value == null ? (field === "price" && data && !whole ? "egyedi" : "") : fmt(value)}
+                {fmt(value)}
               </button>
             </td>
           );
@@ -173,6 +187,7 @@ export function CalendarGrid({
     );
   }
 
+  // Egész ház: automatikus; szobánként nem foglalható napon kattintással mindhárom szoba lezárható.
   function houseAvailabilityRow() {
     return (
       <tr className="border-t-[0.5px] border-[var(--border)]">
@@ -184,7 +199,7 @@ export function CalendarGrid({
           const roomsClosed = ROOM_SCOPES.filter((r) => closed[`${r}|${d}`]);
           const busy = roomsClosed.length > 0;
           const booking = roomsClosed.map((r) => closed[`${r}|${d}`]).find((c) => c?.bookingId);
-          const clickable = houseOnly(d) && !past;
+          const clickable = roomsBlocked(d) && !past;
           const key = `house|${d}`;
           const content = busy ? <IconLock size={15} stroke={1.8} className="text-[#A33A3A]" /> : null;
           return (
@@ -234,25 +249,41 @@ export function CalendarGrid({
         <table className="border-collapse">
           <thead>
             <tr className="bg-[var(--surface2)]">
-              <th className="sticky left-0 z-10 min-w-[190px] bg-[var(--surface2)] px-3 py-2" />
-              {days.map((d) => (
-                <th
-                  key={d}
-                  className={`min-w-[58px] border-l-[0.5px] border-[var(--border)] px-1 py-1.5 text-center text-[12px] font-normal ${
-                    d === today ? "bg-[var(--accent-bg)] font-semibold text-[var(--text)]" : weekend(d) ? "bg-[#ECE8E1] text-[var(--text)]" : "text-[var(--text2)]"
-                  }`}
-                >
-                  <div className="text-[15px] font-semibold">{Number(d.slice(8))}</div>
-                  <div>{WEEKDAYS[dow(d)]}</div>
-                </th>
-              ))}
+              <th className="sticky left-0 z-10 min-w-[190px] border-r-[0.5px] border-[var(--border)] bg-[var(--surface2)] px-3 py-2" />
+              {days.map((d) => {
+                const di = info[d];
+                return (
+                  <th
+                    key={d}
+                    className={`min-w-[62px] border-l-[0.5px] border-[var(--border)] px-1 py-1.5 align-top text-center text-[12px] font-normal ${
+                      d === today ? "bg-[var(--accent-bg)] font-semibold text-[var(--text)]" : weekend(d) ? "bg-[#ECE8E1] text-[var(--text)]" : "text-[var(--text2)]"
+                    }`}
+                  >
+                    <div className="text-[15px] font-semibold">{Number(d.slice(8))}</div>
+                    <div>{WEEKDAYS[dow(d)]}</div>
+                    {di?.tariff && (
+                      <div
+                        title={di.tariff.name}
+                        className="mx-auto mt-1 inline-flex h-5 w-5 items-center justify-center rounded text-[12px] font-bold text-[var(--text)]"
+                        style={{ backgroundColor: di.tariff.color }}
+                      >
+                        {di.tariff.code}
+                      </div>
+                    )}
+                    {di?.label && (
+                      <div title={di.label} className="mx-auto mt-0.5 max-w-[58px] truncate text-[10px] leading-tight text-[var(--text2)]">
+                        {di.label}
+                      </div>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           {blocks.map((b) => (
             <tbody key={b.scope}>
               <tr className="border-t border-[var(--border)] bg-[var(--surface2)]">
-                {/* A cím a rögzített bal oszlopban van, így vízszintes görgetésnél is látszik
-                    (egy teljes szélességű cella a görgetéssel együtt kicsúszna a képből). */}
+                {/* A cím a rögzített bal oszlopban: vízszintes görgetésnél is látszik. */}
                 <th
                   scope="rowgroup"
                   className="sticky left-0 z-10 whitespace-nowrap border-r-[0.5px] border-[var(--border)] bg-[var(--surface2)] px-3 py-2 text-left text-[14px] font-semibold text-[var(--text)]"
@@ -264,13 +295,12 @@ export function CalendarGrid({
               {b.scope === "egesz_haz" ? (
                 <>
                   {houseAvailabilityRow()}
-                  {priceRow("egesz_haz", "price", "Ár / éj")}
+                  {HOUSE_ROWS.map((g) => priceRow("egesz_haz", g, g === 8 ? "1–8 fő" : `${g} fő`))}
                 </>
               ) : (
                 <>
-                  {availabilityRow(b.scope)}
-                  {priceRow(b.scope, "price", "Ár / éj")}
-                  {priceRow(b.scope, "extraPersonPrice", "Pótágy / fő")}
+                  {availabilityRow(b.scope as RoomScope)}
+                  {Array.from({ length: MAX_GUESTS[b.scope] }, (_, i) => i + 1).map((g) => priceRow(b.scope, g, `${g} fő`))}
                 </>
               )}
             </tbody>

@@ -1,5 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { formatFt } from "@/lib/booking/constants";
+import { getSettings } from "@/lib/booking/server";
+
+// "2027. január 1." – a hét napja nélkül
+function fmtLongDate(iso: string): string {
+  const months = ["január", "február", "március", "április", "május", "június", "július", "augusztus", "szeptember", "október", "november", "december"];
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${y}. ${months[m - 1]} ${d}.`;
+}
 
 export const metadata: Metadata = {
   title: "Általános Szerződési Feltételek (ÁSZF) | Viki Vendégház",
@@ -13,7 +22,12 @@ const prose =
   "[&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_li]:mb-1 " +
   "[&_a]:text-[var(--accent)] [&_a]:underline [&_a]:underline-offset-2";
 
-export default function AszfPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AszfPage() {
+  // A díjak a Beállításokból jönnek, így az ÁSZF mindig a valós számokat mutatja.
+  const s = await getSettings();
+  const fromLabel = fmtLongDate(s.newPricingFrom);
   return (
     <div className="pt-16 bg-[var(--bg)] min-h-screen">
       <section className="bg-[var(--nav-bg)] py-16 px-6">
@@ -128,9 +142,10 @@ export default function AszfPage() {
           <h3>4.2. Az egész házas foglalás díja és a csoporton belüli kockázat viselése</h3>
           <p>
             Egész házas foglalás esetén a vendégház egységként kerül értékesítésre. A szolgáltatás
-            díja az egész házra megállapított díj, amely független a ténylegesen megérkező vendégek
-            számától: akár 1 fő, akár a legfeljebb 12 fő veszi igénybe a szálláshelyet, a fizetendő
-            díj azonos. A Szolgáltatót minden esetben a teljes, egész házra vonatkozó díj illeti meg.
+            díja az egész házra a foglaláskor megadott létszám alapján megállapított díj (1–8 főig
+            azonos, afelett létszám szerint), amely független a ténylegesen megérkező vendégek
+            számától. A Szolgáltatót minden esetben a foglalásban rögzített, egész házra vonatkozó díj
+            illeti meg.
           </p>
           <p>
             Amennyiben a vendégcsoport bármely tagja nem érkezik meg, vagy a részvételét lemondja,
@@ -146,20 +161,34 @@ export default function AszfPage() {
           <p>
             Egész házas foglalás esetén a szálláshely-szolgáltatás díja az egész házra
             megállapított, a foglalás visszaigazolásában rögzített díj. A díj a ténylegesen érkező
-            vendégek számától független (lásd 4.2. pont). A mindenkori árak szezontól és naptípustól
-            (hétköznap/hétvége) függően változhatnak.
+            vendégek számától független (lásd 4.2. pont). A mindenkori árak az időszaktól, a
+            naptípustól (hétköznap/hétvége) és a létszámtól függően változhatnak; az aktuális
+            árakat az <Link href="/arak">Árak és díjak</Link> oldal tartalmazza.
           </p>
           <h3>5.2. Foglalási díj (előleg) és fizetés</h3>
           <ul>
             <li>
-              <strong>Foglalási díj (előleg):</strong> a szolgáltatás díjának 10%-a, amelyet a
-              Vendég a foglalás Szolgáltató általi visszaigazolásától számított 3 naptári napon
-              belül, banki átutalással köteles megfizetni.
+              <strong>Foglalási díj (előleg):</strong> a szolgáltatás díjának {s.depositPercentNew}%-a;
+              ha a foglalás bármely éjszakája ünnepre, nagy rendezvényre vagy Szilveszterre esik,
+              {" "}{s.depositPercentPeak}%-a. A Vendég a foglalás Szolgáltató általi visszaigazolásától
+              számított {s.depositDueDays} naptári napon belül, banki átutalással köteles megfizetni. A
+              {" "}{fromLabel} előtti érkezésű foglalásoknál a foglalási díj a szolgáltatás díjának
+              {" "}{s.depositPercent}%-a.
             </li>
             <li>
-              <strong>A foglalás érvényessége:</strong> amennyiben a foglalási díj a fenti 3 napos
-              határidőn belül nem érkezik meg a Szolgáltatóhoz, a foglalás automatikusan érvényét
-              veszti, és a Szolgáltató az időpontot szabadon értékesítheti.
+              <strong>A foglalás érvényessége:</strong> amennyiben a foglalási díj a fenti
+              {" "}{s.depositDueDays} napos határidőn belül nem érkezik meg a Szolgáltatóhoz, a foglalás
+              automatikusan érvényét veszti, és a Szolgáltató az időpontot szabadon értékesítheti.
+            </li>
+            <li>
+              <strong>Takarítási díj:</strong> egész házas foglalásnál {formatFt(s.houseCleaningFee)} /
+              foglalás, ha a tartózkodás {s.houseCleaningUnderNights} éjszakánál rövidebb; szobafoglalásnál
+              {" "}{formatFt(s.roomCleaningFee)} / szoba, ha a tartózkodás {s.roomCleaningUnderNights}{" "}
+              éjszakánál rövidebb.
+            </li>
+            <li>
+              <strong>Gyermekek:</strong> a 3–12 éves gyermek a pótágy (felár) {s.childDiscountPercent}%-át
+              fizeti; a 0–2 éves gyermek ingyenes, és nem számít bele a létszámba.
             </li>
             <li>
               <strong>Fennmaradó összeg:</strong> a szolgáltatás díjának fennmaradó része a
@@ -169,13 +198,15 @@ export default function AszfPage() {
               <strong>Fizetési módok:</strong> készpénz, banki átutalás, valamint SZÉP-kártya.
             </li>
             <li>
-              <strong>Idegenforgalmi adó:</strong> 600 Ft/fő/éj, amely a szolgáltatás díján felül, a
-              helyszínen fizetendő.
+              <strong>Idegenforgalmi adó:</strong> {formatFt(s.ifaPerPersonPerNight)} / fő / éj a 18 év
+              feletti vendégek után. A {fromLabel} napon vagy később érkező foglalásoknál a végösszeg
+              része, korábbi érkezésnél a helyszínen fizetendő.
             </li>
             <li>
-              <strong>Kaució:</strong> a Szolgáltató jogosult kauciót kérni, amelynek összegét
-              egyedileg, a foglalás körülményei alapján állapítja meg. A kauciót a Szolgáltató a
-              szálláshely rendeltetésszerű, kár nélküli visszaadása esetén a távozáskor visszatéríti.
+              <strong>Kaució:</strong> nagyobb csoportoknál a Szolgáltató jogosult kauciót kérni,
+              amelynek összegét egyedileg, a foglalás körülményei alapján állapítja meg. A kauciót a
+              Szolgáltató a szálláshely rendeltetésszerű, kár nélküli visszaadása esetén a távozáskor
+              visszatéríti.
             </li>
           </ul>
 
@@ -225,12 +256,12 @@ export default function AszfPage() {
 
           <h2>7. Bejelentkezés és kijelentkezés</h2>
           <ul>
-            <li>Bejelentkezés (check-in): 15:00 órától.</li>
-            <li>Kijelentkezés (check-out): 10:00 óráig.</li>
+            <li>Bejelentkezés (check-in): {s.checkInFrom} és {s.checkInUntil} óra között.</li>
+            <li>Kijelentkezés (check-out): {s.checkOutUntil} óráig.</li>
           </ul>
           <p>
             <strong>Késői kijelentkezés (late check-out):</strong> amennyiben a Vendég a távozás
-            napján 10:00 óra után is a szálláshelyen kíván maradni, arra minden esetben kizárólag a
+            napján {s.checkOutUntil} óra után is a szálláshelyen kíván maradni, arra minden esetben kizárólag a
             vendégház tulajdonosával (üzemeltetőjével) történő előzetes megegyezés alapján van
             lehetőség. A tulajdonos a többletidőért díjat számíthat fel. A megegyezés minden esetben
             a foglalóval (szerződéses féllel) történik, és a többletdíj megfizetéséért a foglaló

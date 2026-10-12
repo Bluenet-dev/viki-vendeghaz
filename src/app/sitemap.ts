@@ -8,6 +8,7 @@ const BASE_URL = "https://vikivendeghaz.hu";
 const staticRoutes: MetadataRoute.Sitemap = [
   { url: BASE_URL, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
   { url: `${BASE_URL}/szobak`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
+  { url: `${BASE_URL}/arak`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },
   { url: `${BASE_URL}/szobak/komfort-ketagyas`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },
   { url: `${BASE_URL}/szobak/komfort-franciaagyas`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },
   { url: `${BASE_URL}/szobak/superior`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },

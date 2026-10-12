@@ -6,6 +6,7 @@ import { closures } from "@/db/schema";
 import { MEAL_LABEL, formatFt, targetLabel, type Meal } from "@/lib/booking/constants";
 import { addDays, diffDays, fmtLong, todayBudapest } from "@/lib/booking/dates";
 import { getBooking, getSettings } from "@/lib/booking/server";
+import { guestsText } from "@/lib/mail/templates";
 import { depositReceivedAction } from "../actions";
 import { SourceBadge, StatusBadge } from "../badges";
 import { CancelButton, ConfirmButton, ResendButton } from "../buttons";
@@ -28,6 +29,7 @@ export default async function FoglalasPage({ params }: { params: Promise<{ id: s
   if (!b) notFound();
   const s = await getSettings();
   const closedCount = await db.$count(closures, eq(closures.bookingId, b.id));
+  const lines = Array.isArray(b.lines) ? (b.lines as { label: string; amount: number }[]) : null;
   const nights = diffDays(b.checkIn, b.checkOut);
   const today = todayBudapest();
 
@@ -81,17 +83,38 @@ export default async function FoglalasPage({ params }: { params: Promise<{ id: s
         <Row label="Érkezés">{fmtLong(b.checkIn)}</Row>
         <Row label="Távozás">{fmtLong(b.checkOut)}</Row>
         <Row label="Éjszakák">{nights}</Row>
-        <Row label="Vendégek">{b.guests} fő</Row>
+        <Row label="Vendégek">{guestsText(b)}</Row>
         <Row label="Étkezés">
           {b.meal === "nincs" ? "Nincs" : `${MEAL_LABEL[b.meal as Meal] ?? b.meal} – ${b.mealGuests ?? b.guests} fő`}
         </Row>
-        <Row label="Összeg">{b.total != null ? formatFt(b.total) : "Egyedi ár – még nincs megadva"}</Row>
-        <Row label="Előleg">
+        {lines?.length ? (
+          <Row label="Összesítő">
+            <table className="text-[14px]">
+              <tbody>
+                {lines.map((l) => (
+                  <tr key={l.label}>
+                    <td className="pr-6 text-[var(--text2)]">{l.label}</td>
+                    <td className={`text-right whitespace-nowrap ${l.amount < 0 ? "text-[#3A5A3C]" : ""}`}>{formatFt(l.amount)}</td>
+                  </tr>
+                ))}
+                <tr className="font-semibold">
+                  <td className="pr-6 pt-1">Összesen</td>
+                  <td className="pt-1 text-right whitespace-nowrap">{b.total != null ? formatFt(b.total) : "–"}</td>
+                </tr>
+              </tbody>
+            </table>
+          </Row>
+        ) : (
+          <Row label="Összeg">{b.total != null ? formatFt(b.total) : "Egyedi ár – még nincs megadva"}</Row>
+        )}
+        <Row label={b.depositPercent != null ? `Foglaló (${b.depositPercent}%)` : "Foglaló"}>
           {b.depositReceivedAt
             ? `${b.depositAmount != null ? formatFt(b.depositAmount) + " – " : ""}megérkezett ${fmtLong(b.depositReceivedAt)}`
             : b.depositAmount != null
               ? `${formatFt(b.depositAmount)}${depositDue ? `, határidő: ${fmtLong(depositDue)}` : ""}`
-              : "–"}
+              : b.total != null && b.depositPercent != null
+                ? `${formatFt(Math.round((b.total * b.depositPercent) / 100))} (visszaigazoláskor kérjük)`
+                : "Visszaigazoláskor számoljuk"}
         </Row>
         <Row label="Naptár">
           {closedCount > 0 ? `${nights} éj lezárva` : b.status === "valaszra_var" ? "A napok visszaigazoláskor zárulnak le" : "Nincs lezárt nap"}

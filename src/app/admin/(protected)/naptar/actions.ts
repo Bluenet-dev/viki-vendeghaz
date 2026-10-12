@@ -5,9 +5,9 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { closures } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-auth";
-import { ALL_SCOPES, ROOM_SCOPES, isScope, type Scope } from "@/lib/booking/constants";
+import { ALL_SCOPES, MAX_GUESTS, ROOM_SCOPES, isScope, type Scope } from "@/lib/booking/constants";
 import { diffDays, isIsoDate, todayBudapest } from "@/lib/booking/dates";
-import { bulkFill, setRate, toggleClosure } from "@/lib/booking/server";
+import { bulkFill, setDayPrice, toggleClosure } from "@/lib/booking/server";
 
 function assertEditable(date: string) {
   if (!isIsoDate(date)) throw new Error("Érvénytelen dátum.");
@@ -44,19 +44,16 @@ export async function toggleHouseAction(date: string): Promise<{ bookingId: numb
   return { bookingId: null };
 }
 
-export async function setRateAction(
-  scope: string,
-  date: string,
-  field: "price" | "extraPersonPrice",
-  raw: string,
-): Promise<{ error?: string }> {
+// Létszám szerinti napi ár kézi felülírása (üres = törlés).
+export async function setDayPriceAction(scope: string, date: string, guests: number, raw: string): Promise<{ error?: string }> {
   await requireAdmin();
   assertEditable(date);
   if (!isScope(scope)) return { error: "Ismeretlen szoba." };
-  if (field !== "price" && field !== "extraPersonPrice") return { error: "Ismeretlen mező." };
+  const allowed = scope === "egesz_haz" ? [8, 9, 10, 11, 12] : Array.from({ length: MAX_GUESTS[scope] }, (_, i) => i + 1);
+  if (!allowed.includes(guests)) return { error: "Ismeretlen létszám." };
   const clean = raw.replace(/\s|Ft/gi, "");
-  if (clean !== "" && !/^\d+$/.test(clean)) return { error: "Csak számot írjon (pl. 16000)." };
-  await setRate(scope, date, field, clean === "" ? null : Number(clean));
+  if (clean !== "" && !/^\d+$/.test(clean)) return { error: "Csak számot írjon (pl. 18000)." };
+  await setDayPrice(scope, date, guests, clean === "" ? null : Number(clean));
   revalidatePath("/admin/naptar");
   return {};
 }
@@ -83,28 +80,26 @@ export async function bulkFillAction(_prev: BulkState, formData: FormData): Prom
   if (from < todayBudapest()) return { error: "Múltbeli nap nem módosítható." };
   if (diffDays(from, to) > 800) return { error: "Egyszerre legfeljebb kb. két évet lehet kitölteni." };
 
-  const price = optionalInt(formData.get("price"));
-  const extra = optionalInt(formData.get("extraPersonPrice"));
+  const tariff = String(formData.get("tariff") ?? "").trim().toUpperCase();
+  if (tariff && !/^[A-Z]$/.test(tariff)) return { error: "Ismeretlen tarifa." };
   const minNights = optionalInt(formData.get("minNights"));
-  if (price === "invalid" || extra === "invalid" || minNights === "invalid") return { error: "Az árak és az éjszakák száma csak szám lehet." };
+  if (minNights === "invalid") return { error: "Az éjszakák száma csak szám lehet." };
   if (minNights === 0) return { error: "A minimum éjszaka legalább 1." };
-
-  const whole = String(formData.get("wholeHouseOnly") ?? "");
+  const label = String(formData.get("label") ?? "").trim().slice(0, 40);
+  const clearLabel = formData.get("clearLabel") === "on";
   const closure = String(formData.get("closure") ?? "");
   const scopes: Scope[] = scopeRaw === "mind" ? [...ALL_SCOPES] : isScope(scopeRaw) ? [scopeRaw] : [];
   if (!scopes.length) return { error: "Válassza ki a szobát." };
 
-  const nothing = price == null && extra == null && minNights == null && !whole && !closure;
-  if (nothing) return { error: "Töltsön ki legalább egy mezőt." };
+  if (!tariff && minNights == null && !label && !clearLabel && !closure) return { error: "Töltsön ki legalább egy mezőt." };
 
   const res = await bulkFill({
     from,
     to,
     scopes,
-    price,
-    extraPersonPrice: extra,
+    tariff: tariff || null,
     minNights,
-    wholeHouseOnly: whole === "igen" ? true : whole === "nem" ? false : null,
+    label: clearLabel ? "" : label || null,
     closure: closure === "close" ? "close" : closure === "open" ? "open" : null,
   });
   revalidatePath("/admin/naptar");

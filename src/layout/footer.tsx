@@ -5,7 +5,8 @@ const cols = [
   {
     heading: "Szállás",
     links: [
-      { name: "Szobák & árak", href: "/szobak" },
+      { name: "Szobák", href: "/szobak" },
+      { name: "Árak és díjak", href: "/arak" },
       { name: "Csomagajánlatok", href: "/csomagok" },
       { name: "Foglalás", href: "/foglalas" },
     ],

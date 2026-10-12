@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { formatFt } from "@/lib/booking/constants";
+import { getSettings } from "@/lib/booking/server";
 
 export const metadata: Metadata = {
   title: "Házirend | Viki Vendégház Szilvásvárad",
@@ -11,7 +14,11 @@ const prose =
   "[&_h3]:font-semibold [&_h3]:text-base [&_h3]:mt-6 [&_h3]:text-[var(--text)] " +
   "[&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_li]:mb-2";
 
-export default function HazirendPage() {
+export const dynamic = "force-dynamic";
+
+export default async function HazirendPage() {
+  // A díjak és időpontok a Beállításokból jönnek.
+  const s = await getSettings();
   return (
     <div className="pt-16 bg-[var(--bg)] min-h-screen">
       <section className="bg-[var(--nav-bg)] py-16 px-6">
@@ -41,8 +48,8 @@ export default function HazirendPage() {
           <h2>Házirendi pontok</h2>
           <ol>
             <li>
-              Vendégházunkat az érkezés napján 15:00 órától lehet elfoglalni. A kijelentkezés napján
-              10:00 óráig kérjük elhagyni a szálláshelyet.
+              Vendégházunkat az érkezés napján {s.checkInFrom} és {s.checkInUntil} óra között lehet
+              elfoglalni. A kijelentkezés napján {s.checkOutUntil} óráig kérjük elhagyni a szálláshelyet.
             </li>
             <li>
               Vendégházunkat a vendégek tisztán kapják és ottlétük alatt maguk gondoskodnak a
@@ -106,7 +113,7 @@ export default function HazirendPage() {
             <li>Udvar használata (játszótéri eszközök, grill, bogrács)</li>
             <li>Zárt parkoló</li>
             <li>Kültéri fa medence (tavasztól őszig)</li>
-            <li>Sóbarlang használata első 45 percig naponta, szállóvendégeink részére</li>
+            <li>Sóbarlang használata első {s.saltCaveFreeMinutes} percig naponta, szállóvendégeink részére</li>
             <li>
               A vendégház szerződésben áll éttermekkel, ahol 10%-os kedvezményt kaphatnak.
             </li>
@@ -114,13 +121,24 @@ export default function HazirendPage() {
 
           <h2>Fizetős szolgáltatások</h2>
           <ul>
-            <li>Fürdődézsa: téli / nyári időszakban a felfűtési díj napi 7 000 Ft.</li>
-            <li>Finn szauna: 1 óra / 1 500 Ft/fő.</li>
+            <li>Dézsafürdő: {formatFt(s.tubPrice)} / felfűtés.</li>
             <li>
-              Infraszauna: (a Superior szoba igénybevevői, vagy a teljes vendégház lefoglalása
-              esetén) 1 óra / 1 000 Ft/fő.
+              Szaunanap (finn és infraszauna 19:00 óráig, egész házas foglalásnál):{" "}
+              {formatFt(s.saunaDayPrice)} / nap.
+            </li>
+            <li>Finn szauna szobás vendégnek: {formatFt(s.finnSaunaPerPersonHour)} / fő / óra.</li>
+            <li>Közös infraszauna szobás vendégnek: {formatFt(s.infraSharedPerPersonHour)} / fő / óra.</li>
+            <li>Infraszauna a Superior szobában: {formatFt(s.superiorInfraPerHour)} / óra.</li>
+            <li>
+              Kaució: nagyobb csoportoknál egyedi elbírálás alapján kérhetünk kauciót, amely
+              távozáskor – a szálláshely kár nélküli átadása esetén – visszajár.
             </li>
           </ul>
+          <p>
+            A szállás árait, a takarítási díjat, a gyermekkedvezményt és az idegenforgalmi adót az{" "}
+            <Link href="/arak" className="text-[var(--accent)] underline underline-offset-2">Árak és díjak</Link>{" "}
+            oldal tartalmazza.
+          </p>
 
           <h3>Sóbarlang – áraink</h3>
           <p>

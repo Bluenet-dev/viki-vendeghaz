@@ -9,7 +9,15 @@ const input =
   "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[15px] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
 const label = "mb-1 block text-[13px] font-medium text-[var(--text2)]";
 
-export function BulkFillButton({ defaultFrom, defaultTo }: { defaultFrom: string; defaultTo: string }) {
+export function BulkFillButton({
+  defaultFrom,
+  defaultTo,
+  tariffs,
+}: {
+  defaultFrom: string;
+  defaultTo: string;
+  tariffs: { code: string; name: string }[];
+}) {
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState(bulkFillAction, {});
 
@@ -62,36 +70,38 @@ export function BulkFillButton({ defaultFrom, defaultTo }: { defaultFrom: string
 
         <p className="text-[13px] text-[var(--text2)]">Csak a kitöltött mezők változnak, a többi marad a régi.</p>
 
+        <div>
+          <label className={label} htmlFor="tariff">Tarifa</label>
+          <select id="tariff" name="tariff" defaultValue="" className={input}>
+            <option value="">Nem változik</option>
+            {tariffs.map((t) => (
+              <option key={t.code} value={t.code}>{t.code} – {t.name}</option>
+            ))}
+          </select>
+          <p className="mt-1 text-[12px] text-[var(--text3)]">Beírja a napokra a tarifát, minden létszám árát és a minimum éjszakát.</p>
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={label} htmlFor="price">Ár / éj (Ft)</label>
-            <input id="price" name="price" inputMode="numeric" className={input} />
-          </div>
-          <div>
-            <label className={label} htmlFor="extraPersonPrice">Pótágy / fő (Ft)</label>
-            <input id="extraPersonPrice" name="extraPersonPrice" inputMode="numeric" className={input} />
-          </div>
           <div>
             <label className={label} htmlFor="minNights">Min. éjszaka</label>
             <input id="minNights" name="minNights" type="number" min={1} className={input} />
           </div>
           <div>
-            <label className={label} htmlFor="wholeHouseOnly">Csak egész ház</label>
-            <select id="wholeHouseOnly" name="wholeHouseOnly" defaultValue="" className={input}>
+            <label className={label} htmlFor="closure">Szabad / foglalt</label>
+            <select id="closure" name="closure" defaultValue="" className={input}>
               <option value="">Nem változik</option>
-              <option value="igen">Igen</option>
-              <option value="nem">Nem</option>
+              <option value="close">Lezárás</option>
+              <option value="open">Feloldás</option>
             </select>
           </div>
         </div>
 
         <div>
-          <label className={label} htmlFor="closure">Szabad / foglalt</label>
-          <select id="closure" name="closure" defaultValue="" className={input}>
-            <option value="">Nem változik</option>
-            <option value="close">Lezárás</option>
-            <option value="open">Feloldás</option>
-          </select>
+          <label className={label} htmlFor="label">Címke (pl. „Masters”)</label>
+          <input id="label" name="label" maxLength={40} className={input} />
+          <label className="mt-2 flex items-center gap-2 text-[13px] text-[var(--text2)]">
+            <input type="checkbox" name="clearLabel" /> Címke törlése
+          </label>
         </div>
 
         {state.error && <p className="rounded-md bg-[#FCEBEB] px-3 py-2 text-[14px] text-[#B23B3B]">{state.error}</p>}

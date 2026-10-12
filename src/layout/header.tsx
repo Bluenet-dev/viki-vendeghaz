@@ -23,8 +23,9 @@ const nav: NavItem[] = [
       { name: "Csomagajánlatok", href: "/csomagok" },
     ],
     allHref: "/szobak",
-    allLabel: "Összes szoba & árak",
+    allLabel: "Összes szoba",
   },
+  { name: "Árak", href: "/arak" },
   {
     name: "Wellness",
     items: [

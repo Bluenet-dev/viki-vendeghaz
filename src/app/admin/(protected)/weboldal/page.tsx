@@ -9,6 +9,7 @@ import {
   IconMessageCircle,
   IconChartBar,
   IconSettings,
+  IconCurrencyForint,
   type IconProps,
 } from "@tabler/icons-react";
 import type { ComponentType } from "react";
@@ -31,7 +32,8 @@ export default async function WeboldalPage() {
     { href: "/admin/gyik", label: "GYIK", desc: "Gyakori kérdések", icon: IconHelpCircle },
     { href: "/admin/uzenetek", label: "Üzenetek", desc: "Kapcsolati űrlapról", icon: IconMessageCircle, badge: unread },
     { href: "/admin/statisztikak", label: "Statisztikák", desc: "Foglalási grafikonok", icon: IconChartBar },
-    { href: "/admin/beallitasok", label: "Beállítások", desc: "Étkezés, IFA, előleg, bank, Gmail", icon: IconSettings },
+    { href: "/admin/beallitasok/tarifak", label: "Tarifák és csomagok", desc: "A–H tarifák, létszámárak, csomagok", icon: IconCurrencyForint },
+    { href: "/admin/beallitasok", label: "Beállítások", desc: "Díjak, kedvezmények, foglaló, bank, Gmail", icon: IconSettings },
   ];
 
   return (

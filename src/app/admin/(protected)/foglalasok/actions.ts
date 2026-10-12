@@ -116,13 +116,11 @@ export async function createBookingAction(_prev: ActionState, formData: FormData
   if (totalRaw && !/^\d+$/.test(totalRaw)) return { error: "Az összeg csak szám lehet (pl. 64000)." };
 
   const mealGuests = meal === "nincs" ? null : Math.min(Number(str(formData, "mealGuests")) || guests, guests);
-  let total: number | null = totalRaw ? Number(totalRaw) : null;
-  if (total == null) {
-    // Ha nincs megadva, a naptár árai alapján számoljuk.
-    const q = await quoteFor({ scope, checkIn, checkOut, guests, meal: meal as Meal, mealGuests: mealGuests ?? undefined });
-    total = q.total;
-  }
-  const s = await getSettings();
+  // A naptár árai alapján (2027-től tarifa szerinti tételekkel); kézi összeg felülírja.
+  const q = await quoteFor({ scope, checkIn, checkOut, guests, meal: meal as Meal, mealGuests: mealGuests ?? undefined });
+  const manualTotal = totalRaw ? Number(totalRaw) : null;
+  const total: number | null = manualTotal ?? q.total;
+  const depositPercent = q.depositPercent;
   // Az OTA-k (Booking, Szállás.hu) maguk szedik a díjat – ott nincs előlegre várás.
   const status: Status = source === "booking" || source === "szallas_hu" ? "visszaigazolt" : "elfogadva";
 
@@ -140,10 +138,17 @@ export async function createBookingAction(_prev: ActionState, formData: FormData
         meal: meal as Meal,
         mealGuests,
         total,
-        depositAmount: status === "elfogadva" && total != null ? Math.round((total * s.depositPercent) / 100) : null,
+        depositAmount: status === "elfogadva" && total != null ? Math.round((total * depositPercent) / 100) : null,
         source,
         status,
         note: str(formData, "note") || null,
+        adults: guests,
+        teens: 0,
+        children: 0,
+        infants: 0,
+        lines: manualTotal == null ? q.lines : null,
+        depositPercent,
+        pricingRegime: q.regime,
       },
       true,
     );

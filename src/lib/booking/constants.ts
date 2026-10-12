@@ -112,5 +112,6 @@ export function targetMaxGuests(t: Target): number {
 }
 
 export function formatFt(n: number): string {
-  return `${n.toLocaleString("hu-HU")} Ft`;
+  // Kedvezménynél valódi mínuszjel (−), ne kötőjel.
+  return n < 0 ? `−${(-n).toLocaleString("hu-HU")} Ft` : `${n.toLocaleString("hu-HU")} Ft`;
 }

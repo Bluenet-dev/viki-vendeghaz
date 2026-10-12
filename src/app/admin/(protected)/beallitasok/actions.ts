@@ -22,10 +22,39 @@ const INT_FIELDS = [
   "breakfastPrice",
   "dinnerPrice",
   "halfBoardPrice",
+  "depositPercentNew",
+  "depositPercentPeak",
+  "childDiscountPercent",
+  "houseLongStayNights",
+  "houseLongStayPercent",
+  "roomThirdNightPercent",
+  "lastMinuteDays",
+  "lastMinutePercent",
+  "houseCleaningFee",
+  "houseCleaningUnderNights",
+  "roomCleaningFee",
+  "roomCleaningUnderNights",
+  "saunaDayPrice",
+  "tubPrice",
+  "finnSaunaPerPersonHour",
+  "infraSharedPerPersonHour",
+  "superiorInfraPerHour",
+  "saltCaveFreeMinutes",
+] as const;
+
+const PERCENT_FIELDS = [
+  "depositPercent",
+  "depositPercentNew",
+  "depositPercentPeak",
+  "childDiscountPercent",
+  "houseLongStayPercent",
+  "roomThirdNightPercent",
+  "lastMinutePercent",
 ] as const;
 
 const TEXT_FIELDS = [
   "checkInFrom",
+  "checkInUntil",
   "checkOutUntil",
   "propertyName",
   "phone",
@@ -47,14 +76,17 @@ export async function saveSettingsAction(_prev: SettingsState, formData: FormDat
     if (!/^\d+$/.test(raw)) return { error: "Az árak és számok mezőibe csak számot írjon." };
     update[f] = Number(raw);
   }
-  if ((update.depositPercent as number) > 100) return { error: "Az előleg legfeljebb 100% lehet." };
+  if (PERCENT_FIELDS.some((f) => (update[f] as number) > 100)) return { error: "A százalékok legfeljebb 100 lehetnek." };
+  const from = String(formData.get("newPricingFrom") ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from)) return { error: "Adja meg, mely naptól érvényesek az új szabályok." };
+  update.newPricingFrom = from;
 
   for (const f of TEXT_FIELDS) {
     const v = String(formData.get(f) ?? "").trim();
     if (!v) return { error: "Minden mezőt töltsön ki." };
     update[f] = v;
   }
-  if (!/^\d{1,2}:\d{2}$/.test(update.checkInFrom as string) || !/^\d{1,2}:\d{2}$/.test(update.checkOutUntil as string)) {
+  if (["checkInFrom", "checkInUntil", "checkOutUntil"].some((k) => !/^\d{1,2}:\d{2}$/.test(update[k] as string))) {
     return { error: "Az időpontot így adja meg: 15:00" };
   }
 

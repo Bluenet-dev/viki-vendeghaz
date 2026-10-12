@@ -5,10 +5,22 @@
 
 import { and, eq, gte, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { bookings, closures, dayRates, settings } from "@/db/schema";
+import { bookings, closures, dayPrices, dayRates, settings, stayPackages, tariffPrices, tariffs } from "@/db/schema";
 import { ALL_SCOPES, ROOM_SCOPES, scopeRooms, targetRooms, type Meal, type Scope, type Source, type Status, type Target } from "./constants";
 import { addDays, nightsOf, todayBudapest } from "./dates";
-import { closedNights, computeQuote, rateKey, searchOptions, type BookingData, type Quote, type RateRow } from "./quote";
+import {
+  closedNights,
+  computeQuote,
+  priceKey,
+  rateKey,
+  searchOptions,
+  type BookingData,
+  type PackageRow,
+  type Quote,
+  type QuoteInput,
+  type RateRow,
+  type TariffRow,
+} from "./quote";
 
 export type Settings = typeof settings.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
@@ -20,8 +32,42 @@ export async function getSettings(): Promise<Settings> {
   return created;
 }
 
+export async function loadTariffs(): Promise<TariffRow[]> {
+  return db
+    .select({
+      code: tariffs.code,
+      name: tariffs.name,
+      minNights: tariffs.minNights,
+      roomMode: tariffs.roomMode,
+      releaseDays: tariffs.releaseDays,
+      thirdNightDiscount: tariffs.thirdNightDiscount,
+      lastMinuteDiscount: tariffs.lastMinuteDiscount,
+      peakDeposit: tariffs.peakDeposit,
+      packageGroup: tariffs.packageGroup,
+      color: tariffs.color,
+    })
+    .from(tariffs)
+    .orderBy(tariffs.sortOrder);
+}
+
+export async function loadPackages(): Promise<PackageRow[]> {
+  return db
+    .select({
+      slug: stayPackages.slug,
+      name: stayPackages.name,
+      includes: stayPackages.includes,
+      priceLow: stayPackages.priceLow,
+      priceHigh: stayPackages.priceHigh,
+      maxGuests: stayPackages.maxGuests,
+      months: stayPackages.months,
+      active: stayPackages.active,
+    })
+    .from(stayPackages)
+    .orderBy(stayPackages.sortOrder);
+}
+
 export async function loadBookingData(from: string, to: string, s?: Settings): Promise<BookingData> {
-  const [rateRows, closureRows, st] = await Promise.all([
+  const [rateRows, priceRows, closureRows, tariffRows, packages, st] = await Promise.all([
     db
       .select({
         roomScope: dayRates.roomScope,
@@ -30,31 +76,42 @@ export async function loadBookingData(from: string, to: string, s?: Settings): P
         extraPersonPrice: dayRates.extraPersonPrice,
         minNights: dayRates.minNights,
         wholeHouseOnly: dayRates.wholeHouseOnly,
+        tariffCode: dayRates.tariffCode,
+        label: dayRates.label,
       })
       .from(dayRates)
       .where(and(gte(dayRates.date, from), lte(dayRates.date, to))),
     db
+      .select({ roomScope: dayPrices.roomScope, date: dayPrices.date, guests: dayPrices.guests, price: dayPrices.price })
+      .from(dayPrices)
+      .where(and(gte(dayPrices.date, from), lte(dayPrices.date, to))),
+    db
       .select({ roomScope: closures.roomScope, date: closures.date, bookingId: closures.bookingId })
       .from(closures)
       .where(and(gte(closures.date, from), lte(closures.date, to))),
+    loadTariffs(),
+    loadPackages(),
     s ? Promise.resolve(s) : getSettings(),
   ]);
 
   const rates = new Map<string, RateRow>();
   for (const r of rateRows) rates.set(rateKey(r.roomScope, r.date), r);
+  const prices = new Map<string, number>();
+  for (const p of priceRows) prices.set(priceKey(p.roomScope, p.date, p.guests), p.price);
   const closed = new Map<string, number | null>();
   for (const c of closureRows) closed.set(rateKey(c.roomScope, c.date), c.bookingId);
-  return { rates, closed, settings: st };
+  return {
+    rates,
+    prices,
+    closed,
+    tariffs: new Map(tariffRows.map((t) => [t.code, t])),
+    packages,
+    settings: st,
+    today: todayBudapest(),
+  };
 }
 
-export async function quoteFor(input: {
-  scope: Target;
-  checkIn: string;
-  checkOut: string;
-  guests: number;
-  meal?: Meal;
-  mealGuests?: number;
-}): Promise<Quote> {
+export async function quoteFor(input: QuoteInput): Promise<Quote> {
   const data = await loadBookingData(input.checkIn, input.checkOut);
   return computeQuote(input, data);
 }
@@ -147,6 +204,16 @@ export interface NewBooking {
   status: Status;
   guestMessage?: string | null;
   note?: string | null;
+  // 2027-es árazás
+  adults?: number | null;
+  teens?: number | null;
+  children?: number | null;
+  infants?: number | null;
+  packageSlug?: string | null;
+  extras?: { saunaDays?: number; tubCount?: number } | null;
+  lines?: { label: string; amount: number }[] | null;
+  depositPercent?: number | null;
+  pricingRegime?: string | null;
 }
 
 // closeDays = true: a foglalás és a napok lezárása egyetlen atomikus utasítás.
@@ -170,6 +237,15 @@ export async function createBooking(b: NewBooking, closeDays: boolean): Promise<
         status: b.status,
         guestMessage: b.guestMessage || null,
         note: b.note || null,
+        adults: b.adults ?? null,
+        teens: b.teens ?? null,
+        children: b.children ?? null,
+        infants: b.infants ?? null,
+        packageSlug: b.packageSlug ?? null,
+        extras: b.extras ?? null,
+        lines: b.lines ?? null,
+        depositPercent: b.depositPercent ?? null,
+        pricingRegime: b.pricingRegime ?? null,
       })
       .returning({ id: bookings.id });
     return { ok: true, id: row.id };
@@ -184,10 +260,14 @@ export async function createBooking(b: NewBooking, closeDays: boolean): Promise<
     const res = await db.execute<{ id: number }>(sql`
       WITH nb AS (
         INSERT INTO bookings (name, email, phone, room_scope, check_in, check_out, guests, meal, meal_guests,
-                              total, deposit_amount, source, status, guest_message, note, accepted_at)
+                              total, deposit_amount, source, status, guest_message, note, accepted_at,
+                              adults, teens, children, infants, package_slug, extras, lines, deposit_percent, pricing_regime)
         VALUES (${b.name}, ${b.email || null}, ${b.phone || null}, ${b.scope}, ${b.checkIn}, ${b.checkOut},
                 ${b.guests}, ${b.meal}, ${b.mealGuests}, ${b.total}, ${b.depositAmount ?? null}, ${b.source},
-                ${b.status}, ${b.guestMessage || null}, ${b.note || null}, ${acceptedAt})
+                ${b.status}, ${b.guestMessage || null}, ${b.note || null}, ${acceptedAt},
+                ${b.adults ?? null}, ${b.teens ?? null}, ${b.children ?? null}, ${b.infants ?? null}, ${b.packageSlug ?? null},
+                ${b.extras ? JSON.stringify(b.extras) : null}::jsonb, ${b.lines ? JSON.stringify(b.lines) : null}::jsonb,
+                ${b.depositPercent ?? null}, ${b.pricingRegime ?? null})
         RETURNING id
       ), nc AS (
         INSERT INTO closures (room_scope, date, booking_id)
@@ -221,7 +301,8 @@ export async function confirmBooking(id: number): Promise<MutationResult> {
   if (busy.length) return { ok: false, error: "busy", busy };
 
   const s = await getSettings();
-  const deposit = b.depositAmount ?? (b.total != null ? Math.round((b.total * s.depositPercent) / 100) : null);
+  // A foglaló a foglaláskor rögzített százalékkal (2027: 30/50%); régi foglalásnál a beállítással.
+  const deposit = b.depositAmount ?? (b.total != null ? Math.round((b.total * (b.depositPercent ?? s.depositPercent)) / 100) : null);
   const rows = closurePairsJson(scope, b.checkIn, b.checkOut);
   try {
     // Ütközésnél az egyedi index hibát dob, és az állapotváltás is visszagördül.
@@ -276,32 +357,99 @@ export async function toggleClosure(room: string, date: string): Promise<{ booki
   return { bookingId: null };
 }
 
-export async function setRate(scope: Scope, date: string, field: "price" | "extraPersonPrice", value: number | null): Promise<void> {
-  await db
-    .insert(dayRates)
-    .values({ roomScope: scope, date, [field]: value })
-    .onConflictDoUpdate({ target: [dayRates.roomScope, dayRates.date], set: { [field]: value } });
+// A létszám szerinti napi ár kézi felülírása (null = törlés). A 2 fős (szoba) és az
+// 1–8 fős (ház) ár a day_rates.price-ba is bekerül – a "-tól" feliratok innen számolnak.
+export async function setDayPrice(scope: Scope, date: string, guests: number, value: number | null): Promise<void> {
+  const key = and(eq(dayPrices.roomScope, scope), eq(dayPrices.date, date), eq(dayPrices.guests, guests));
+  if (value == null) await db.delete(dayPrices).where(key);
+  else {
+    await db
+      .insert(dayPrices)
+      .values({ roomScope: scope, date, guests, price: value })
+      .onConflictDoUpdate({ target: [dayPrices.roomScope, dayPrices.date, dayPrices.guests], set: { price: value } });
+  }
+  if (guests === (scope === "egesz_haz" ? 8 : 2)) {
+    await db
+      .insert(dayRates)
+      .values({ roomScope: scope, date, price: value })
+      .onConflictDoUpdate({ target: [dayRates.roomScope, dayRates.date], set: { price: value } });
+  }
+}
+
+// Tarifa alkalmazása a megadott napokra: betű, min. éjszaka, szobák nyitása és MINDEN
+// létszámár a tarifatáblából. Lezáráshoz és foglaláshoz nem nyúl.
+export async function applyTariff(code: string, dates: string[], scopes: Scope[]): Promise<void> {
+  if (!dates.length || !scopes.length) return;
+  const [t] = await db.select().from(tariffs).where(eq(tariffs.code, code));
+  if (!t) throw new Error(`Ismeretlen tarifa: ${code}`);
+  const tp = await db.select().from(tariffPrices).where(eq(tariffPrices.tariffCode, code));
+
+  const rateRows = scopes.flatMap((scope) => {
+    const base = tp.find((p) => p.roomScope === scope && p.guests === (scope === "egesz_haz" ? 8 : 2))?.price ?? null;
+    return dates.map((date) => ({
+      roomScope: scope,
+      date,
+      tariffCode: code,
+      minNights: t.minNights,
+      wholeHouseOnly: scope !== "egesz_haz" && t.roomMode !== "open",
+      price: base,
+      extraPersonPrice: null,
+    }));
+  });
+  for (let i = 0; i < rateRows.length; i += 500) {
+    await db
+      .insert(dayRates)
+      .values(rateRows.slice(i, i + 500))
+      .onConflictDoUpdate({
+        target: [dayRates.roomScope, dayRates.date],
+        set: {
+          tariffCode: sql`excluded.tariff_code`,
+          minNights: sql`excluded.min_nights`,
+          wholeHouseOnly: sql`excluded.whole_house_only`,
+          price: sql`excluded.price`,
+          extraPersonPrice: null,
+        },
+      });
+  }
+
+  for (let i = 0; i < dates.length; i += 400) {
+    await db.delete(dayPrices).where(and(inArray(dayPrices.roomScope, scopes), inArray(dayPrices.date, dates.slice(i, i + 400))));
+  }
+  const priceRows = scopes.flatMap((scope) =>
+    tp.filter((p) => p.roomScope === scope).flatMap((p) => dates.map((date) => ({ roomScope: scope, date, guests: p.guests, price: p.price }))),
+  );
+  for (let i = 0; i < priceRows.length; i += 500) await db.insert(dayPrices).values(priceRows.slice(i, i + 500));
+}
+
+// A tarifa minden jövőbeli napjára újra kiírja az árakat (Beállítások → Tarifák).
+export async function reapplyTariffToFutureDays(code: string): Promise<number> {
+  const rows = await db
+    .selectDistinct({ date: dayRates.date })
+    .from(dayRates)
+    .where(and(eq(dayRates.tariffCode, code), gte(dayRates.date, todayBudapest())));
+  const dates = rows.map((r) => r.date);
+  await applyTariff(code, dates, [...ALL_SCOPES]);
+  return dates.length;
 }
 
 export interface BulkFill {
   from: string;
   to: string;
   scopes: Scope[];
-  price?: number | null;
-  extraPersonPrice?: number | null;
+  tariff?: string | null;
   minNights?: number | null;
-  wholeHouseOnly?: boolean | null;
+  label?: string | null; // undefined/null = nem változik, "" = törlés
   closure?: "close" | "open" | null;
 }
 
 // Csak a kitöltött mezők íródnak felül; a feloldás foglaláshoz tartozó napot nem érint.
 export async function bulkFill(f: BulkFill): Promise<{ days: number; skippedBooked: number }> {
   const days = nightsOf(f.from, addDays(f.to, 1));
+  if (f.tariff) await applyTariff(f.tariff, days, f.scopes);
+
   const set: Partial<typeof dayRates.$inferInsert> = {};
-  if (f.price !== undefined && f.price !== null) set.price = f.price;
-  if (f.extraPersonPrice !== undefined && f.extraPersonPrice !== null) set.extraPersonPrice = f.extraPersonPrice;
   if (f.minNights !== undefined && f.minNights !== null) set.minNights = f.minNights;
-  if (f.wholeHouseOnly !== undefined && f.wholeHouseOnly !== null) set.wholeHouseOnly = f.wholeHouseOnly;
+  if (f.label !== undefined && f.label !== null) set.label = f.label === "" ? null : f.label;
 
   if (Object.keys(set).length) {
     const rows = f.scopes.flatMap((scope) => days.map((date) => ({ roomScope: scope, date, ...set })));

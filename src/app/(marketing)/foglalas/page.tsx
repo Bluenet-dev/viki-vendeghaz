@@ -7,7 +7,7 @@ import { gallery } from "@/db/schema";
 import { BookingSearch } from "@/components/booking-search";
 import { SCOPE_LABEL, formatFt, isCombo, normalizeTarget, targetMaxGuests, targetRooms, type Scope, type Target } from "@/lib/booking/constants";
 import { addDays, diffDays, fmtLong, fmtRange, isIsoDate, todayBudapest } from "@/lib/booking/dates";
-import { computeQuote, searchOptions } from "@/lib/booking/quote";
+import { searchOptions, serializeBookingData } from "@/lib/booking/quote";
 import { findNearestFreeWindows, getSettings, loadBookingData } from "@/lib/booking/server";
 import { RequestForm } from "./request-form";
 
@@ -89,7 +89,6 @@ export default async function FoglalasPage({
       const chosen = choice ? options.find((o) => o.scope === choice) : undefined;
 
       if (chosen) {
-        const withoutMeal = computeQuote({ scope: chosen.scope, checkIn: ci, checkOut: co, guests }, data);
         body = (
           <div>
             <Link href={searchHref(ci, co, guests)} className="text-[14px] text-[var(--text2)] hover:text-[var(--text)]">
@@ -104,13 +103,15 @@ export default async function FoglalasPage({
               checkIn={ci}
               checkOut={co}
               guests={guests}
-              nights={chosen.nights}
-              lines={withoutMeal.lines}
-              accommodation={withoutMeal.total}
-              ifa={withoutMeal.ifa}
-              depositPercent={settings.depositPercent}
-              mealPrices={{ reggeli: settings.breakfastPrice, vacsora: settings.dinnerPrice, felpanzio: settings.halfBoardPrice }}
+              data={serializeBookingData(data)}
+              info={{
+                finnSauna: settings.finnSaunaPerPersonHour,
+                infraShared: settings.infraSharedPerPersonHour,
+                superiorInfra: settings.superiorInfraPerHour,
+                saltCaveMinutes: settings.saltCaveFreeMinutes,
+              }}
               checkInFrom={settings.checkInFrom}
+              checkInUntil={settings.checkInUntil}
               checkOutUntil={settings.checkOutUntil}
             />
           </div>

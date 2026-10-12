@@ -49,18 +49,43 @@ function mealText(meal: string, mealGuests: number | null): string {
   return `${MEAL_LABEL[meal as Meal] ?? meal} – ${mealGuests ?? 1} fő`;
 }
 
+export function guestsText(b: Pick<Booking, "guests" | "adults" | "teens" | "children" | "infants">): string {
+  if (b.adults == null) return `${b.guests} fő`;
+  const parts = [`${b.adults} felnőtt`];
+  if (b.teens) parts.push(`${b.teens} gyerek (13–17)`);
+  if (b.children) parts.push(`${b.children} gyerek (3–12)`);
+  if (b.infants) parts.push(`${b.infants} baba (0–2)`);
+  return parts.join(", ");
+}
+
+function bookingLines(b: Booking): { label: string; amount: number }[] | null {
+  return Array.isArray(b.lines) ? (b.lines as { label: string; amount: number }[]) : null;
+}
+
 function stayRows(b: Booking, s: Settings): [string, string][] {
   const nights = diffDays(b.checkIn, b.checkOut);
-  return [
+  const rows: [string, string][] = [
     ["Szállás", esc(targetLabel(b.roomScope))],
-    ["Érkezés", `${fmtLong(b.checkIn)}, ${esc(s.checkInFrom)}-tól`],
+    ["Érkezés", `${fmtLong(b.checkIn)}, ${esc(s.checkInFrom)}–${esc(s.checkInUntil)}`],
     ["Távozás", `${fmtLong(b.checkOut)}, ${esc(s.checkOutUntil)}-ig`],
     ["Éjszakák", `${nights}`],
-    ["Vendégek", `${b.guests} fő`],
-    ["Étkezés", esc(mealText(b.meal, b.mealGuests))],
-    ["Összesen", b.total != null ? formatFt(b.total) : "Egyedi ár – hamarosan jelezzük"],
-    ["Idegenforgalmi adó", `${formatFt(s.ifaPerPersonPerNight)}/fő/éj, helyszínen fizetendő`],
+    ["Vendégek", esc(guestsText(b))],
   ];
+  const lines = bookingLines(b);
+  if (lines?.length) {
+    // Tételes összesítő (2027-es árazás: szállás, kedvezmények, takarítás, IFA, extrák, étkezés)
+    for (const l of lines) rows.push([esc(l.label), formatFt(l.amount)]);
+    rows.push(["Összesen", b.total != null ? `<strong>${formatFt(b.total)}</strong>` : "Egyedi ár – hamarosan jelezzük"]);
+    if (b.pricingRegime !== "2027") rows.push(["Idegenforgalmi adó", `${formatFt(s.ifaPerPersonPerNight)}/fő/éj, helyszínen fizetendő`]);
+  } else {
+    rows.push(["Étkezés", esc(mealText(b.meal, b.mealGuests))]);
+    rows.push(["Összesen", b.total != null ? formatFt(b.total) : "Egyedi ár – hamarosan jelezzük"]);
+    rows.push(["Idegenforgalmi adó", `${formatFt(s.ifaPerPersonPerNight)}/fő/éj, helyszínen fizetendő`]);
+  }
+  if (b.total != null && b.depositPercent != null) {
+    rows.push([`Foglaló (${b.depositPercent}%)`, formatFt(Math.round((b.total * b.depositPercent) / 100))]);
+  }
+  return rows;
 }
 
 // Tulajdonosnak: új weboldalas kérés (Resend).
@@ -88,14 +113,14 @@ ${rows(items)}
 export function guestReceivedMail(b: Booking, s: Settings): Mail {
   const items = stayRows(b, s);
   const body = `<p style="margin:0 0 12px">Kedves ${esc(b.name)}!</p>
-<p style="margin:0 0 12px">Köszönjük, megkaptuk a foglalási kérését. Hamarosan jelentkezünk a visszaigazolással és az előleg részleteivel. A kérés még nem végleges foglalás.</p>
+<p style="margin:0 0 12px">Köszönjük, megkaptuk a foglalási kérését. Hamarosan jelentkezünk a visszaigazolással és a foglaló részleteivel. A kérés még nem végleges foglalás.</p>
 ${rows(items)}
 <p style="margin:16px 0 0">Kérdés esetén hívjon minket: <strong>${esc(s.phone)}</strong></p>`;
   return {
     to: b.email ?? "",
     subject: `Megkaptuk a foglalási kérését – ${s.propertyName}`,
     html: layout("Megkaptuk a kérését", body, s),
-    text: `Kedves ${b.name}!\n\nKöszönjük, megkaptuk a foglalási kérését. Hamarosan jelentkezünk a visszaigazolással és az előleg részleteivel.\n\n${textRows(items)}\n\nKérdés esetén: ${s.phone}`,
+    text: `Kedves ${b.name}!\n\nKöszönjük, megkaptuk a foglalási kérését. Hamarosan jelentkezünk a visszaigazolással és a foglaló részleteivel.\n\n${textRows(items)}\n\nKérdés esetén: ${s.phone}`,
     replyTo: s.email,
   };
 }
@@ -116,13 +141,13 @@ export function guestConfirmationMail(b: Booking, s: Settings): Mail {
   const depositBox =
     deposit != null
       ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EEF3EE;border:1px solid #C5D5C5;border-radius:8px;margin:18px 0"><tr><td style="padding:16px 18px">
-<div style="font-size:13px;color:${ACCENT};font-weight:bold;text-transform:uppercase;letter-spacing:1px">Előleg</div>
+<div style="font-size:13px;color:${ACCENT};font-weight:bold;text-transform:uppercase;letter-spacing:1px">Foglaló</div>
 <div style="font-size:22px;font-weight:bold;margin:4px 0">${formatFt(deposit)}</div>
 <div style="font-size:14px">Kérjük, ${fmtLong(due)}-ig utalja át – ezzel válik véglegessé a foglalás.</div>
 ${rows(bank)}
 <div style="font-size:13px;color:#6B6560">Lemondás az érkezés előtti 30. napig díjmentes. Részletek: <a href="https://www.vikivendeghaz.hu/aszf" style="color:${ACCENT}">ÁSZF</a></div>
 </td></tr></table>`
-      : `<p>Az előleg összegét külön jelezzük.</p>`;
+      : `<p>A foglaló összegét külön jelezzük.</p>`;
   const body = `<p style="margin:0 0 12px">Kedves ${esc(b.name)}!</p>
 <p style="margin:0 0 12px">Örömmel visszaigazoljuk foglalását, a napokat lefoglaltuk Önnek.</p>
 ${rows(items)}${depositBox}
@@ -132,7 +157,7 @@ ${rows(items)}${depositBox}
     subject: `Foglalás visszaigazolása – ${s.propertyName} (${b.checkIn})`,
     html: layout("Foglalását visszaigazoltuk", body, s),
     text: `Kedves ${b.name}!\n\nÖrömmel visszaigazoljuk foglalását.\n\n${textRows(items)}\n\n${
-      deposit != null ? `Előleg: ${formatFt(deposit)}, határidő: ${fmtLong(due)}\n${textRows(bank)}\n\n` : ""
+      deposit != null ? `Foglaló: ${formatFt(deposit)}, határidő: ${fmtLong(due)}\n${textRows(bank)}\n\n` : ""
     }Kérdése van? Válaszoljon erre a levélre, vagy hívjon: ${s.phone}`,
   };
 }

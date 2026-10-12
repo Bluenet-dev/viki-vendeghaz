@@ -15,6 +15,16 @@ export default async function BeallitasokPage() {
         <Link href="/admin/weboldal" className="text-[13px] text-[var(--text2)] hover:text-[var(--text)]">← Weboldal</Link>
         <h1 className="mt-3 text-xl font-semibold text-[var(--text)]">Beállítások</h1>
       </div>
+      <Link
+        href="/admin/beallitasok/tarifak"
+        className="flex items-center justify-between rounded-[10px] border-[0.5px] border-[var(--border)] bg-[var(--surface)] p-5 hover:border-[var(--accent)]"
+      >
+        <span>
+          <span className="block text-[15px] font-semibold text-[var(--text)]">Tarifák és csomagok</span>
+          <span className="block text-[14px] text-[var(--text2)]">A–H tarifák létszám szerinti árai, minimum éjszaka, csomagok</span>
+        </span>
+        <span className="text-[var(--accent)]">→</span>
+      </Link>
       <GmailTest configured={isGmailConfigured()} user={process.env.GMAIL_USER ?? null} />
       <SettingsForm values={values} />
     </div>
