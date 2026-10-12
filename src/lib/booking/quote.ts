@@ -12,6 +12,7 @@ import {
   ALL_SCOPES,
   BASE_GUESTS,
   MAX_GUESTS,
+  MEAL_LABEL,
   ROOM_SCOPES,
   SCOPE_LABEL,
   isCombo,
@@ -110,9 +111,29 @@ export type Problem =
   | { kind: "no_rate"; dates: string[] }
   | { kind: "package"; reason: string };
 
+// Tételtípus – a sorrend és a bevétel-számítás (IFA nem bevétel) ehhez igazodik.
+export type LineKind = "szallas" | "kedvezmeny" | "gyermek" | "csomag" | "szauna" | "dezsa" | "etkezes" | "takaritas" | "ifa";
+
 export interface QuoteLine {
-  label: string;
+  key?: string; // állandó azonosító (kézi felülíráshoz)
+  kind?: LineKind;
+  label: string; // megnevezés
+  qtyText?: string; // mennyiség, pl. "2 éj" vagy "10 fő × 2 éj"
+  unitPrice?: number;
   amount: number;
+  manual?: boolean; // kézzel átírt összeg (csak az admin látja)
+}
+
+// Egysoros szöveg (űrlap, levél): "Szállás · 2 éj × 102 000 Ft". Régi, csak
+// label/amount sorokra a label marad.
+export function lineText(l: QuoteLine): string {
+  if (!l.qtyText) return l.label;
+  const unit = l.unitPrice != null && !l.manual ? ` × ${l.unitPrice.toLocaleString("hu-HU")} Ft` : "";
+  return `${l.label} · ${l.qtyText}${unit}`;
+}
+
+export function isIfaLine(l: QuoteLine): boolean {
+  return l.kind === "ifa" || l.label.startsWith("Idegenforgalmi adó");
 }
 
 export interface Quote {
@@ -187,6 +208,7 @@ const fmtPct = (n: number) => `${n}%`;
 
 interface UnitResult {
   gross: number; // létszámár összesen
+  nightly: number[]; // éjszakánkénti létszámár (a tételsorok összevonásához)
   childDiscount: number;
   nightDiscounts: { kind: "long" | "third" | "last"; amount: number }[];
   missing: boolean;
@@ -202,7 +224,7 @@ function unitCost(
   opts: { regime: "2026" | "2027"; checkIn: string; nights: number },
 ): UnitResult {
   const s = data.settings;
-  const res: UnitResult = { gross: 0, childDiscount: 0, nightDiscounts: [], missing: false };
+  const res: UnitResult = { gross: 0, nightly: [], childDiscount: 0, nightDiscounts: [], missing: false };
   const baseSlots = unit === "egesz_haz" ? HOUSE_BASE_ROW : BASE_GUESTS[unit];
   const lastMinute = diffDays(data.today, opts.checkIn) <= s.lastMinuteDays;
 
@@ -213,6 +235,7 @@ function unitCost(
       return;
     }
     res.gross += p;
+    res.nightly.push(p);
     if (opts.regime === "2026") return;
 
     // Gyerekkedvezmény: a gyerekek a legfelső helyeket töltik; ha az felárhely,
@@ -315,13 +338,18 @@ export function computeQuote(input: QuoteInput, data: BookingData): Quote {
   if (busy.length) problems.push({ kind: "closed", dates: busy });
 
   const opts = { regime, checkIn, nights };
-  const lines: QuoteLine[] = [];
+  // Tételsorok a végleges sorrendben: szállás, kedvezmények, gyermekkedvezmény, csomag,
+  // Szaunanap, dézsa, étkezés, takarítási díj, IFA.
+  const stay: QuoteLine[] = [];
+  const nightDisc: QuoteLine[] = [];
+  const childDisc: QuoteLine[] = [];
+  const pkgLines: QuoteLine[] = [];
   let accommodation = 0;
   let priceMissing = false;
 
   if (pkg) {
     // Csomag: létszámtól független éjszakai ár, kedvezmény nem jár rá.
-    let sum = 0;
+    const per: number[] = [];
     for (const d of dates) {
       const t = data.tariffs.get(data.rates.get(rateKey("egesz_haz", d))?.tariffCode ?? "");
       const price = t?.packageGroup === "low" ? pkg.priceLow : t?.packageGroup === "high" ? pkg.priceHigh : null;
@@ -330,11 +358,15 @@ export function computeQuote(input: QuoteInput, data: BookingData): Quote {
         problems.push({ kind: "package", reason: "Ez a csomag erre az időszakra nem választható." });
         break;
       }
-      sum += price;
+      per.push(price);
     }
     if (guests > pkg.maxGuests) problems.push({ kind: "package", reason: `Ez a csomag legfeljebb ${pkg.maxGuests} főre szól.` });
-    accommodation = sum;
-    lines.push({ label: `Csomag: ${pkg.name} – ${nights} éj`, amount: sum });
+    accommodation = per.reduce((a, x) => a + x, 0);
+    const groups = new Map<number, number>();
+    for (const p of per) groups.set(p, (groups.get(p) ?? 0) + 1);
+    for (const [p, n] of groups) {
+      pkgLines.push({ key: `csomag:${p}`, kind: "csomag", label: `Csomag: ${pkg.name}`, qtyText: `${n} éj`, unitPrice: p, amount: p * n });
+    }
   } else {
     // Egységek és (kombinációnál) a legolcsóbb elosztás
     let best: { results: UnitResult[]; split: number[] } | null = null;
@@ -356,18 +388,23 @@ export function computeQuote(input: QuoteInput, data: BookingData): Quote {
 
     if (!priceMissing) {
       units.forEach((u, i) => {
-        const who = combo ? ` – ${SCOPE_LABEL[u]} (${best!.split[i]} fő)` : "";
-        lines.push({ label: `Szállás${who} – ${nights} éj`, amount: results[i].gross });
+        const who = combo ? `: ${SCOPE_LABEL[u]} (${best!.split[i]} fő)` : "";
+        // Azonos éjszakai ár (tarifa) szerint összevonva: "2 éj × 102 000 Ft"
+        const groups = new Map<number, number>();
+        for (const p of results[i].nightly) groups.set(p, (groups.get(p) ?? 0) + 1);
+        for (const [p, n] of groups) {
+          stay.push({ key: `szallas:${u}:${p}`, kind: "szallas", label: `Szállás${who}`, qtyText: `${n} éj`, unitPrice: p, amount: p * n });
+        }
       });
-      const child = results.reduce((a, r) => a + r.childDiscount, 0);
-      if (child) lines.push({ label: `Gyermekkedvezmény (3–12 év, a felár ${fmtPct(s.childDiscountPercent)}-a)`, amount: -child });
       const sumKind = (k: "long" | "third" | "last") => results.reduce((a, r) => a + r.nightDiscounts.filter((x) => x.kind === k).reduce((b, x) => b + x.amount, 0), 0);
       const long = sumKind("long");
       const third = sumKind("third");
       const last = sumKind("last");
-      if (long) lines.push({ label: `Kedvezmény – ${s.houseLongStayNights} éjtől ${fmtPct(s.houseLongStayPercent)}`, amount: -long });
-      if (third) lines.push({ label: `Kedvezmény – a 3. éjszaka ${fmtPct(s.roomThirdNightPercent)}`, amount: -third });
-      if (last) lines.push({ label: `Last minute kedvezmény – ${fmtPct(s.lastMinutePercent)}`, amount: -last });
+      if (long) nightDisc.push({ key: "kedvezmeny:long", kind: "kedvezmeny", label: `Kedvezmény: ${s.houseLongStayNights} éjtől ${fmtPct(s.houseLongStayPercent)}`, amount: -long });
+      if (third) nightDisc.push({ key: "kedvezmeny:third", kind: "kedvezmeny", label: `Kedvezmény: a 3. éjszaka ${fmtPct(s.roomThirdNightPercent)}`, amount: -third });
+      if (last) nightDisc.push({ key: "kedvezmeny:last", kind: "kedvezmeny", label: `Last minute kedvezmény: ${fmtPct(s.lastMinutePercent)}`, amount: -last });
+      const child = results.reduce((a, r) => a + r.childDiscount, 0);
+      if (child) childDisc.push({ key: "gyermek", kind: "gyermek", label: `Gyermekkedvezmény (3–12 év, a felár ${fmtPct(s.childDiscountPercent)}-a)`, amount: -child });
       accommodation = results.reduce((a, r) => a + unitNet(r), 0);
     }
   }
@@ -376,37 +413,38 @@ export function computeQuote(input: QuoteInput, data: BookingData): Quote {
   const ifaPeople = regime === "2027" ? party.adults : guests;
   const ifa = s.ifaPerPersonPerNight * ifaPeople * nights;
 
+  const lines: QuoteLine[] = [];
   let total: number | null = null;
   let depositPercent = s.depositPercent;
   if (!priceMissing) {
+    const mealUnit = mealUnitPrice(meal, s);
+    const mealLine: QuoteLine[] = mealUnit && base.mealGuests
+      ? [{ key: "etkezes", kind: "etkezes", label: `Étkezés (${meal === "felpanzio" ? "félpanzió" : MEAL_LABEL[meal].toLowerCase()})`, qtyText: `${base.mealGuests} fő × ${nights} nap`, unitPrice: mealUnit, amount: mealUnit * base.mealGuests * nights }]
+      : [];
     if (regime === "2027") {
-      // Takarítási díj
-      let cleaning = 0;
-      if (scope === "egesz_haz") {
-        if (nights < s.houseCleaningUnderNights) cleaning = s.houseCleaningFee;
-      } else if (nights < s.roomCleaningUnderNights) {
-        cleaning = s.roomCleaningFee * units.length;
-      }
-      if (cleaning) lines.push({ label: units.length > 1 ? `Takarítási díj – ${units.length} szoba` : "Takarítási díj", amount: cleaning });
-      lines.push({ label: `Idegenforgalmi adó – ${party.adults} fő (18+) × ${nights} éj`, amount: ifa });
-
       const saunaDays = scope === "egesz_haz" ? Math.max(0, Math.floor(input.extras?.saunaDays ?? 0)) : 0;
       const tubCount = Math.max(0, Math.floor(input.extras?.tubCount ?? 0));
-      if (saunaDays) lines.push({ label: `Szaunanap – ${saunaDays} nap`, amount: saunaDays * s.saunaDayPrice });
-      if (tubCount) lines.push({ label: `Dézsafürdő – ${tubCount} felfűtés`, amount: tubCount * s.tubPrice });
-      const mealAmount = mealUnitPrice(meal, s) * base.mealGuests * nights;
-      if (mealAmount) lines.push({ label: `Étkezés – ${base.mealGuests} fő × ${nights} nap`, amount: mealAmount });
+      const extraLines: QuoteLine[] = [];
+      if (saunaDays) extraLines.push({ key: "szauna", kind: "szauna", label: "Szaunanap", qtyText: `${saunaDays} nap`, unitPrice: s.saunaDayPrice, amount: saunaDays * s.saunaDayPrice });
+      if (tubCount) extraLines.push({ key: "dezsa", kind: "dezsa", label: "Dézsafürdő", qtyText: `${tubCount} felfűtés`, unitPrice: s.tubPrice, amount: tubCount * s.tubPrice });
 
-      total = accommodation + cleaning + ifa + saunaDays * s.saunaDayPrice + tubCount * s.tubPrice + mealAmount;
+      // Takarítási díj
+      const cleanUnits = scope === "egesz_haz" ? (nights < s.houseCleaningUnderNights ? 1 : 0) : nights < s.roomCleaningUnderNights ? units.length : 0;
+      const cleanFee = scope === "egesz_haz" ? s.houseCleaningFee : s.roomCleaningFee;
+      const cleaning: QuoteLine[] = cleanUnits
+        ? [{ key: "takaritas", kind: "takaritas", label: "Takarítási díj", qtyText: cleanUnits > 1 ? `${cleanUnits} szoba` : undefined, unitPrice: cleanUnits > 1 ? cleanFee : undefined, amount: cleanFee * cleanUnits }]
+        : [];
+      const ifaLine: QuoteLine = { key: "ifa", kind: "ifa", label: "Idegenforgalmi adó (18 év felett)", qtyText: `${party.adults} fő × ${nights} éj`, unitPrice: s.ifaPerPersonPerNight, amount: ifa };
+
+      lines.push(...stay, ...nightDisc, ...childDisc, ...pkgLines, ...extraLines, ...mealLine, ...cleaning, ifaLine);
+      total = lines.reduce((a, l) => a + l.amount, 0);
       const peak = dates.some((d) => units.some((u) => data.tariffs.get(data.rates.get(rateKey(u, d))?.tariffCode ?? "")?.peakDeposit));
       depositPercent = peak ? s.depositPercentPeak : s.depositPercentNew;
     } else {
-      const mealAmount = mealUnitPrice(meal, s) * base.mealGuests * nights;
-      if (mealAmount) lines.push({ label: `Étkezés – ${base.mealGuests} fő × ${nights} nap`, amount: mealAmount });
-      total = accommodation + mealAmount;
+      lines.push(...stay, ...mealLine);
+      total = lines.reduce((a, l) => a + l.amount, 0);
     }
   } else {
-    lines.length = 0;
     accommodation = 0;
   }
 
@@ -515,7 +553,7 @@ function enumerateSplits(rooms: RoomScope[], guests: number, children: number) {
 }
 
 // A foglalható kétszobás kombinációk (három szoba = az egész ház, annak saját ára van).
-const COMBOS: Target[] = [];
+export const COMBOS: Target[] = [];
 for (let i = 0; i < ROOM_SCOPES.length; i++) {
   for (let j = i + 1; j < ROOM_SCOPES.length; j++) COMBOS.push(`${ROOM_SCOPES[i]},${ROOM_SCOPES[j]}`);
 }

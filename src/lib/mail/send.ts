@@ -4,6 +4,8 @@
 //  – Resend (noreply): belső értesítők és az automatikus "Megkaptuk a kérését".
 // Ha az EMAIL_TEST_REDIRECT be van állítva (preview), minden levél oda megy.
 
+import fs from "node:fs/promises";
+import path from "node:path";
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
 
@@ -13,6 +15,7 @@ export interface Mail {
   html: string;
   text: string;
   replyTo?: string;
+  attachments?: { filename: string; content: Buffer; contentType: string }[];
 }
 
 export class MailError extends Error {}
@@ -26,12 +29,33 @@ function applyTestRedirect(mail: Mail): Mail {
   return { ...mail, to: redirect, subject: `[TESZT → ${mail.to}] ${mail.subject}` };
 }
 
+// Csak helyi teszthez (Vercelen soha): a levelek fájlba kerülnek küldés helyett.
+// A soha nem kézbesíthető .invalid végű címre küldés Gmail-hibát szimulál.
+function outboxDir(): string | null {
+  const dir = process.env.MAIL_OUTBOX_DIR?.trim();
+  return dir && !process.env.VERCEL ? dir : null;
+}
+
+async function writeOutbox(dir: string, channel: string, mail: Mail): Promise<void> {
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const base = path.join(dir, `${stamp}-${channel}`);
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(`${base}.html`, `<!-- To: ${mail.to} | Subject: ${mail.subject} -->\n${mail.html}`);
+  for (const a of mail.attachments ?? []) await fs.writeFile(`${base}-${a.filename}`, a.content);
+}
+
 export function isGmailConfigured(): boolean {
-  return Boolean(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
+  return Boolean(outboxDir() || (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD));
 }
 
 export async function sendViaGmail(input: Mail): Promise<void> {
   if (!isGmailConfigured()) throw new MailError(GMAIL_ERROR);
+  const outbox = outboxDir();
+  if (outbox) {
+    if (/\.invalid$/i.test(input.to.trim())) throw new MailError(GMAIL_ERROR);
+    await writeOutbox(outbox, "gmail", applyTestRedirect(input));
+    return;
+  }
   const mail = applyTestRedirect(input);
   const transport = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -47,6 +71,7 @@ export async function sendViaGmail(input: Mail): Promise<void> {
       html: mail.html,
       text: mail.text,
       replyTo: mail.replyTo,
+      attachments: mail.attachments,
     });
   } catch (e) {
     console.error("Gmail küldési hiba:", e);
@@ -56,6 +81,11 @@ export async function sendViaGmail(input: Mail): Promise<void> {
 
 // Resend-hiba nem akaszthatja meg a foglalást – csak naplózzuk.
 export async function sendViaResend(input: Mail): Promise<boolean> {
+  const outbox = outboxDir();
+  if (outbox) {
+    await writeOutbox(outbox, "resend", applyTestRedirect(input));
+    return true;
+  }
   if (!process.env.RESEND_API_KEY) return false;
   const mail = applyTestRedirect(input);
   const from = process.env.RESEND_FROM_EMAIL ?? "noreply@vikivendeghaz.hu";

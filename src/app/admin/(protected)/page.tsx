@@ -7,6 +7,8 @@ import { addDays, diffDays, fmtLong, fmtRange, todayBudapest } from "@/lib/booki
 import { getSettings } from "@/lib/booking/server";
 import { SourceBadge } from "./foglalasok/badges";
 import { ConfirmButton, ReleaseButton } from "./foglalasok/buttons";
+import { offersEnabled } from "@/modules/offers/flag";
+import { offersByStatus } from "@/modules/offers/server";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Áttekintés" };
@@ -47,6 +49,9 @@ export default async function AttekintesPage({ searchParams }: { searchParams: P
   ]);
 
   const bookedRooms = closedToday.filter((c) => (ROOM_SCOPES as readonly string[]).includes(c.room)).length;
+  // Új ajánlatkérések (ha az ajánlat modul be van kapcsolva) – ugyanúgy válaszra várnak.
+  const newOffers = offersEnabled() ? await offersByStatus(["uj"]) : [];
+  const waitingTotal = waiting.length + newOffers.length;
 
   return (
     <div className="max-w-5xl">
@@ -73,7 +78,7 @@ export default async function AttekintesPage({ searchParams }: { searchParams: P
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card label="Érkezik" value={arrivals.length} />
         <Card label="Távozik" value={departures.length} />
-        <Card label="Válaszra vár" value={waiting.length} warn={waiting.length > 0} />
+        <Card label="Válaszra vár" value={waitingTotal} warn={waitingTotal > 0} />
         <Card label={`Foglalt szoba ${word.toLowerCase()}`} value={`${bookedRooms}/${ROOM_SCOPES.length}`} />
       </div>
 
@@ -97,12 +102,30 @@ export default async function AttekintesPage({ searchParams }: { searchParams: P
 
       <section className="mb-8">
         <h2 className="mb-3 text-[15px] font-semibold text-[var(--text)]">Válaszra vár</h2>
-        {waiting.length === 0 ? (
+        {waitingTotal === 0 ? (
           <p className="rounded-[10px] border-[0.5px] border-[var(--border)] bg-[var(--surface)] px-4 py-5 text-[14px] text-[var(--text3)]">
             Nincs megválaszolatlan kérés.
           </p>
         ) : (
           <div className="space-y-2">
+            {newOffers.map((o) => (
+              <div key={`o${o.id}`} className="flex flex-wrap items-start justify-between gap-3 rounded-[10px] border border-[#F0D98A] bg-[#FFFBEA] px-4 py-3">
+                <div className="min-w-0 text-[14px]">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-[var(--text)]">{o.name}</span>
+                    <span className="text-[var(--text2)]">{o.adults + o.teens + o.children} fő</span>
+                    <span className="inline-block whitespace-nowrap rounded border border-[var(--border)] px-1.5 text-[11px] text-[var(--text2)]">Ajánlatkérés</span>
+                  </div>
+                  <div className="mt-0.5 text-[var(--text2)]">
+                    {fmtRange(o.checkIn, o.checkOut)} · {o.kind === "betelt" ? "betelt – alternatívák" : targetLabel(o.roomScopes.includes("egesz_haz") ? "egesz_haz" : o.roomScopes.join(","))}
+                    {o.kind !== "betelt" && o.total != null ? ` · ${formatFt(o.total)}` : ""}
+                  </div>
+                </div>
+                <Link href={`/admin/ajanlatok/${o.id}`} className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-[14px] font-semibold text-white hover:opacity-90">
+                  Ajánlat megírása
+                </Link>
+              </div>
+            ))}
             {waiting.map((b) => (
               <div key={b.id} className="flex flex-wrap items-start justify-between gap-3 rounded-[10px] border border-[#F0D98A] bg-[#FFFBEA] px-4 py-3">
                 <div className="min-w-0 text-[14px]">

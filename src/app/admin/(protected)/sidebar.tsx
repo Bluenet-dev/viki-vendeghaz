@@ -42,14 +42,14 @@ function matches(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function Sidebar({ offersEnabled, waitingCount }: { offersEnabled: boolean; waitingCount: number }) {
+export function Sidebar({ offersEnabled, waitingCount, newOffers }: { offersEnabled: boolean; waitingCount: number; newOffers: number }) {
   const pathname = usePathname();
 
   const navItems: NavItem[] = [
     { href: "/admin", label: "Áttekintés", icon: IconLayoutDashboard },
     { href: "/admin/foglalasok", label: "Foglalások", icon: IconClipboardList, badge: waitingCount },
     { href: "/admin/naptar", label: "Naptár és árak", icon: IconCalendarEvent },
-    ...(offersEnabled ? [{ href: "/admin/ajanlatok", label: "Ajánlatkérések", icon: IconFileInvoice }] : []),
+    ...(offersEnabled ? [{ href: "/admin/ajanlatok", label: "Ajánlatkérések", icon: IconFileInvoice, badge: newOffers }] : []),
     { href: "/admin/weboldal", label: "Weboldal", icon: IconWorld, also: WEBSITE_PATHS },
   ];
 

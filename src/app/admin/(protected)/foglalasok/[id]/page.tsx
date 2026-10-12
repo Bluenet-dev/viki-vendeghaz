@@ -6,6 +6,7 @@ import { closures } from "@/db/schema";
 import { MEAL_LABEL, formatFt, targetLabel, type Meal } from "@/lib/booking/constants";
 import { addDays, diffDays, fmtLong, todayBudapest } from "@/lib/booking/dates";
 import { getBooking, getSettings } from "@/lib/booking/server";
+import { lineText, type QuoteLine } from "@/lib/booking/quote";
 import { guestsText } from "@/lib/mail/templates";
 import { depositReceivedAction } from "../actions";
 import { SourceBadge, StatusBadge } from "../badges";
@@ -29,7 +30,7 @@ export default async function FoglalasPage({ params }: { params: Promise<{ id: s
   if (!b) notFound();
   const s = await getSettings();
   const closedCount = await db.$count(closures, eq(closures.bookingId, b.id));
-  const lines = Array.isArray(b.lines) ? (b.lines as { label: string; amount: number }[]) : null;
+  const lines = Array.isArray(b.lines) ? (b.lines as QuoteLine[]) : null;
   const nights = diffDays(b.checkIn, b.checkOut);
   const today = todayBudapest();
 
@@ -92,8 +93,8 @@ export default async function FoglalasPage({ params }: { params: Promise<{ id: s
             <table className="text-[14px]">
               <tbody>
                 {lines.map((l) => (
-                  <tr key={l.label}>
-                    <td className="pr-6 text-[var(--text2)]">{l.label}</td>
+                  <tr key={l.key ?? l.label}>
+                    <td className="pr-6 text-[var(--text2)]">{lineText(l)}{l.manual ? <span className="ml-1.5 text-[11px] text-[#8A4A22]">kézzel módosítva</span> : null}</td>
                     <td className={`text-right whitespace-nowrap ${l.amount < 0 ? "text-[#3A5A3C]" : ""}`}>{formatFt(l.amount)}</td>
                   </tr>
                 ))}

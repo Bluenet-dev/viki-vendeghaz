@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { MEAL_LABEL, formatFt, targetMaxGuests, type Meal, type Target } from "@/lib/booking/constants";
 import {
   computeQuote,
+  lineText,
   deserializeBookingData,
   problemMessage,
   type Party,
@@ -234,8 +235,8 @@ export function RequestForm(props: {
           ) : (
             <dl className="space-y-2 text-[15px]">
               {quote.lines.map((l) => (
-                <div key={l.label} className="flex justify-between gap-3">
-                  <dt className="text-[var(--text2)]">{l.label}</dt>
+                <div key={l.key ?? l.label} className="flex justify-between gap-3">
+                  <dt className="text-[var(--text2)]">{lineText(l)}</dt>
                   <dd className={`whitespace-nowrap ${l.amount < 0 ? "text-[#3A5A3C]" : "text-[var(--text)]"}`}>{formatFt(l.amount)}</dd>
                 </div>
               ))}

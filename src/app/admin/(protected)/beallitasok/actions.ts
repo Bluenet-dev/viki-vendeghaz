@@ -64,7 +64,13 @@ const TEXT_FIELDS = [
   "bankAccount",
   "bankIban",
   "bankName",
+  "websiteUrl",
+  "aszfUrl",
 ] as const;
+
+// Az Árajánlatok szakasz mezői (csak bekapcsolt modulnál vannak az űrlapon).
+const OFFER_TEXT_FIELDS = ["cancellationTerms", "declineTemplate"] as const;
+const COLOR_FIELDS = ["brandColor", "accentColor"] as const;
 
 export async function saveSettingsAction(_prev: SettingsState, formData: FormData): Promise<SettingsState> {
   await requireAdmin();
@@ -88,6 +94,28 @@ export async function saveSettingsAction(_prev: SettingsState, formData: FormDat
   }
   if (["checkInFrom", "checkInUntil", "checkOutUntil"].some((k) => !/^\d{1,2}:\d{2}$/.test(update[k] as string))) {
     return { error: "Az időpontot így adja meg: 15:00" };
+  }
+  if (["websiteUrl", "aszfUrl"].some((k) => !/^https?:\/\/\S+$/.test(update[k] as string))) {
+    return { error: "A weboldal és az ÁSZF címe https://-sel kezdődjön." };
+  }
+
+  if (formData.has("offerValidDays")) {
+    const days = String(formData.get("offerValidDays") ?? "").trim();
+    if (!/^\d+$/.test(days) || Number(days) < 1 || Number(days) > 60) return { error: "Az ajánlat érvényessége 1 és 60 nap között lehet." };
+    update.offerValidDays = Number(days);
+    for (const f of OFFER_TEXT_FIELDS) {
+      const v = String(formData.get(f) ?? "").trim();
+      if (!v) return { error: "Minden mezőt töltsön ki." };
+      update[f] = v;
+    }
+    for (const f of COLOR_FIELDS) {
+      const v = String(formData.get(f) ?? "").trim();
+      if (!/^#[0-9a-fA-F]{6}$/.test(v)) return { error: "A színt így adja meg: #2A3228" };
+      update[f] = v;
+    }
+    const logo = String(formData.get("logoUrl") ?? "").trim();
+    if (logo && !/^https:\/\/\S+$/.test(logo)) return { error: "A logó címe https://-sel kezdődjön, vagy hagyja üresen." };
+    (update as Record<string, unknown>).logoUrl = logo || null;
   }
 
   await db.update(settings).set(update).where(eq(settings.id, current.id));

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSettings } from "@/lib/booking/server";
 import { isGmailConfigured } from "@/lib/mail/send";
+import { offersEnabled } from "@/modules/offers/flag";
 import { GmailTest, SettingsForm } from "./form";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +9,8 @@ export const metadata = { title: "Beállítások" };
 
 export default async function BeallitasokPage() {
   const s = await getSettings();
-  const { id: _id, updatedAt: _u, ...values } = s;
+  const { id: _id, updatedAt: _u, logoUrl, ...rest } = s;
+  const values = { ...rest, logoUrl: logoUrl ?? "" };
   return (
     <div className="max-w-3xl space-y-5">
       <div>
@@ -26,7 +28,7 @@ export default async function BeallitasokPage() {
         <span className="text-[var(--accent)]">→</span>
       </Link>
       <GmailTest configured={isGmailConfigured()} user={process.env.GMAIL_USER ?? null} />
-      <SettingsForm values={values} />
+      <SettingsForm values={values} offersEnabled={offersEnabled()} />
     </div>
   );
 }

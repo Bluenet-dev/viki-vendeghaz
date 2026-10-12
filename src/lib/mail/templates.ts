@@ -4,6 +4,7 @@
 import { MEAL_LABEL, formatFt, targetLabel, type Meal } from "@/lib/booking/constants";
 import { addDays, diffDays, fmtLong, todayBudapest } from "@/lib/booking/dates";
 import type { Booking, Settings } from "@/lib/booking/server";
+import { lineText, type QuoteLine } from "@/lib/booking/quote";
 import type { Mail } from "./send";
 
 export function esc(s: string | null | undefined): string {
@@ -58,8 +59,8 @@ export function guestsText(b: Pick<Booking, "guests" | "adults" | "teens" | "chi
   return parts.join(", ");
 }
 
-function bookingLines(b: Booking): { label: string; amount: number }[] | null {
-  return Array.isArray(b.lines) ? (b.lines as { label: string; amount: number }[]) : null;
+function bookingLines(b: Booking): QuoteLine[] | null {
+  return Array.isArray(b.lines) ? (b.lines as QuoteLine[]) : null;
 }
 
 function stayRows(b: Booking, s: Settings): [string, string][] {
@@ -74,7 +75,7 @@ function stayRows(b: Booking, s: Settings): [string, string][] {
   const lines = bookingLines(b);
   if (lines?.length) {
     // Tételes összesítő (2027-es árazás: szállás, kedvezmények, takarítás, IFA, extrák, étkezés)
-    for (const l of lines) rows.push([esc(l.label), formatFt(l.amount)]);
+    for (const l of lines) rows.push([esc(lineText(l)), formatFt(l.amount)]);
     rows.push(["Összesen", b.total != null ? `<strong>${formatFt(b.total)}</strong>` : "Egyedi ár – hamarosan jelezzük"]);
     if (b.pricingRegime !== "2027") rows.push(["Idegenforgalmi adó", `${formatFt(s.ifaPerPersonPerNight)}/fő/éj, helyszínen fizetendő`]);
   } else {
@@ -126,7 +127,8 @@ ${rows(items)}
 }
 
 // Vendégnek: visszaigazolás az előleg-utalási adatokkal (Gmail).
-export function guestConfirmationMail(b: Booking, s: Settings): Mail {
+// reference: az utalás közleménye (ajánlatból jött foglalásnál az ajánlatszám).
+export function guestConfirmationMail(b: Booking, s: Settings, reference?: string): Mail {
   const deposit = b.depositAmount;
   const acceptedDay = b.acceptedAt ? new Date(b.acceptedAt).toISOString().slice(0, 10) : todayBudapest();
   const due = addDays(acceptedDay, s.depositDueDays);
@@ -136,7 +138,7 @@ export function guestConfirmationMail(b: Booking, s: Settings): Mail {
     ["Számlaszám", esc(s.bankAccount)],
     ["IBAN", esc(s.bankIban)],
     ["Bank", esc(s.bankName)],
-    ["Közlemény", `${esc(b.name)}, ${b.checkIn}`],
+    ["Közlemény", reference ? esc(reference) : `${esc(b.name)}, ${b.checkIn}`],
   ];
   const depositBox =
     deposit != null
@@ -145,7 +147,7 @@ export function guestConfirmationMail(b: Booking, s: Settings): Mail {
 <div style="font-size:22px;font-weight:bold;margin:4px 0">${formatFt(deposit)}</div>
 <div style="font-size:14px">Kérjük, ${fmtLong(due)}-ig utalja át – ezzel válik véglegessé a foglalás.</div>
 ${rows(bank)}
-<div style="font-size:13px;color:#6B6560">Lemondás az érkezés előtti 30. napig díjmentes. Részletek: <a href="https://www.vikivendeghaz.hu/aszf" style="color:${ACCENT}">ÁSZF</a></div>
+<div style="font-size:13px;color:#6B6560">${esc(s.cancellationTerms)} Részletek: <a href="${esc(s.aszfUrl)}" style="color:${ACCENT}">ÁSZF</a></div>
 </td></tr></table>`
       : `<p>A foglaló összegét külön jelezzük.</p>`;
   const body = `<p style="margin:0 0 12px">Kedves ${esc(b.name)}!</p>

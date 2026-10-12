@@ -314,6 +314,19 @@ export const settings = pgTable("settings", {
   superiorInfraPerHour: integer("superior_infra_per_hour").notNull().default(1500),
   saltCaveFreeMinutes: integer("salt_cave_free_minutes").notNull().default(45),
   checkInUntil: text("check_in_until").notNull().default("21:00"),
+  // ─── Árajánlat modul (minden szállásspecifikus adat innen jön) ───
+  websiteUrl: text("website_url").notNull().default("https://www.vikivendeghaz.hu"),
+  aszfUrl: text("aszf_url").notNull().default("https://www.vikivendeghaz.hu/aszf"),
+  logoUrl: text("logo_url"),
+  brandColor: text("brand_color").notNull().default("#2A3228"),
+  accentColor: text("accent_color").notNull().default("#5A7A5C"),
+  offerValidDays: integer("offer_valid_days").notNull().default(3),
+  cancellationTerms: text("cancellation_terms")
+    .notNull()
+    .default("Lemondás az érkezés előtti 30. napig díjmentes. 30–15 nap között a foglaló fele, 15 napon belül a teljes foglaló a szállásé."),
+  declineTemplate: text("decline_template")
+    .notNull()
+    .default("Köszönjük érdeklődését! Sajnos a kért időpontban nem tudjuk fogadni Önöket. Reméljük, egy másik alkalommal vendégül láthatjuk. Keressen minket bizalommal!"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
@@ -373,6 +386,55 @@ export const stayPackages = pgTable("stay_packages", {
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
 });
+
+// ─── Árajánlatok (src/modules/offers) ───────────────────────────────────────
+// Állapot: uj → elkuldve → elfogadva → foglalas; oldalág: elutasitva, lejart.
+export const offers = pgTable(
+  "offers",
+  {
+    id: serial("id").primaryKey(),
+    number: text("number").notNull().unique(), // "2027-001", évente újrainduló
+    status: text("status").notNull().default("uj"),
+    source: text("source").notNull().default("weboldal"), // weboldal | kezi
+    name: text("name").notNull(),
+    email: text("email"),
+    phone: text("phone"),
+    checkIn: date("check_in").notNull(),
+    checkOut: date("check_out").notNull(),
+    adults: integer("adults").notNull().default(1),
+    teens: integer("teens").notNull().default(0), // 13–17 év
+    children: integer("children").notNull().default(0), // 3–12 év
+    infants: integer("infants").notNull().default(0), // 0–2 év
+    requestedScopes: text("requested_scopes").array().notNull(), // amit a vendég kért; ["egesz_haz"] = egész ház
+    roomScopes: text("room_scopes").array().notNull(), // amit ajánlunk
+    packageSlug: text("package_slug"),
+    extras: jsonb("extras"), // { saunaDays, tubCount }
+    meal: text("meal").notNull().default("nincs"),
+    mealGuests: integer("meal_guests"),
+    message: text("message"), // a vendég üzenete
+    request: jsonb("request"), // az eredeti kérés pillanatképe: { party, scope, packageSlug, extras, meal, mealGuests }
+    kind: text("kind").notNull().default("ajanlat"), // ajanlat | betelt
+    alternatives: jsonb("alternatives"), // betelt: [{ checkIn, checkOut }]
+    lines: jsonb("lines"), // tételsorok: [{ key, kind, label, qty, unitPrice, amount, manual }]
+    overrides: jsonb("overrides"), // kézzel átírt tételek: { [key]: amount }
+    total: integer("total"),
+    deposit: integer("deposit"),
+    depositPercent: integer("deposit_percent"),
+    pricingRegime: text("pricing_regime"),
+    personalMessage: text("personal_message"),
+    declineMessage: text("decline_message"),
+    validDays: integer("valid_days"),
+    validUntil: date("valid_until"),
+    sentAt: timestamp("sent_at"),
+    acceptedAt: timestamp("accepted_at"),
+    declinedAt: timestamp("declined_at"),
+    acceptToken: text("accept_token").notNull().unique(),
+    bookingId: integer("booking_id").references(() => bookings.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("offers_status_idx").on(t.status), index("offers_booking_idx").on(t.bookingId)],
+);
 
 // ─── Wellness szolgáltatások ────────────────────────────────────────────────
 export const wellnessServices = pgTable("wellness_services", {

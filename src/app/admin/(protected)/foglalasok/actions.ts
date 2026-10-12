@@ -19,6 +19,7 @@ import {
 } from "@/lib/booking/server";
 import { GMAIL_ERROR, MailError, sendViaGmail } from "@/lib/mail/send";
 import { guestConfirmationMail } from "@/lib/mail/templates";
+import { markOfferBooked, offerNumberForBooking } from "@/modules/offers/server";
 
 export interface ActionState {
   ok?: boolean;
@@ -44,7 +45,7 @@ async function sendConfirmation(id: number): Promise<string | undefined> {
   const b = await getBooking(id);
   if (!b?.email) return undefined;
   try {
-    await sendViaGmail(guestConfirmationMail(b, await getSettings()));
+    await sendViaGmail(guestConfirmationMail(b, await getSettings(), await offerNumberForBooking(id)));
     await db.update(bookings).set({ confirmationSentAt: new Date() }).where(eq(bookings.id, id));
     return undefined;
   } catch (e) {
@@ -80,8 +81,11 @@ export async function resendConfirmationAction(_prev: ActionState, formData: For
 
 export async function depositReceivedAction(formData: FormData): Promise<void> {
   await requireAdmin();
-  await markDepositReceived(Number(formData.get("id")));
+  const id = Number(formData.get("id"));
+  await markDepositReceived(id);
+  await markOfferBooked(id);
   revalidateAll();
+  revalidatePath("/admin/ajanlatok", "layout");
 }
 
 export async function cancelBookingAction(formData: FormData): Promise<void> {

@@ -33,8 +33,15 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // node-ical nem bundlelhető Turbopack-kel (BigInt compat)
-  serverExternalPackages: ["node-ical"],
+  // node-ical nem bundlelhető Turbopack-kel (BigInt compat); a react-pdf natív
+  // függőségei (fontkit, yoga) szintén szerveroldalon, bundle nélkül futnak.
+  serverExternalPackages: ["node-ical", "@react-pdf/renderer"],
+
+  // Az ajánlat PDF betűtípusai futáskor fájlból töltődnek be – kerüljenek a függvénybe.
+  // (~60 KB, ezért minden függvénybe – így a server action útvonalától sem függ.)
+  outputFileTracingIncludes: {
+    "/**": ["./src/modules/offers/fonts/**"],
+  },
 
   experimental: {},
 };

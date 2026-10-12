@@ -9,6 +9,7 @@ import { SCOPE_LABEL, formatFt, isCombo, normalizeTarget, targetMaxGuests, targe
 import { addDays, diffDays, fmtLong, fmtRange, isIsoDate, todayBudapest } from "@/lib/booking/dates";
 import { searchOptions, serializeBookingData } from "@/lib/booking/quote";
 import { findNearestFreeWindows, getSettings, loadBookingData } from "@/lib/booking/server";
+import { offersEnabled } from "@/modules/offers/flag";
 import { RequestForm } from "./request-form";
 
 export const dynamic = "force-dynamic";
@@ -215,6 +216,23 @@ export default async function FoglalasPage({
       <section className="px-6 py-10">
         <div className="mx-auto max-w-[1000px]">{body}</div>
       </section>
+
+      {offersEnabled() && (
+        <section className="px-6 pb-6">
+          <div className="mx-auto flex max-w-[1000px] flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
+            <div>
+              <p className="text-lg font-semibold text-[var(--text)]">Csoport, család, egyedi kérés?</p>
+              <p className="text-[var(--text2)]">Kérjen személyre szabott ajánlatot – e-mailben küldjük.</p>
+            </div>
+            <Link
+              href={checkIn && checkOut ? `/ajanlatkeres?erkezes=${checkIn}&tavozas=${checkOut}&fo=${guests}` : "/ajanlatkeres"}
+              className="rounded-full border border-[var(--accent)] px-5 py-2.5 font-semibold text-[var(--accent)] hover:bg-[var(--accent-bg)]"
+            >
+              Ajánlatot kérek
+            </Link>
+          </div>
+        </section>
+      )}
 
       <section className="px-6 pb-16">
         <div className="mx-auto max-w-[1000px] rounded-xl border border-[var(--border)] bg-[var(--surface2)] p-6 text-center">

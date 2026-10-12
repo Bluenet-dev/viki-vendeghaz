@@ -21,6 +21,15 @@ function Field({ name, label, values, suffix }: { name: string; label: string; v
   );
 }
 
+function TextArea({ name, label, values }: { name: string; label: string; values: Values }) {
+  return (
+    <label className="block sm:col-span-2">
+      <span className="mb-1 block text-[13px] font-medium text-[var(--text2)]">{label}</span>
+      <textarea name={name} rows={3} defaultValue={String(values[name] ?? "")} className={`${input} resize-y`} />
+    </label>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-[10px] border-[0.5px] border-[var(--border)] bg-[var(--surface)] p-5">
@@ -30,7 +39,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export function SettingsForm({ values }: { values: Values }) {
+export function SettingsForm({ values, offersEnabled }: { values: Values; offersEnabled: boolean }) {
   const [state, action, pending] = useActionState(saveSettingsAction, {});
   return (
     <form onSubmit={submitKeepingValues(action)} className="space-y-5">
@@ -96,7 +105,20 @@ export function SettingsForm({ values }: { values: Values }) {
         <Field name="phone" label="Telefon" values={values} />
         <Field name="email" label="E-mail" values={values} />
         <Field name="address" label="Cím" values={values} />
+        <Field name="websiteUrl" label="Weboldal címe" values={values} />
+        <Field name="aszfUrl" label="ÁSZF linkje" values={values} />
       </Section>
+
+      {offersEnabled && (
+        <Section title="Árajánlatok">
+          <Field name="offerValidDays" label="Az ajánlat érvényes a küldéstől" suffix="nap" values={values} />
+          <Field name="logoUrl" label="Logó képének címe (nem kötelező)" values={values} />
+          <Field name="brandColor" label="Fejléc színe" values={values} />
+          <Field name="accentColor" label="Gombok, kiemelések színe" values={values} />
+          <TextArea name="cancellationTerms" label="Lemondási feltétel (az ajánlat foglaló-dobozában)" values={values} />
+          <TextArea name="declineTemplate" label="Elutasító levél alapszövege" values={values} />
+        </Section>
+      )}
 
       {state.error && <p className="rounded-md bg-[#FCEBEB] px-3 py-2 text-[14px] text-[#B23B3B]">{state.error}</p>}
       {state.ok && <p className="rounded-md bg-[var(--accent-bg)] px-3 py-2 text-[14px] text-[#3A5A3C]">Elmentve.</p>}
