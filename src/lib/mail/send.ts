@@ -113,6 +113,9 @@ export async function sendViaResend(input: Mail): Promise<boolean> {
 export const OWNER_EMAIL = process.env.OWNER_EMAIL ?? "vikivendeghaz@gmail.com";
 
 export function siteUrl(): string {
+  // Előnézeten a levelek linkjei (pl. ajánlat elfogadása) az ág saját címére mutassanak,
+  // ne az éles oldalra – ott az előnézeti adatbázis ajánlatai nem léteznek.
+  if (process.env.VERCEL_ENV === "preview" && process.env.VERCEL_BRANCH_URL) return `https://${process.env.VERCEL_BRANCH_URL}`;
   if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
   if (process.env.VERCEL_ENV === "production") return "https://www.vikivendeghaz.hu";
   if (process.env.VERCEL_BRANCH_URL) return `https://${process.env.VERCEL_BRANCH_URL}`;
