@@ -1,12 +1,11 @@
-import Link from "next/link";
 import { and, eq, gte, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
-import { bookings, closures, dayPrices, dayRates } from "@/db/schema";
+import { bookings, closures, dayPrices, dayRates, tariffPrices } from "@/db/schema";
 import { ROOM_SCOPES } from "@/lib/booking/constants";
 import { addDays, fmtShort, monthLabel, todayBudapest } from "@/lib/booking/dates";
 import { loadTariffs } from "@/lib/booking/server";
-import { BulkFillButton } from "./bulk";
 import { CalendarGrid, type DayInfo } from "./grid";
+import type { PanelTariff } from "./days-panel";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Naptár és árak" };
@@ -31,7 +30,7 @@ export default async function NaptarPage({ searchParams }: { searchParams: Promi
   const wideFrom = addDays(first, -120);
   const wideTo = addDays(last, 120);
 
-  const [rateRows, priceRows, closureRows, flagRows, tariffList] = await Promise.all([
+  const [rateRows, priceRows, closureRows, flagRows, tariffList, tariffPriceRows] = await Promise.all([
     db.select().from(dayRates).where(and(eq(dayRates.roomScope, "szoba-1"), gte(dayRates.date, first), lte(dayRates.date, last))),
     db.select().from(dayPrices).where(and(gte(dayPrices.date, first), lte(dayPrices.date, last))),
     db
@@ -44,6 +43,7 @@ export default async function NaptarPage({ searchParams }: { searchParams: Promi
       .from(dayRates)
       .where(and(eq(dayRates.roomScope, "szoba-1"), isNull(dayRates.tariffCode), gte(dayRates.date, wideFrom), lte(dayRates.date, wideTo))),
     loadTariffs(),
+    db.select().from(tariffPrices),
   ]);
 
   const tariffMap = new Map(tariffList.map((t) => [t.code, t]));
@@ -52,24 +52,40 @@ export default async function NaptarPage({ searchParams }: { searchParams: Promi
   const closed: Record<string, { bookingId: number | null; name: string | null }> = {};
   for (const c of closureRows) closed[`${c.room}|${c.date}`] = { bookingId: c.bookingId, name: c.name };
 
-  // Naponként: tarifa, címke, és hogy a szobák szobánként foglalhatók-e.
+  // Naponként: tarifa, ünnep neve, és a szobák nyitásának szabálya. Hogy egy "nyíló" nap
+  // éppen nyitva van-e, a böngésző számolja (a ház szabadságától függ, ami lezáráskor változik).
   const info: Record<string, DayInfo> = {};
   for (const d of days) {
     const r = rateRows.find((x) => x.date === d);
     const t = r?.tariffCode ? tariffMap.get(r.tariffCode) : undefined;
-    const houseFree = ROOM_SCOPES.every((room) => !closed[`${room}|${d}`]);
     if (t) {
       const opensOn = t.roomMode === "release" ? addDays(d, -(t.releaseDays ?? 0)) : null;
       info[d] = {
         tariff: { code: t.code, name: t.name, color: t.color },
         label: r?.label ?? null,
-        mode: t.roomMode === "open" ? "open" : t.roomMode === "never" ? "never" : today >= opensOn! && houseFree ? "open" : "release",
+        rule: t.roomMode === "open" ? "open" : t.roomMode === "never" ? "never" : "release",
         opensOn: opensOn && today < opensOn ? opensOn : null,
       };
     } else {
-      info[d] = { tariff: null, label: r?.label ?? null, mode: r?.wholeHouseOnly ? "legacyWhole" : "open", opensOn: null };
+      info[d] = { tariff: null, label: r?.label ?? null, rule: r?.wholeHouseOnly ? "legacyWhole" : "open", opensOn: null };
     }
   }
+
+  // Árlisták a "Több nap beállítása" panelhez: érthető név, ház ára, szoba legkisebb ára.
+  const panelTariffs: PanelTariff[] = tariffList.map((t) => {
+    const rows = tariffPriceRows.filter((p) => p.tariffCode === t.code);
+    const house = rows.find((p) => p.roomScope === "egesz_haz" && p.guests === 8)?.price ?? null;
+    const roomPrices = rows.filter((p) => (ROOM_SCOPES as readonly string[]).includes(p.roomScope)).map((p) => p.price);
+    return {
+      code: t.code,
+      name: t.name,
+      color: t.color,
+      minNights: t.minNights,
+      housePrice: house,
+      roomFrom: roomPrices.length ? Math.min(...roomPrices) : null,
+      roomsBookable: t.roomMode === "open" ? "yes" : t.roomMode === "never" ? "no" : "late",
+    };
+  });
 
   // Régi, összefüggő "csak egész ház" időszakok (2026), amelyek érintik a hónapot.
   const flags = new Set(flagRows.filter((r) => r.whole).map((r) => r.date));
@@ -96,27 +112,7 @@ export default async function NaptarPage({ searchParams }: { searchParams: Promi
 
   return (
     <div>
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold text-[var(--text)]">Naptár és árak</h1>
-        <BulkFillButton
-          defaultFrom={first < today ? today : first}
-          defaultTo={last < today ? today : last}
-          tariffs={tariffList.map((t) => ({ code: t.code, name: t.name }))}
-        />
-      </div>
-
-      <div className="mb-4 flex items-center gap-3">
-        <Link href={`/admin/naptar?ho=${prev}`} aria-label="Előző hónap" className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[15px] text-[var(--text2)] hover:text-[var(--text)]">
-          ←
-        </Link>
-        <h2 className="min-w-44 text-center text-[17px] font-semibold capitalize text-[var(--text)]">{monthLabel(y, m - 1)}</h2>
-        <Link href={`/admin/naptar?ho=${next}`} aria-label="Következő hónap" className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[15px] text-[var(--text2)] hover:text-[var(--text)]">
-          →
-        </Link>
-        {first > today || last < today ? (
-          <Link href="/admin/naptar" className="ml-2 text-[14px] text-[var(--accent)] hover:underline">Vissza a mai naphoz</Link>
-        ) : null}
-      </div>
+      <h1 className="mb-4 text-xl font-semibold text-[var(--text)]">Naptár és árak</h1>
 
       {monthTariffs.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] text-[var(--text2)]">
@@ -138,11 +134,25 @@ export default async function NaptarPage({ searchParams }: { searchParams: Promi
       )}
       {visibleRanges.map((r) => (
         <div key={r.from} className="mb-3 rounded-md border border-[#C5D5C5] bg-[var(--accent-bg)] px-4 py-2 text-[14px] text-[#3A5A3C]">
-          Csak egész ház: {fmtShort(r.from).replace(/\.$/, "")} – {fmtShort(r.to).replace(/\.$/, "")}
+          Csak egész ház: {fmtShort(r.from).replace(/.$/, "")} – {fmtShort(r.to).replace(/.$/, "")}
         </div>
       ))}
 
-      <CalendarGrid days={days} today={today} info={info} prices={prices} closed={closed} />
+      <CalendarGrid
+        days={days}
+        today={today}
+        info={info}
+        prices={prices}
+        closed={closed}
+        nav={{
+          title: monthLabel(y, m - 1),
+          prevHref: `/admin/naptar?ho=${prev}`,
+          nextHref: `/admin/naptar?ho=${next}`,
+          showToday: first > today || last < today,
+        }}
+        tariffs={panelTariffs}
+        defaultRange={{ from: first < today ? today : first, to: last < today ? today : last }}
+      />
     </div>
   );
 }

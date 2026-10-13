@@ -432,48 +432,80 @@ export async function reapplyTariffToFutureDays(code: string): Promise<number> {
   return dates.length;
 }
 
-export interface BulkFill {
-  from: string;
-  to: string;
+// "Több nap beállítása": a kijelölt napokra (hétnap-szűrés után) és szállásokra egyszerre.
+export interface DaysChange {
+  dates: string[];
   scopes: Scope[];
-  tariff?: string | null;
-  minNights?: number | null;
-  label?: string | null; // undefined/null = nem változik, "" = törlés
+  prices?: { scope: Scope; guests: number; price: number }[]; // csak a kitöltött árak
+  tariff?: string | null; // árlista: minden ár + min. éjszaka + szobák nyitása
   closure?: "close" | "open" | null;
+  minNights?: number | null;
+  label?: string | null; // ünnep/esemény neve; "" = törlés; null = nem változik
 }
 
-// Csak a kitöltött mezők íródnak felül; a feloldás foglaláshoz tartozó napot nem érint.
-export async function bulkFill(f: BulkFill): Promise<{ days: number; skippedBooked: number }> {
-  const days = nightsOf(f.from, addDays(f.to, 1));
-  if (f.tariff) await applyTariff(f.tariff, days, f.scopes);
+// A napok közül mennyin van már foglalás az érintett szobákban.
+export async function bookedDaysAmong(dates: string[], scopes: Scope[]): Promise<number> {
+  const rooms = Array.from(new Set(scopes.flatMap((s) => scopeRooms(s))));
+  if (!dates.length || !rooms.length) return 0;
+  let n = 0;
+  for (let i = 0; i < dates.length; i += 400) {
+    const [row] = await db
+      .select({ n: sql<number>`count(distinct ${closures.date})::int` })
+      .from(closures)
+      .where(and(inArray(closures.roomScope, rooms), inArray(closures.date, dates.slice(i, i + 400)), isNotNull(closures.bookingId)));
+    n += Number(row.n);
+  }
+  return n;
+}
 
-  const set: Partial<typeof dayRates.$inferInsert> = {};
-  if (f.minNights !== undefined && f.minNights !== null) set.minNights = f.minNights;
-  if (f.label !== undefined && f.label !== null) set.label = f.label === "" ? null : f.label;
+export async function applyToDays(c: DaysChange): Promise<{ days: number; booked: number }> {
+  const { dates, scopes } = c;
+  const booked = await bookedDaysAmong(dates, scopes);
+  if (!dates.length || !scopes.length) return { days: 0, booked };
 
-  if (Object.keys(set).length) {
-    const rows = f.scopes.flatMap((scope) => days.map((date) => ({ roomScope: scope, date, ...set })));
+  if (c.tariff) await applyTariff(c.tariff, dates, scopes);
+
+  if (c.prices?.length) {
+    const rows = c.prices.flatMap((p) => dates.map((date) => ({ roomScope: p.scope, date, guests: p.guests, price: p.price })));
     for (let i = 0; i < rows.length; i += 500) {
       await db
-        .insert(dayRates)
+        .insert(dayPrices)
         .values(rows.slice(i, i + 500))
-        .onConflictDoUpdate({ target: [dayRates.roomScope, dayRates.date], set });
+        .onConflictDoUpdate({ target: [dayPrices.roomScope, dayPrices.date, dayPrices.guests], set: { price: sql`excluded.price` } });
+    }
+    // A 2 fős (szoba) és az 1–8 fős (ház) ár a day_rates.price-ba is ("-tól" feliratok).
+    const base = c.prices.filter((p) => p.guests === (p.scope === "egesz_haz" ? 8 : 2));
+    const rateRows = base.flatMap((p) => dates.map((date) => ({ roomScope: p.scope, date, price: p.price })));
+    for (let i = 0; i < rateRows.length; i += 500) {
+      await db
+        .insert(dayRates)
+        .values(rateRows.slice(i, i + 500))
+        .onConflictDoUpdate({ target: [dayRates.roomScope, dayRates.date], set: { price: sql`excluded.price` } });
     }
   }
 
-  let skippedBooked = 0;
-  const rooms = Array.from(new Set(f.scopes.flatMap((s) => scopeRooms(s))));
-  if (f.closure === "close" && rooms.length) {
-    const rows = rooms.flatMap((room) => days.map((date) => ({ roomScope: room, date, note: "Kézi lezárás" })));
-    for (let i = 0; i < rows.length; i += 500) await db.insert(closures).values(rows.slice(i, i + 500)).onConflictDoNothing();
-  } else if (f.closure === "open" && rooms.length) {
-    const range = and(inArray(closures.roomScope, rooms), gte(closures.date, f.from), lte(closures.date, f.to));
-    const [{ n }] = await db
-      .select({ n: sql<number>`count(distinct ${closures.date})::int` })
-      .from(closures)
-      .where(and(range, isNotNull(closures.bookingId)));
-    skippedBooked = Number(n);
-    await db.delete(closures).where(and(range, isNull(closures.bookingId)));
+  // Min. éjszaka a kijelölt szállásokra; az ünnep neve napra szól, ezért mindegyikre.
+  const updates: { scopes: readonly Scope[]; set: Partial<typeof dayRates.$inferInsert> }[] = [];
+  if (c.minNights != null) updates.push({ scopes, set: { minNights: c.minNights } });
+  if (c.label != null) updates.push({ scopes: ALL_SCOPES, set: { label: c.label === "" ? null : c.label } });
+  for (const u of updates) {
+    const rows = u.scopes.flatMap((scope) => dates.map((date) => ({ roomScope: scope, date, ...u.set })));
+    for (let i = 0; i < rows.length; i += 500) {
+      await db.insert(dayRates).values(rows.slice(i, i + 500)).onConflictDoUpdate({ target: [dayRates.roomScope, dayRates.date], set: u.set });
+    }
   }
-  return { days: days.length, skippedBooked };
+
+  // Lezárás / feloldás. Foglaláshoz tartozó nap zárva marad.
+  const rooms = Array.from(new Set(scopes.flatMap((s) => scopeRooms(s))));
+  if (c.closure === "close" && rooms.length) {
+    const rows = rooms.flatMap((room) => dates.map((date) => ({ roomScope: room, date, note: "Kézi lezárás" })));
+    for (let i = 0; i < rows.length; i += 500) await db.insert(closures).values(rows.slice(i, i + 500)).onConflictDoNothing();
+  } else if (c.closure === "open" && rooms.length) {
+    for (let i = 0; i < dates.length; i += 400) {
+      await db
+        .delete(closures)
+        .where(and(inArray(closures.roomScope, rooms), inArray(closures.date, dates.slice(i, i + 400)), isNull(closures.bookingId)));
+    }
+  }
+  return { days: dates.length, booked };
 }

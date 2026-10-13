@@ -1,13 +1,17 @@
 "use server";
 
+// A naptár műveletei. Szándékosan NINCS revalidatePath: az oldal újrarenderelése a
+// görgetést a tetejére ugratná. A cellák a böngészőben azonnal (optimistán) frissülnek;
+// a "Több nap beállítása" után a kliens maga kér frissítést, a görgetés megtartásával.
+// Az admin oldalak force-dynamic-ok, így más oldalra lépve mindig friss adat jön.
+
 import { and, eq, inArray } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { closures } from "@/db/schema";
+import { closures, tariffs } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-auth";
 import { ALL_SCOPES, MAX_GUESTS, ROOM_SCOPES, isScope, type Scope } from "@/lib/booking/constants";
-import { diffDays, isIsoDate, todayBudapest } from "@/lib/booking/dates";
-import { bulkFill, setDayPrice, toggleClosure } from "@/lib/booking/server";
+import { isIsoDate, todayBudapest } from "@/lib/booking/dates";
+import { applyToDays, bookedDaysAmong, setDayPrice, toggleClosure } from "@/lib/booking/server";
 
 function assertEditable(date: string) {
   if (!isIsoDate(date)) throw new Error("Érvénytelen dátum.");
@@ -19,12 +23,10 @@ export async function toggleClosureAction(room: string, date: string): Promise<{
   await requireAdmin();
   assertEditable(date);
   const res = await toggleClosure(room, date);
-  revalidatePath("/admin/naptar");
-  revalidatePath("/admin");
   return { bookingId: res?.bookingId ?? null };
 }
 
-// "Csak egész ház" napon az egész ház cellája mindhárom szobát egyszerre zárja/oldja.
+// Szobánként nem foglalható napon az egész ház cellája mindhárom szobát egyszerre zárja/oldja.
 export async function toggleHouseAction(date: string): Promise<{ bookingId: number | null }> {
   await requireAdmin();
   assertEditable(date);
@@ -39,75 +41,127 @@ export async function toggleHouseAction(date: string): Promise<{ bookingId: numb
       .values(ROOM_SCOPES.map((room) => ({ roomScope: room, date, note: "Kézi lezárás" })))
       .onConflictDoNothing();
   }
-  revalidatePath("/admin/naptar");
-  revalidatePath("/admin");
   return { bookingId: null };
 }
 
-// Létszám szerinti napi ár kézi felülírása (üres = törlés).
-export async function setDayPriceAction(scope: string, date: string, guests: number, raw: string): Promise<{ error?: string }> {
+function allowedGuests(scope: Scope): number[] {
+  return scope === "egesz_haz" ? [8, 9, 10, 11, 12] : Array.from({ length: MAX_GUESTS[scope] }, (_, i) => i + 1);
+}
+
+// "18 000", "18000 Ft" → 18000; üres vagy hibás → null
+function parsePrice(raw: string): number | null {
+  const clean = String(raw ?? "").replace(/\s|ft/gi, "");
+  return /^\d{1,7}$/.test(clean) ? Number(clean) : null;
+}
+
+// Egy cella ára.
+export async function setDayPriceAction(scope: string, date: string, guests: number, raw: string): Promise<{ error?: string; price?: number }> {
   await requireAdmin();
   assertEditable(date);
   if (!isScope(scope)) return { error: "Ismeretlen szoba." };
-  const allowed = scope === "egesz_haz" ? [8, 9, 10, 11, 12] : Array.from({ length: MAX_GUESTS[scope] }, (_, i) => i + 1);
-  if (!allowed.includes(guests)) return { error: "Ismeretlen létszám." };
-  const clean = raw.replace(/\s|Ft/gi, "");
-  if (clean !== "" && !/^\d+$/.test(clean)) return { error: "Csak számot írjon (pl. 18000)." };
-  await setDayPrice(scope, date, guests, clean === "" ? null : Number(clean));
-  revalidatePath("/admin/naptar");
-  return {};
+  if (!allowedGuests(scope).includes(guests)) return { error: "Ismeretlen létszám." };
+  const price = parsePrice(raw);
+  if (price == null) return { error: "Csak számot írjon be." };
+  await setDayPrice(scope, date, guests, price);
+  return { price };
 }
 
-export interface BulkState {
-  ok?: boolean;
-  message?: string;
-  error?: string;
+// ─── Több nap beállítása ────────────────────────────────────────────────────
+
+export interface DaysInput {
+  dates: string[];
+  scopes: string[];
+  mode: "prices" | "tariff" | "close" | "open" | null;
+  prices?: { scope: string; guests: number; value: string }[];
+  tariff?: string | null;
+  minNights?: string;
+  label?: string;
+  clearLabel?: boolean;
 }
 
-function optionalInt(v: FormDataEntryValue | null): number | null | "invalid" {
-  const s = String(v ?? "").replace(/\s|Ft/gi, "");
-  if (s === "") return null;
-  return /^\d+$/.test(s) ? Number(s) : "invalid";
+type Clean = {
+  dates: string[];
+  scopes: Scope[];
+  prices: { scope: Scope; guests: number; price: number }[];
+  tariff: string | null;
+  closure: "close" | "open" | null;
+  minNights: number | null;
+  label: string | null;
+};
+
+async function clean(input: DaysInput): Promise<Clean | { error: string }> {
+  const today = todayBudapest();
+  const dates = Array.from(new Set((input.dates ?? []).filter((d) => isIsoDate(d) && d >= today))).sort();
+  if (!dates.length) return { error: "Válasszon ki legalább egy mai vagy későbbi napot." };
+  if (dates.length > 800) return { error: "Egyszerre legfeljebb kb. két évet lehet beállítani." };
+  const scopes = (input.scopes ?? []).filter(isScope);
+  if (!scopes.length) return { error: "Jelölje be, melyik szállásra vonatkozik." };
+
+  const prices: Clean["prices"] = [];
+  if (input.mode === "prices") {
+    for (const p of input.prices ?? []) {
+      if (!String(p.value ?? "").trim()) continue; // üres = nem változik
+      if (!isScope(p.scope) || !scopes.includes(p.scope) || !allowedGuests(p.scope).includes(p.guests)) continue;
+      const price = parsePrice(p.value);
+      if (price == null) return { error: "Az árakhoz csak számot írjon (pl. 18 000)." };
+      prices.push({ scope: p.scope, guests: p.guests, price });
+    }
+  }
+
+  let tariff: string | null = null;
+  if (input.mode === "tariff") {
+    const code = String(input.tariff ?? "").toUpperCase();
+    const [t] = code ? await db.select({ code: tariffs.code }).from(tariffs).where(eq(tariffs.code, code)) : [];
+    if (!t) return { error: "Válasszon egy árlistát." };
+    tariff = t.code;
+  }
+
+  let minNights: number | null = null;
+  const mn = String(input.minNights ?? "").trim();
+  if (mn) {
+    if (!/^\d{1,2}$/.test(mn) || Number(mn) < 1) return { error: "Az éjszakák száma 1 és 99 közötti szám legyen." };
+    minNights = Number(mn);
+  }
+  const name = String(input.label ?? "").trim().slice(0, 40);
+  const label = input.clearLabel ? "" : name || null;
+
+  const closure = input.mode === "close" ? "close" : input.mode === "open" ? "open" : null;
+  if (input.mode === "prices" && !prices.length && minNights == null && label == null) return { error: "Írjon be legalább egy árat." };
+  if (!input.mode && minNights == null && label == null) return { error: "Válassza ki, mit szeretne beállítani." };
+  return { dates, scopes, prices, tariff, closure, minNights, label };
 }
 
-export async function bulkFillAction(_prev: BulkState, formData: FormData): Promise<BulkState> {
+// Az összefoglalóhoz: hány nap, és hányon van már foglalás.
+export async function previewDaysAction(input: Pick<DaysInput, "dates" | "scopes">): Promise<{ days: number; booked: number }> {
   await requireAdmin();
-  const from = String(formData.get("from") ?? "");
-  const to = String(formData.get("to") ?? "");
-  const scopeRaw = String(formData.get("scope") ?? "mind");
-  if (!isIsoDate(from) || !isIsoDate(to)) return { error: "Adja meg a kezdő és a záró napot." };
-  if (to < from) return { error: "A záró nap nem lehet korábbi a kezdőnél." };
-  if (from < todayBudapest()) return { error: "Múltbeli nap nem módosítható." };
-  if (diffDays(from, to) > 800) return { error: "Egyszerre legfeljebb kb. két évet lehet kitölteni." };
+  const today = todayBudapest();
+  const dates = (input.dates ?? []).filter((d) => isIsoDate(d) && d >= today).slice(0, 800);
+  const scopes = (input.scopes ?? []).filter(isScope);
+  return { days: dates.length, booked: await bookedDaysAmong(dates, scopes.length ? scopes : [...ALL_SCOPES]) };
+}
 
-  const tariff = String(formData.get("tariff") ?? "").trim().toUpperCase();
-  if (tariff && !/^[A-Z]$/.test(tariff)) return { error: "Ismeretlen tarifa." };
-  const minNights = optionalInt(formData.get("minNights"));
-  if (minNights === "invalid") return { error: "Az éjszakák száma csak szám lehet." };
-  if (minNights === 0) return { error: "A minimum éjszaka legalább 1." };
-  const label = String(formData.get("label") ?? "").trim().slice(0, 40);
-  const clearLabel = formData.get("clearLabel") === "on";
-  const closure = String(formData.get("closure") ?? "");
-  const scopes: Scope[] = scopeRaw === "mind" ? [...ALL_SCOPES] : isScope(scopeRaw) ? [scopeRaw] : [];
-  if (!scopes.length) return { error: "Válassza ki a szobát." };
-
-  if (!tariff && minNights == null && !label && !clearLabel && !closure) return { error: "Töltsön ki legalább egy mezőt." };
-
-  const res = await bulkFill({
-    from,
-    to,
-    scopes,
-    tariff: tariff || null,
-    minNights,
-    label: clearLabel ? "" : label || null,
-    closure: closure === "close" ? "close" : closure === "open" ? "open" : null,
+export async function applyDaysAction(input: DaysInput): Promise<{ ok?: boolean; message?: string; error?: string }> {
+  await requireAdmin();
+  const c = await clean(input);
+  if ("error" in c) return { error: c.error };
+  const res = await applyToDays({
+    dates: c.dates,
+    scopes: c.scopes,
+    prices: c.prices,
+    tariff: c.tariff,
+    closure: c.closure,
+    minNights: c.minNights,
+    label: c.label,
   });
-  revalidatePath("/admin/naptar");
-  revalidatePath("/admin");
-  return {
-    ok: true,
-    message:
-      `${res.days} nap frissítve.` +
-      (res.skippedBooked ? ` ${res.skippedBooked} foglalt nap zárva maradt, mert foglaláshoz tartozik.` : ""),
-  };
+  let message = `Elmentve, ${res.days} nap módosult.`;
+  if (res.booked) {
+    const one = res.booked === 1;
+    message +=
+      c.closure === "open"
+        ? ` ${res.booked} napon foglalás van, ${one ? "ez zárva maradt" : "ezek zárva maradtak"}.`
+        : c.closure === "close"
+          ? ` ${res.booked} napon már foglalás volt, ${one ? "ez eddig is zárva volt" : "ezek eddig is zárva voltak"}.`
+          : ` ${res.booked} napon már van foglalás, ${one ? "ennél" : "ezeknél"} a meglévő foglalás összege nem változott.`;
+  }
+  return { ok: true, message };
 }
