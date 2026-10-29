@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { and, eq, gte, isNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import { bookings, closures, dayPrices, dayRates, tariffPrices } from "@/db/schema";
@@ -6,6 +7,7 @@ import { addDays, fmtShort, monthLabel, todayBudapest } from "@/lib/booking/date
 import { loadTariffs } from "@/lib/booking/server";
 import { CalendarGrid, type DayInfo } from "./grid";
 import type { PanelTariff } from "./days-panel";
+import { scheduleStaleRefresh } from "@/lib/ical/server";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Naptár és árak" };
@@ -15,6 +17,8 @@ function pad(n: number) {
 }
 
 export default async function NaptarPage({ searchParams }: { searchParams: Promise<{ ho?: string }> }) {
+  // Elavult portál-naptár → háttérfrissítés (a megjelenítést nem lassítja).
+  scheduleStaleRefresh();
   const { ho } = await searchParams;
   const today = todayBudapest();
   const [y, m] = /^\d{4}-\d{2}$/.test(ho ?? "") ? ho!.split("-").map(Number) : today.split("-").slice(0, 2).map(Number);
@@ -112,7 +116,12 @@ export default async function NaptarPage({ searchParams }: { searchParams: Promi
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-semibold text-[var(--text)]">Naptár és árak</h1>
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+        <h1 className="text-xl font-semibold text-[var(--text)]">Naptár és árak</h1>
+        <Link href="/admin/naptar/szinkron" className="text-sm text-[var(--accent)] hover:underline">
+          Naptár-szinkron (Booking, Szállás.hu) →
+        </Link>
+      </div>
 
       {monthTariffs.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] text-[var(--text2)]">
