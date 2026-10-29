@@ -23,6 +23,8 @@ export const rooms = pgTable("rooms", {
   amenities: text("amenities"),        // vesszővel elválasztott lista
   sortOrder: integer("sort_order").default(0),
   active: boolean("active").default(true),
+  // Titkos iCal-export link tokenje (≥ 32 karakter). Újragenerálva a régi link érvénytelen.
+  icalExportToken: text("ical_export_token").unique(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -264,13 +266,69 @@ export const closures = pgTable(
     roomScope: text("room_scope").notNull(),
     date: date("date").notNull(),
     bookingId: integer("booking_id").references(() => bookings.id, { onDelete: "set null" }),
+    // iCal-importból származó zárolás: a blokk törlésekor a nap is felszabadul.
+    externalBlockId: integer("external_block_id").references(() => externalBlocks.id, { onDelete: "cascade" }),
     note: text("note"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [
     uniqueIndex("closures_scope_date_uq").on(t.roomScope, t.date),
     index("closures_booking_idx").on(t.bookingId),
+    index("closures_external_block_idx").on(t.externalBlockId),
   ],
+);
+
+// ─── iCal-naptárszinkron (BlueNet CMS) ──────────────────────────────────────
+// Egységenként (szobánként) és platformonként egy import-feed. Az importált
+// foglalások az external_blocks-ba kerülnek (az igazságforrás), és a szabad
+// éjszakákra closures-sort is kapnak (external_block_id), így a foglalómotor, a
+// naptár és a weboldal változtatás nélkül zárolja őket.
+
+export const calendarFeeds = pgTable(
+  "calendar_feeds",
+  {
+    id: serial("id").primaryKey(),
+    unitId: integer("unit_id").notNull().references(() => rooms.id, { onDelete: "cascade" }),
+    platform: text("platform").notNull(), // "booking" | "szallas" | "airbnb" | "egyeb"
+    importUrl: text("import_url"),
+    active: boolean("active").notNull().default(true),
+    lastSuccessAt: timestamp("last_success_at"),
+    lastAttemptAt: timestamp("last_attempt_at"),
+    lastError: text("last_error"),
+    failCount: integer("fail_count").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("calendar_feeds_unit_platform_uq").on(t.unitId, t.platform)],
+);
+
+export const externalBlocks = pgTable(
+  "external_blocks",
+  {
+    id: serial("id").primaryKey(),
+    feedId: integer("feed_id").notNull().references(() => calendarFeeds.id, { onDelete: "cascade" }),
+    unitId: integer("unit_id").notNull().references(() => rooms.id, { onDelete: "cascade" }),
+    uid: text("uid").notNull(),
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date").notNull(), // KIZÁRÓLAGOS (a távozás napja)
+    summary: text("summary"), // rövidítve
+    lastSeenAt: timestamp("last_seen_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("external_blocks_feed_uid_uq").on(t.feedId, t.uid),
+    index("external_blocks_unit_idx").on(t.unitId, t.startDate),
+  ],
+);
+
+// Már jelzett ütközések – ugyanarra az ütközésre csak egy e-mail megy.
+export const calendarConflicts = pgTable(
+  "calendar_conflicts",
+  {
+    id: serial("id").primaryKey(),
+    externalBlockId: integer("external_block_id").notNull().references(() => externalBlocks.id, { onDelete: "cascade" }),
+    bookingId: integer("booking_id").notNull().references(() => bookings.id, { onDelete: "cascade" }),
+    notifiedAt: timestamp("notified_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("calendar_conflicts_block_booking_uq").on(t.externalBlockId, t.bookingId)],
 );
 
 // Egysoros beállítás-tábla.
