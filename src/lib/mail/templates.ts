@@ -98,6 +98,8 @@ export function ownerNewRequestMail(b: Booking, s: Settings, adminUrl: string): 
     ...stayRows(b, s),
   ];
   if (b.guestMessage) items.push(["Üzenet", esc(b.guestMessage).replace(/\n/g, "<br>")]);
+  // Pl. ha a foglalás előtti friss iCal-ellenőrzés nem érte el valamelyik portált.
+  if (b.note) items.push(["Megjegyzés", esc(b.note)]);
   const body = `<p style="margin:0 0 8px">Új foglalási kérés érkezett a weboldalról. A napok <strong>még nincsenek lezárva</strong> – a visszaigazolással zárulnak le.</p>
 ${rows(items)}
 <p style="margin:20px 0 0"><a href="${adminUrl}" style="display:inline-block;background:${ACCENT};color:#FFFFFF;text-decoration:none;padding:12px 22px;border-radius:6px;font-weight:bold">Megnyitom a foglalást</a></p>`;
@@ -171,5 +173,62 @@ export function gmailTestMail(s: Settings): Mail {
     subject: `Gmail-kapcsolat teszt – ${s.propertyName}`,
     html: layout("Gmail-kapcsolat teszt", body, s),
     text: "Ez egy próbalevél. Ha megérkezett, a Gmail-kapcsolat működik.",
+  };
+}
+
+// ─── iCal-naptárszinkron: belső értesítők a tulajdonosnak (Resend) ──────────
+
+const dotDate = (iso: string) => `${iso.replace(/-/g, ".")}.`;
+
+function budapestDateTime(d: Date | null): string {
+  if (!d) return "még nem volt";
+  return new Intl.DateTimeFormat("hu-HU", {
+    timeZone: "Europe/Budapest",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
+}
+
+export function ownerIcalConflictMail(
+  c: { unit: string; platform: string; start: string; end: string; bookingUrl: string },
+  s: Settings,
+): Mail {
+  const items: [string, string][] = [
+    ["Egység", esc(c.unit)],
+    ["Időszak", `${dotDate(c.start)}–${dotDate(c.end)}`],
+    ["Forrás", esc(c.platform)],
+  ];
+  const lead = `A(z) ${c.platform} naptárában foglalás jelent meg erre az időszakra, miközben a saját oldaladon is van foglalás ugyanerre. Kérlek, ellenőrizd mindkettőt, és szükség esetén vedd fel a kapcsolatot a vendéggel.`;
+  const body = `<p style="margin:0 0 8px">${esc(lead)}</p>
+${rows(items)}
+<p style="margin:20px 0 0"><a href="${c.bookingUrl}" style="display:inline-block;background:${ACCENT};color:#FFFFFF;text-decoration:none;padding:12px 22px;border-radius:6px;font-weight:bold">Megnyitom a saját foglalást</a></p>`;
+  return {
+    to: "",
+    subject: `Lehetséges dupla foglalás – ${c.unit}, ${dotDate(c.start)}–${dotDate(c.end)}`,
+    html: layout("Lehetséges dupla foglalás", body, s),
+    text: `${lead}\n\n${textRows(items)}\n\n${c.bookingUrl}`,
+  };
+}
+
+export function ownerIcalFeedFailingMail(
+  f: { unit: string; platform: string; lastSuccessAt: Date | null; lastError: string | null; panelUrl: string },
+  s: Settings,
+): Mail {
+  const lead = `Az elmúlt háromszori próbálkozásra nem sikerült lekérni a(z) ${f.platform} naptárát. Az utolsó sikeres frissítés: ${budapestDateTime(f.lastSuccessAt)}. Ellenőrizd az iCal linket a Naptár-szinkron panelen.`;
+  const items: [string, string][] = [
+    ["Egység", esc(f.unit)],
+    ["Hibaüzenet", esc(f.lastError) || "–"],
+  ];
+  const body = `<p style="margin:0 0 8px">${esc(lead)}</p>
+${rows(items)}
+<p style="margin:20px 0 0"><a href="${f.panelUrl}" style="display:inline-block;background:${ACCENT};color:#FFFFFF;text-decoration:none;padding:12px 22px;border-radius:6px;font-weight:bold">Naptár-szinkron panel</a></p>`;
+  return {
+    to: "",
+    subject: `A ${f.platform}-naptár nem frissül – ${f.unit}`,
+    html: layout("A naptár nem frissül", body, s),
+    text: `${lead}\n\n${textRows(items)}\n\n${f.panelUrl}`,
   };
 }
