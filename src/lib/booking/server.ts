@@ -8,6 +8,8 @@ import { db } from "@/db";
 import { bookings, closures, dayPrices, dayRates, settings, stayPackages, tariffPrices, tariffs } from "@/db/schema";
 import { ALL_SCOPES, ROOM_SCOPES, scopeRooms, targetRooms, type Meal, type Scope, type Source, type Status, type Target } from "./constants";
 import { addDays, nightsOf, todayBudapest } from "./dates";
+import { freshCheck, releaseImportedNights } from "@/lib/ical/server";
+import { SOURCE_PLATFORM } from "@/lib/ical/types";
 import {
   closedNights,
   computeQuote,
@@ -251,6 +253,11 @@ export async function createBooking(b: NewBooking, closeDays: boolean): Promise<
     return { ok: true, id: row.id };
   }
 
+  // A tulajdonos egy portál foglalását rögzíti (forrás = az a portál): az onnan
+  // importált lezárások ezeken a napokon átadják a helyüket a foglalásnak.
+  const portal = SOURCE_PLATFORM[b.source];
+  if (portal) await releaseImportedNights(b.scope, b.checkIn, b.checkOut, portal);
+
   const busy = await busyDates(b.scope, b.checkIn, b.checkOut);
   if (busy.length) return { ok: false, error: "busy", busy };
 
@@ -297,6 +304,9 @@ export async function confirmBooking(id: number): Promise<MutationResult> {
   if (b.status !== "valaszra_var") return { ok: false, error: "Ez a foglalás már nem vár válaszra." };
   const scope: Target = b.roomScope;
 
+  // Friss ellenőrzés a napok lezárása előtt: ha közben valamelyik portálon foglalás
+  // jelent meg, az a lenti ütközésvizsgálatban már látszik.
+  await freshCheck(scope);
   const busy = await busyDates(scope, b.checkIn, b.checkOut, id);
   if (busy.length) return { ok: false, error: "busy", busy };
 
@@ -347,11 +357,16 @@ export async function cancelBooking(id: number, releaseDays: boolean): Promise<v
   await db.batch(ops);
 }
 
-// Naptár-cella: szabad ↔ kézi lezárás. Foglaláshoz tartozó napot nem old fel.
+export const IMPORTED_CLOSURE_ERROR =
+  "Ez a nap egy portál naptárából (iCal) zárolt – a portálon kell feloldani, különben a következő szinkron visszazárja.";
+
+// Naptár-cella: szabad ↔ kézi lezárás. Foglaláshoz tartozó napot nem old fel, és a
+// portálról importált lezárást sem (azt a portálon kell feloldani).
 export async function toggleClosure(room: string, date: string): Promise<{ bookingId: number | null } | null> {
   if (!(ROOM_SCOPES as readonly string[]).includes(room)) return null;
   const [existing] = await db.select().from(closures).where(and(eq(closures.roomScope, room), eq(closures.date, date)));
   if (existing?.bookingId) return { bookingId: existing.bookingId };
+  if (existing?.externalBlockId) throw new Error(IMPORTED_CLOSURE_ERROR);
   if (existing) await db.delete(closures).where(eq(closures.id, existing.id));
   else await db.insert(closures).values({ roomScope: room, date, note: "Kézi lezárás" }).onConflictDoNothing();
   return { bookingId: null };
@@ -501,10 +516,18 @@ export async function applyToDays(c: DaysChange): Promise<{ days: number; booked
     const rows = rooms.flatMap((room) => dates.map((date) => ({ roomScope: room, date, note: "Kézi lezárás" })));
     for (let i = 0; i < rows.length; i += 500) await db.insert(closures).values(rows.slice(i, i + 500)).onConflictDoNothing();
   } else if (c.closure === "open" && rooms.length) {
+    // A portálról importált (iCal) lezárás is zárva marad: azt a portálon kell feloldani.
     for (let i = 0; i < dates.length; i += 400) {
       await db
         .delete(closures)
-        .where(and(inArray(closures.roomScope, rooms), inArray(closures.date, dates.slice(i, i + 400)), isNull(closures.bookingId)));
+        .where(
+          and(
+            inArray(closures.roomScope, rooms),
+            inArray(closures.date, dates.slice(i, i + 400)),
+            isNull(closures.bookingId),
+            isNull(closures.externalBlockId),
+          ),
+        );
     }
   }
   return { days: dates.length, booked };

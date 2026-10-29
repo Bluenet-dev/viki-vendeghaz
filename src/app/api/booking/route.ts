@@ -5,6 +5,9 @@ import { computeQuote, problemMessage, type Party } from "@/lib/booking/quote";
 import { createBooking, getBooking, getSettings, loadBookingData } from "@/lib/booking/server";
 import { OWNER_EMAIL, sendViaResend, siteUrl } from "@/lib/mail/send";
 import { guestReceivedMail, ownerNewRequestMail } from "@/lib/mail/templates";
+import { freshCheck, freshCheckNote } from "@/lib/ical/server";
+
+const BUSY_MESSAGE = "Ez az időpont időközben foglalttá vált. Kérjük, válasszon másik dátumot.";
 
 // Weboldalas foglalási kérés. Az árat és az elérhetőséget a szerver számolja
 // újra – a kliens csak a választást küldi, az általa látott ár nem mérvadó.
@@ -46,6 +49,10 @@ export async function POST(req: NextRequest) {
   if (checkIn <= todayBudapest()) return NextResponse.json({ error: "Az érkezés legkorábban holnap lehet." }, { status: 400 });
 
   const m = isMeal(meal) ? meal : "nincs";
+  // Foglalás előtti friss ellenőrzés: az érintett egységek portál-naptárai most
+  // (szinkron, feedenként max. 5 s) újra lehúzódnak, így a lenti ütközésvizsgálat a
+  // friss állapotot látja. Elérhetetlen feednél az utolsó sikeres állapot dönt.
+  const fresh = await freshCheck(scope);
   const data = await loadBookingData(checkIn, checkOut);
   const quote = computeQuote(
     { scope, checkIn, checkOut, party, meal: m, mealGuests: Number.isFinite(mealGuests) ? mealGuests : guests, packageSlug, extras },
@@ -56,7 +63,7 @@ export async function POST(req: NextRequest) {
     const closed = quote.problems.some((x) => x.kind === "closed");
     return NextResponse.json(
       {
-        error: closed ? "Sajnos ez az időpont közben betelt. Kérjük, válasszon másik időpontot." : problemMessage(quote.problems[0]),
+        error: closed ? BUSY_MESSAGE : problemMessage(quote.problems[0]),
         code: closed ? "busy" : "invalid",
       },
       { status: 409 },
@@ -78,6 +85,7 @@ export async function POST(req: NextRequest) {
       source: "weboldal",
       status: "valaszra_var",
       guestMessage: message || null,
+      note: freshCheckNote(fresh),
       adults: party.adults,
       teens: party.teens,
       children: party.children,

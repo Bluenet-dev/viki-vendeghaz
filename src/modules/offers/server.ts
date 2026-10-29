@@ -10,6 +10,7 @@ import { addDays, diffDays, nightsOf, todayBudapest } from "@/lib/booking/dates"
 import { COMBOS, computeQuote, type BookingData, type Party, type Quote } from "@/lib/booking/quote";
 import { findNearestFreeWindows, getSettings, loadBookingData, type Settings } from "@/lib/booking/server";
 import { siteUrl } from "@/lib/mail/send";
+import { freshCheck } from "@/lib/ical/server";
 import { applyOverrides, quoteInput, requestUrl, type OfferTotals } from "./pricing";
 import { scopesToTarget, targetToScopes, type Extras, type OfferDraft, type OfferKind, type OfferLine, type Window } from "./types";
 import { brandFrom, buildOfferView, type OfferView } from "./view";
@@ -324,6 +325,9 @@ export async function acceptOffer(o: Offer, by: "guest" | "admin"): Promise<Acce
 
   const target = normalizeTarget(scopesToTarget(o.roomScopes));
   if (!target) return { ok: false, reason: "state" };
+  // Foglalás előtti friss iCal-ellenőrzés: a portálon közben megjelent foglalás a
+  // lenti atomikus beszúrásnál ütközésként ("busy") jelentkezik.
+  await freshCheck(target);
   const p = partyOf(o);
   const rows = closurePairsJson(target, o.checkIn, o.checkOut);
   const statusCond = by === "admin" ? sql`status IN ('elkuldve', 'lejart')` : sql`status = 'elkuldve' AND (valid_until IS NULL OR valid_until >= ${today})`;

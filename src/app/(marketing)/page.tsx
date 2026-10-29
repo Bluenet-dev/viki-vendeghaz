@@ -16,6 +16,7 @@ const ROOM_DETAIL_URLS: Record<string, string> = {
   "superior": "/szobak/superior",
 };
 import { MiniCalendar } from "./mini-calendar";
+import { scheduleStaleRefresh } from "@/lib/ical/server";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,8 @@ const reviews = [
 ];
 
 export default async function Home() {
+  // Elavult portál-naptár → háttérfrissítés (a megjelenítést nem lassítja).
+  scheduleStaleRefresh();
   const allRooms = await db
     .select({ slug: rooms.slug, name: rooms.name, capacity: rooms.capacity, bedType: rooms.bedType, amenities: rooms.amenities })
     .from(rooms)

@@ -11,7 +11,7 @@ import { closures, tariffs } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-auth";
 import { ALL_SCOPES, MAX_GUESTS, ROOM_SCOPES, isScope, type Scope } from "@/lib/booking/constants";
 import { isIsoDate, todayBudapest } from "@/lib/booking/dates";
-import { applyToDays, bookedDaysAmong, setDayPrice, toggleClosure } from "@/lib/booking/server";
+import { IMPORTED_CLOSURE_ERROR, applyToDays, bookedDaysAmong, setDayPrice, toggleClosure } from "@/lib/booking/server";
 
 function assertEditable(date: string) {
   if (!isIsoDate(date)) throw new Error("Érvénytelen dátum.");
@@ -34,6 +34,7 @@ export async function toggleHouseAction(date: string): Promise<{ bookingId: numb
   const booked = rows.find((r) => r.bookingId);
   if (booked) return { bookingId: booked.bookingId };
   if (rows.length === ROOM_SCOPES.length) {
+    if (rows.some((r) => r.externalBlockId)) throw new Error(IMPORTED_CLOSURE_ERROR);
     await db.delete(closures).where(and(eq(closures.date, date), inArray(closures.roomScope, [...ROOM_SCOPES])));
   } else {
     await db

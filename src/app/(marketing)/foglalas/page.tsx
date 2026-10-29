@@ -11,6 +11,7 @@ import { searchOptions, serializeBookingData } from "@/lib/booking/quote";
 import { findNearestFreeWindows, getSettings, loadBookingData } from "@/lib/booking/server";
 import { offersEnabled } from "@/modules/offers/flag";
 import { RequestForm } from "./request-form";
+import { scheduleStaleRefresh } from "@/lib/ical/server";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,8 @@ export default async function FoglalasPage({
 }: {
   searchParams: Promise<{ erkezes?: string; tavozas?: string; fo?: string; valasztas?: string }>;
 }) {
+  // Elavult portál-naptár → háttérfrissítés (a megjelenítést nem lassítja).
+  scheduleStaleRefresh();
   const sp = await searchParams;
   const today = todayBudapest();
   const minDate = addDays(today, 1);
