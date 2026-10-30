@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { ensureExportToken, listFeeds, listUnits, scheduleStaleRefresh } from "@/lib/ical/server";
-import { UI_PLATFORMS, type UiPlatform } from "@/lib/ical/types";
+import { ensureExportToken, listFeeds, scheduleStaleRefresh, unitName } from "@/lib/ical/server";
+import { UI_PLATFORMS, UNITS, type UiPlatform } from "@/lib/ical/types";
 import { siteUrl } from "@/lib/mail/send";
 import { UnitSyncCard, type FeedView } from "./panel";
 
@@ -19,8 +19,8 @@ function relative(d: Date | null): string | null {
 
 export default async function NaptarSzinkronPage() {
   scheduleStaleRefresh();
-  const units = await listUnits();
-  const [tokens, feeds] = await Promise.all([Promise.all(units.map((u) => ensureExportToken(u.id))), listFeeds(units.map((u) => u.id))]);
+  const units = [...UNITS];
+  const [tokens, feeds] = await Promise.all([Promise.all(units.map((u) => ensureExportToken(u))), listFeeds(units)]);
   const base = siteUrl();
 
   return (
@@ -33,17 +33,17 @@ export default async function NaptarSzinkronPage() {
         <h1 className="text-xl font-semibold text-[var(--text)]">Naptár-szinkron</h1>
       </div>
       <p className="mb-6 text-sm leading-relaxed text-[var(--text2)]">
-        Szobánként összekötheted a saját oldal foglalási naptárát a Booking.com és a Szállás.hu naptárával. Az export linket a portálba
+        Szobánként és az egész házra külön összekötheted a saját oldal foglalási naptárát a Booking.com és a Szállás.hu naptárával. Az export linket a portálba
         illeszd be, a portál export linkjét pedig ide. A rendszer 15 percenként frissít, és a saját oldalon érkező foglalás előtt mindig
         friss állapotot kér le.
       </p>
 
       <div className="space-y-6">
         {units.map((u, i) => {
-          const link = (p: string) => `${base}/api/ical/${u.id}/${p}/${tokens[i]}.ics`;
+          const link = (p: string) => `${base}/api/ical/${u}/${p}/${tokens[i]}.ics`;
           const feedViews = Object.fromEntries(
             UI_PLATFORMS.map((p) => {
-              const f = feeds.find((x) => x.unitId === u.id && x.platform === p);
+              const f = feeds.find((x) => x.unit === u && x.platform === p);
               const view: FeedView | null = f
                 ? {
                     id: f.id,
@@ -58,9 +58,9 @@ export default async function NaptarSzinkronPage() {
           ) as Record<UiPlatform, FeedView | null>;
           return (
             <UnitSyncCard
-              key={u.id}
-              unitId={u.id}
-              unitName={u.name}
+              key={u}
+              unit={u}
+              unitName={unitName(u)}
               exportLinks={{ booking: link("booking"), szallas: link("szallas"), altalanos: link("altalanos") }}
               feeds={feedViews}
             />

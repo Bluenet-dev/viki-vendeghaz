@@ -4,7 +4,8 @@
 // lekérésnél egyetlen blokk sem törlődhet (ezt a hívó garantálja).
 
 import type { Source, Status } from "@/lib/booking/constants";
-import { SOURCE_PLATFORM, type DateRange, type FeedPlatform, type ParsedEvent } from "./types";
+import { nightsOf } from "@/lib/booking/dates";
+import { bookingCameFromFeed, bookingTouchesUnit, unitRooms, type DateRange, type FeedPlatform, type ParsedEvent, type Unit } from "./types";
 
 export interface StoredBlock extends DateRange {
   id: number;
@@ -43,6 +44,7 @@ export interface ConflictBooking {
   checkOut: string;
   source: Source | string;
   status: Status | string;
+  scope: string; // szoba, kombináció vagy "egesz_haz"
 }
 
 export interface Conflict {
@@ -57,18 +59,20 @@ export function overlaps(a: DateRange, b: DateRange): boolean {
   return a.start < b.end && b.start < a.end;
 }
 
-// Egy egység importált blokkjai × az egységet érintő élő CMS-foglalások.
-// Nem ütközés, ha a CMS-foglalás forrása éppen az a portál (a tulajdonos onnan
-// rögzítette kézzel – ugyanaz a foglalás).
+// Egy feed (egység × platform) importált blokkjai × az egységet érintő élő
+// CMS-foglalások (függőben lévők is). Nem ütközés, ha a CMS-foglalást a tulajdonos
+// éppen ebből a hirdetésből rögzítette kézzel (forrás = a portál, ugyanaz az egység).
+// Az egész ház blokkja minden szobás foglalással ütközhet, és fordítva.
 export function findConflicts(
-  platform: FeedPlatform,
+  feed: { unit: Unit; platform: FeedPlatform },
   blocks: (DateRange & { id: number })[],
   bookings: ConflictBooking[],
 ): Conflict[] {
   const out: Conflict[] = [];
   for (const b of bookings) {
     if (b.status === "lemondott") continue;
-    if (SOURCE_PLATFORM[b.source as Source] === platform) continue;
+    if (!bookingTouchesUnit(b.scope, feed.unit)) continue;
+    if (bookingCameFromFeed(b, feed.unit, feed.platform)) continue;
     const range = { start: b.checkIn, end: b.checkOut };
     for (const x of blocks) {
       if (!overlaps(x, range)) continue;
@@ -81,4 +85,16 @@ export function findConflicts(
     }
   }
   return out;
+}
+
+// ─── Materializálás ─────────────────────────────────────────────────────────
+
+// Mely (szoba, éjszaka) párokat zárja egy importált blokk, a horizonton belül.
+// Szobablokk → az adott szoba; egész házas blokk → mindhárom szoba. (Szobablokknál
+// az egész ház a meglévő szabály szerint foglalt: bármelyik szobája zárolt.)
+export function blockClosures(unit: Unit, block: DateRange, horizon: { from: string; to: string }): { room: string; date: string }[] {
+  const from = block.start > horizon.from ? block.start : horizon.from;
+  const to = block.end < horizon.to ? block.end : horizon.to;
+  const rooms = unitRooms(unit);
+  return nightsOf(from, to).flatMap((date) => rooms.map((room) => ({ room, date })));
 }

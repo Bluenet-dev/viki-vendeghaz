@@ -1,29 +1,49 @@
 // iCal-naptárszinkron – adatbázis-réteg: export-adatok, feed-szinkron, a külső
 // blokkok "materializálása" closures-sorokká, ütközés- és hibaértesítés.
 //
-// Materializálás: minden importált blokk szabad éjszakája closures-sort kap
-// (external_block_id-vel). Így a foglalómotor, a naptár és a weboldal változtatás
-// nélkül zárolja ezeket, az ütközésvédelem pedig a meglévő egyedi indexen marad.
-// Ha az éjszakán már CMS-foglalás van, nem kap sort – az ütközésként jelentkezik.
+// Egység = a három szoba és az egész ház (lásd types.ts). Materializálás: minden
+// importált blokk szabad éjszakája closures-sort kap (external_block_id-vel) –
+// szobablokk az adott szobára, egész házas blokk mindhárom szobára. Így a
+// foglalómotor, a naptár és a weboldal változtatás nélkül zárolja ezeket; az egész
+// ház pedig a meglévő szabály szerint foglalt, ha bármelyik szobája zárolt. Ha az
+// éjszakán már CMS-foglalás van, nem kap sort – az ütközésként jelentkezik.
 
 import { after } from "next/server";
-import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { bookings, calendarConflicts, calendarFeeds, closures, externalBlocks, rooms, settings } from "@/db/schema";
-import { ROOM_SCOPES, targetRooms, type Target } from "@/lib/booking/constants";
+import { bookings, calendarConflicts, calendarFeeds, calendarUnits, closures, externalBlocks, settings } from "@/db/schema";
+import { SCOPE_LABEL, targetRooms, type Target } from "@/lib/booking/constants";
 import { addDays, nightsOf, todayBudapest } from "@/lib/booking/dates";
 import { OWNER_EMAIL, sendViaResend, siteUrl } from "@/lib/mail/send";
 import { ownerIcalConflictMail, ownerIcalFeedFailingMail } from "@/lib/mail/templates";
-import { selectExportEvents, type ExportInput } from "./export";
+import { selectExportEvents } from "./export";
 import { fetchIcs } from "./fetch";
-import { findConflicts, type ReconcilePlan } from "./reconcile";
+import { blockClosures, findConflicts, type ReconcilePlan } from "./reconcile";
 import { syncOneFeed, type SyncResult } from "./sync-core";
 import { generateExportToken } from "./token";
-import { PLATFORM_LABEL, type ExportEvent, type ExportPlatform, type FeedPlatform } from "./types";
+import {
+  PLATFORM_LABEL,
+  UNITS,
+  originUnits,
+  unitRooms,
+  unitsTouchedBy,
+  type ExportEvent,
+  type ExportPlatform,
+  type FeedPlatform,
+  type Unit,
+} from "./types";
 
 export const STALE_AFTER_MS = 15 * 60 * 1000;
 export const FRESH_CHECK_TIMEOUT_MS = 5_000;
 const FAIL_NOTIFY_AT = 3;
+
+type BatchItem = Parameters<typeof db.batch>[0][number];
+
+// Több módosítás egy tranzakcióban (neon-http batch); üres listánál nem csinál semmit.
+async function runBatch(ops: BatchItem[]): Promise<void> {
+  if (!ops.length) return;
+  await db.batch(ops as [BatchItem, ...BatchItem[]]);
+}
 
 export function addMonths(iso: string, months: number): string {
   const d = new Date(`${iso}T12:00:00Z`);
@@ -36,62 +56,60 @@ export function exportHorizon(today = todayBudapest()): { from: string; to: stri
   return { from: addDays(today, -1), to: addMonths(today, 18) };
 }
 
-type BatchItem = Parameters<typeof db.batch>[0][number];
-
-// Több módosítás egy tranzakcióban (neon-http batch); üres listánál nem csinál semmit.
-async function runBatch(ops: BatchItem[]): Promise<void> {
-  if (!ops.length) return;
-  await db.batch(ops as [BatchItem, ...BatchItem[]]);
-}
-
 async function loadSettings() {
   const [row] = await db.select().from(settings).limit(1);
   return row;
 }
 
-// ─── Egységek és export-token ───────────────────────────────────────────────
-
-export type Unit = { id: number; slug: string; name: string; token: string | null };
-
-export async function listUnits(): Promise<Unit[]> {
-  const rows = await db
-    .select({ id: rooms.id, slug: rooms.slug, name: rooms.name, token: rooms.icalExportToken })
-    .from(rooms)
-    .where(inArray(rooms.slug, [...ROOM_SCOPES]))
-    .orderBy(asc(rooms.sortOrder), asc(rooms.id));
-  return rows;
+export function unitName(unit: string): string {
+  return SCOPE_LABEL[unit as Unit] ?? unit;
 }
 
-export async function ensureExportToken(unitId: number): Promise<string> {
-  const [row] = await db.select({ token: rooms.icalExportToken }).from(rooms).where(eq(rooms.id, unitId));
-  if (row?.token) return row.token;
-  await db.update(rooms).set({ icalExportToken: generateExportToken() }).where(and(eq(rooms.id, unitId), isNull(rooms.icalExportToken)));
-  const [again] = await db.select({ token: rooms.icalExportToken }).from(rooms).where(eq(rooms.id, unitId));
-  return again!.token!;
+// ─── Export-token ───────────────────────────────────────────────────────────
+
+export async function ensureExportToken(unit: Unit): Promise<string> {
+  await db.insert(calendarUnits).values({ unit, icalExportToken: generateExportToken() }).onConflictDoNothing();
+  const [row] = await db.select({ token: calendarUnits.icalExportToken }).from(calendarUnits).where(eq(calendarUnits.unit, unit));
+  return row.token;
 }
 
-export async function regenerateExportToken(unitId: number): Promise<void> {
-  await db.update(rooms).set({ icalExportToken: generateExportToken() }).where(eq(rooms.id, unitId));
+export async function exportTokenOf(unit: Unit): Promise<string | null> {
+  const [row] = await db.select({ token: calendarUnits.icalExportToken }).from(calendarUnits).where(eq(calendarUnits.unit, unit));
+  return row?.token ?? null;
+}
+
+export async function regenerateExportToken(unit: Unit): Promise<void> {
+  await db
+    .insert(calendarUnits)
+    .values({ unit, icalExportToken: generateExportToken() })
+    .onConflictDoUpdate({ target: calendarUnits.unit, set: { icalExportToken: generateExportToken() } });
 }
 
 // ─── Export ─────────────────────────────────────────────────────────────────
 
-export async function loadExport(unit: { id: number; slug: string }, platform: ExportPlatform): Promise<ExportEvent[]> {
+export async function loadExport(unit: Unit, platform: ExportPlatform): Promise<ExportEvent[]> {
   const horizon = exportHorizon();
+  const rooms: string[] = unitRooms(unit);
 
-  const [bookingRows, manualRows, extRows] = await Promise.all([
-    // Élő foglalások (megerősített ÉS függőben lévő; a lemondott nem).
+  const [bookingRows, manualRows, extRows, ownFeed] = await Promise.all([
     db
-      .select({ id: bookings.id, checkIn: bookings.checkIn, checkOut: bookings.checkOut, source: bookings.source, scope: bookings.roomScope })
+      .select({
+        id: bookings.id,
+        checkIn: bookings.checkIn,
+        checkOut: bookings.checkOut,
+        source: bookings.source,
+        status: bookings.status,
+        scope: bookings.roomScope,
+      })
       .from(bookings)
       .where(and(sql`${bookings.status} <> 'lemondott'`, gt(bookings.checkOut, horizon.from), lt(bookings.checkIn, horizon.to))),
     // Kézi zárolás: nem foglaláshoz és nem importhoz tartozó lezárás.
     db
-      .select({ id: closures.id, date: closures.date })
+      .select({ id: closures.id, room: closures.roomScope, date: closures.date })
       .from(closures)
       .where(
         and(
-          eq(closures.roomScope, unit.slug),
+          inArray(closures.roomScope, rooms),
           isNull(closures.bookingId),
           isNull(closures.externalBlockId),
           gt(closures.date, addDays(horizon.from, -1)),
@@ -99,37 +117,41 @@ export async function loadExport(unit: { id: number; slug: string }, platform: E
         ),
       ),
     db
-      .select({ feedId: externalBlocks.feedId, platform: calendarFeeds.platform, uid: externalBlocks.uid, start: externalBlocks.startDate, end: externalBlocks.endDate })
+      .select({ feedId: externalBlocks.feedId, unit: externalBlocks.unit, uid: externalBlocks.uid, start: externalBlocks.startDate, end: externalBlocks.endDate })
       .from(externalBlocks)
-      .innerJoin(calendarFeeds, eq(calendarFeeds.id, externalBlocks.feedId))
-      .where(and(eq(externalBlocks.unitId, unit.id), gt(externalBlocks.endDate, horizon.from), lt(externalBlocks.startDate, horizon.to))),
+      .where(and(gt(externalBlocks.endDate, horizon.from), lt(externalBlocks.startDate, horizon.to))),
+    platform === "altalanos"
+      ? Promise.resolve([] as { id: number }[])
+      : db.select({ id: calendarFeeds.id }).from(calendarFeeds).where(and(eq(calendarFeeds.unit, unit), eq(calendarFeeds.platform, platform))),
   ]);
 
-  const input: ExportInput = {
-    bookings: bookingRows.filter((b) => (targetRooms(b.scope) as string[]).includes(unit.slug)),
-    manualBlocks: manualRows,
-    externalBlocks: extRows.map((x) => ({ ...x, platform: x.platform as FeedPlatform })),
-    horizon,
-  };
-  return selectExportEvents(platform, input);
+  return selectExportEvents(
+    { unit, platform, feedId: ownFeed[0]?.id ?? null },
+    {
+      bookings: bookingRows,
+      manualBlocks: manualRows,
+      externalBlocks: extRows.map((x) => ({ ...x, unit: x.unit as Unit })),
+      horizon,
+    },
+  );
 }
 
 // ─── Feedek ─────────────────────────────────────────────────────────────────
 
 export type Feed = typeof calendarFeeds.$inferSelect;
 
-export async function listFeeds(unitIds?: number[]): Promise<Feed[]> {
+export async function listFeeds(units?: Unit[]): Promise<Feed[]> {
   const q = db.select().from(calendarFeeds);
-  return unitIds ? q.where(inArray(calendarFeeds.unitId, unitIds)) : q;
+  return units ? q.where(inArray(calendarFeeds.unit, units)) : q;
 }
 
-export async function upsertFeedUrl(unitId: number, platform: FeedPlatform, importUrl: string | null): Promise<Feed> {
+export async function upsertFeedUrl(unit: Unit, platform: FeedPlatform, importUrl: string): Promise<Feed> {
   const [row] = await db
     .insert(calendarFeeds)
-    .values({ unitId, platform, importUrl, active: importUrl != null })
+    .values({ unit, platform, importUrl, active: true })
     .onConflictDoUpdate({
-      target: [calendarFeeds.unitId, calendarFeeds.platform],
-      set: { importUrl, active: importUrl != null, failCount: 0, lastError: null },
+      target: [calendarFeeds.unit, calendarFeeds.platform],
+      set: { importUrl, active: true, failCount: 0, lastError: null },
     })
     .returning();
   return row;
@@ -137,7 +159,7 @@ export async function upsertFeedUrl(unitId: number, platform: FeedPlatform, impo
 
 // Az URL törlésekor a feed blokkjai (és a materializált napok) is törlődnek.
 export async function removeFeed(feedId: number): Promise<void> {
-  await db.batch([
+  await runBatch([
     db.delete(externalBlocks).where(eq(externalBlocks.feedId, feedId)),
     db.update(calendarFeeds).set({ importUrl: null, active: false, failCount: 0, lastError: null }).where(eq(calendarFeeds.id, feedId)),
   ]);
@@ -145,8 +167,8 @@ export async function removeFeed(feedId: number): Promise<void> {
 
 // A tárolt blokkok alapján újraírja a feed napjait a closures-ben (horizonton belül),
 // egy tranzakcióban: a módosult blokkok régi napjai törlődnek, minden szabad éjszaka
-// (újra) lezárul. Így egy kézzel feloldott import-nap a következő szinkronnál visszazár.
-async function materialize(feed: Feed, changedBlockIds: number[], unitSlug: string): Promise<void> {
+// (újra) lezárul. Így egy feloldott import-nap a következő szinkronnál visszazár.
+async function materialize(feed: Feed, changedBlockIds: number[]): Promise<void> {
   const horizon = exportHorizon();
   const blocks = await db
     .select({ id: externalBlocks.id, start: externalBlocks.startDate, end: externalBlocks.endDate })
@@ -154,14 +176,10 @@ async function materialize(feed: Feed, changedBlockIds: number[], unitSlug: stri
     .where(and(eq(externalBlocks.feedId, feed.id), gt(externalBlocks.endDate, horizon.from), lt(externalBlocks.startDate, horizon.to)));
 
   const note = `iCal: ${PLATFORM_LABEL[feed.platform as FeedPlatform] ?? feed.platform}`;
-  const rows: (typeof closures.$inferInsert)[] = [];
-  for (const b of blocks) {
-    const from = b.start > horizon.from ? b.start : horizon.from;
-    const to = b.end < horizon.to ? b.end : horizon.to;
-    for (const d of nightsOf(from, to)) rows.push({ roomScope: unitSlug, date: d, externalBlockId: b.id, note });
-  }
+  const rows: (typeof closures.$inferInsert)[] = blocks.flatMap((b) =>
+    blockClosures(feed.unit as Unit, b, horizon).map((c) => ({ roomScope: c.room, date: c.date, externalBlockId: b.id, note })),
+  );
 
-  // Egy tranzakció (neon-http batch): a régi napok törlése és az újak lezárása együtt.
   const ops: BatchItem[] = [];
   if (changedBlockIds.length) ops.push(db.delete(closures).where(inArray(closures.externalBlockId, changedBlockIds)));
   for (let i = 0; i < rows.length; i += 2000) ops.push(db.insert(closures).values(rows.slice(i, i + 2000)).onConflictDoNothing());
@@ -182,7 +200,7 @@ async function applyPlan(feed: Feed, plan: ReconcilePlan): Promise<number[]> {
     ops.push(
       db
         .insert(externalBlocks)
-        .values(plan.inserts.map((e) => ({ feedId: feed.id, unitId: feed.unitId, uid: e.uid, startDate: e.start, endDate: e.end, summary: e.summary || null, lastSeenAt: now })))
+        .values(plan.inserts.map((e) => ({ feedId: feed.id, unit: feed.unit, uid: e.uid, startDate: e.start, endDate: e.end, summary: e.summary || null, lastSeenAt: now })))
         .onConflictDoNothing(),
     );
   }
@@ -190,7 +208,7 @@ async function applyPlan(feed: Feed, plan: ReconcilePlan): Promise<number[]> {
   return plan.updates.map((u) => u.id);
 }
 
-async function notifyConflicts(feed: Feed, unit: Unit): Promise<void> {
+async function notifyConflicts(feed: Feed): Promise<void> {
   const blocks = await db
     .select({ id: externalBlocks.id, start: externalBlocks.startDate, end: externalBlocks.endDate })
     .from(externalBlocks)
@@ -203,10 +221,9 @@ async function notifyConflicts(feed: Feed, unit: Unit): Promise<void> {
     .select({ id: bookings.id, checkIn: bookings.checkIn, checkOut: bookings.checkOut, source: bookings.source, status: bookings.status, scope: bookings.roomScope })
     .from(bookings)
     .where(and(sql`${bookings.status} <> 'lemondott'`, gt(bookings.checkOut, minStart), lt(bookings.checkIn, maxEnd)));
-  const forUnit = live.filter((b) => (targetRooms(b.scope) as string[]).includes(unit.slug));
 
   const platform = feed.platform as FeedPlatform;
-  const conflicts = findConflicts(platform, blocks, forUnit);
+  const conflicts = findConflicts({ unit: feed.unit as Unit, platform }, blocks, live);
   if (!conflicts.length) return;
 
   const s = await loadSettings();
@@ -218,14 +235,14 @@ async function notifyConflicts(feed: Feed, unit: Unit): Promise<void> {
       .returning({ id: calendarConflicts.id });
     if (!inserted.length || !s) continue; // már jeleztük
     const mail = ownerIcalConflictMail(
-      { unit: unit.name, platform: PLATFORM_LABEL[platform], start: c.start, end: c.end, bookingUrl: `${siteUrl()}/admin/foglalasok/${c.bookingId}` },
+      { unit: unitName(feed.unit), platform: PLATFORM_LABEL[platform], start: c.start, end: c.end, bookingUrl: `${siteUrl()}/admin/foglalasok/${c.bookingId}` },
       s,
     );
     await sendViaResend({ ...mail, to: OWNER_EMAIL });
   }
 }
 
-async function markFailure(feed: Feed, unit: Unit, message: string): Promise<number> {
+async function markFailure(feed: Feed, message: string): Promise<number> {
   const [row] = await db
     .update(calendarFeeds)
     .set({ failCount: sql`${calendarFeeds.failCount} + 1`, lastAttemptAt: new Date(), lastError: message.slice(0, 500) })
@@ -238,7 +255,7 @@ async function markFailure(feed: Feed, unit: Unit, message: string): Promise<num
     if (s) {
       const mail = ownerIcalFeedFailingMail(
         {
-          unit: unit.name,
+          unit: unitName(feed.unit),
           platform: PLATFORM_LABEL[feed.platform as FeedPlatform] ?? feed.platform,
           lastSuccessAt: row?.lastSuccessAt ?? null,
           lastError: message,
@@ -252,7 +269,7 @@ async function markFailure(feed: Feed, unit: Unit, message: string): Promise<num
   return failCount;
 }
 
-export async function syncFeed(feed: Feed, unit: Unit, timeoutMs?: number): Promise<SyncResult> {
+export async function syncFeed(feed: Feed, timeoutMs?: number): Promise<SyncResult> {
   if (!feed.importUrl) return { ok: false, feedId: feed.id, error: "Nincs import link.", failCount: feed.failCount };
   let changed: number[] = [];
   const result = await syncOneFeed({ id: feed.id, importUrl: feed.importUrl }, addDays(todayBudapest(), -1), {
@@ -269,25 +286,24 @@ export async function syncFeed(feed: Feed, unit: Unit, timeoutMs?: number): Prom
       const now = new Date();
       await db.update(calendarFeeds).set({ lastSuccessAt: now, lastAttemptAt: now, lastError: null, failCount: 0 }).where(eq(calendarFeeds.id, feedId));
     },
-    markFailure: (_feedId, message) => markFailure(feed, unit, message),
+    markFailure: (_feedId, message) => markFailure(feed, message),
   });
 
   if (result.ok) {
-    await materialize(feed, changed, unit.slug);
-    await notifyConflicts(feed, unit);
+    await materialize(feed, changed);
+    await notifyConflicts(feed);
   }
   return result;
 }
 
 // Az aktív (linkkel rendelkező) feedek szinkronja, korlátozott párhuzamossággal.
-async function runFeeds(feeds: Feed[], units: Unit[], timeoutMs?: number, concurrency = 4): Promise<SyncResult[]> {
-  const byId = new Map(units.map((u) => [u.id, u]));
-  const queue = feeds.filter((f) => f.active && f.importUrl && byId.has(f.unitId));
+async function runFeeds(feeds: Feed[], timeoutMs?: number, concurrency = 4): Promise<SyncResult[]> {
+  const queue = feeds.filter((f) => f.active && f.importUrl && (UNITS as readonly string[]).includes(f.unit));
   const results: SyncResult[] = [];
   async function worker() {
     for (let f = queue.shift(); f; f = queue.shift()) {
       try {
-        results.push(await syncFeed(f, byId.get(f.unitId)!, timeoutMs));
+        results.push(await syncFeed(f, timeoutMs));
       } catch (e) {
         results.push({ ok: false, feedId: f.id, error: e instanceof Error ? e.message : String(e), failCount: f.failCount });
       }
@@ -298,14 +314,7 @@ async function runFeeds(feeds: Feed[], units: Unit[], timeoutMs?: number, concur
 }
 
 export async function syncAllFeeds(): Promise<SyncResult[]> {
-  const [units, feeds] = await Promise.all([listUnits(), listFeeds()]);
-  return runFeeds(feeds, units);
-}
-
-export async function syncUnitFeeds(unitIds: number[], timeoutMs?: number): Promise<SyncResult[]> {
-  if (!unitIds.length) return [];
-  const [units, feeds] = await Promise.all([listUnits(), listFeeds(unitIds)]);
-  return runFeeds(feeds, units, timeoutMs, feeds.length || 1);
+  return runFeeds(await listFeeds());
 }
 
 // ─── Foglalás előtti friss ellenőrzés ───────────────────────────────────────
@@ -315,29 +324,18 @@ export interface FreshCheck {
   failed: { unit: string; platform: string; error: string }[];
 }
 
-// A foglalás érintett egységeinek összes feedjét SZINKRON módon újra lehúzza
-// (párhuzamosan, feedenként max. 5 s). Utána a closures már a friss állapotot tükrözi.
+// A foglalást érintő egységek (a szobák és az egész ház) összes feedjét SZINKRON
+// módon újra lehúzza – párhuzamosan, feedenként max. 5 s. Utána a closures már a
+// friss állapotot tükrözi.
 export async function freshCheck(target: Target): Promise<FreshCheck> {
-  const slugs = targetRooms(target) as string[];
-  const units = (await listUnits()).filter((u) => slugs.includes(u.slug));
-  const results = await syncUnitFeeds(
-    units.map((u) => u.id),
-    FRESH_CHECK_TIMEOUT_MS,
-  );
-  const failedIds = new Set(results.filter((r) => !r.ok).map((r) => r.feedId));
-  if (!failedIds.size) return { failed: [] };
-  const feeds = await listFeeds(units.map((u) => u.id));
-  const unitName = new Map(units.map((u) => [u.id, u.name]));
+  const feeds = await listFeeds(unitsTouchedBy(target));
+  const results = await runFeeds(feeds, FRESH_CHECK_TIMEOUT_MS, feeds.length || 1);
   return {
     failed: results
       .filter((r): r is Extract<SyncResult, { ok: false }> => !r.ok)
       .map((r) => {
         const f = feeds.find((x) => x.id === r.feedId);
-        return {
-          unit: (f && unitName.get(f.unitId)) ?? "?",
-          platform: PLATFORM_LABEL[(f?.platform ?? "egyeb") as FeedPlatform],
-          error: r.error,
-        };
+        return { unit: unitName(f?.unit ?? "?"), platform: PLATFORM_LABEL[(f?.platform ?? "egyeb") as FeedPlatform], error: r.error };
       }),
   };
 }
@@ -350,9 +348,8 @@ export function freshCheckNote(fc: FreshCheck): string | null {
 
 // ─── Megjelenítéskor: elavult feedek háttérfrissítése ───────────────────────
 
-// A 15 percnél régebben frissült feedeket frissíti. Az oldal ezt after()-ben hívja,
-// így a megjelenítést nem lassítja. Ha nemrég (2 percen belül) volt próbálkozás,
-// nem indítja újra (sok egyidejű látogató ne indítson sok lekérést).
+// A 15 percnél régebben frissült feedeket frissíti. Ha nemrég (2 percen belül) volt
+// próbálkozás, nem indítja újra (sok egyidejű látogató ne indítson sok lekérést).
 export async function refreshStaleFeeds(): Promise<void> {
   const now = Date.now();
   const staleBefore = new Date(now - STALE_AFTER_MS);
@@ -371,30 +368,7 @@ export async function refreshStaleFeeds(): Promise<void> {
   if (!stale.length) return;
   // A próbálkozás idejét előre rögzítjük, hogy a párhuzamos kérések ne induljanak el újra.
   await db.update(calendarFeeds).set({ lastAttemptAt: new Date() }).where(inArray(calendarFeeds.id, stale.map((f) => f.id)));
-  await runFeeds(stale, await listUnits());
-}
-
-// ─── A tulajdonos által rögzített portál-foglalás ───────────────────────────
-
-// Ha a tulajdonos egy portálon érkezett foglalást kézzel rögzít a CMS-ben (forrás =
-// az a portál), az onnan importált lezárások a foglalás napjain átadják a helyüket
-// a foglalás lezárásainak – különben a saját foglalását nem tudná rögzíteni.
-export async function releaseImportedNights(target: Target, checkIn: string, checkOut: string, platform: FeedPlatform): Promise<void> {
-  const nights = nightsOf(checkIn, checkOut);
-  if (!nights.length) return;
-  const feedIds = (await db.select({ id: calendarFeeds.id }).from(calendarFeeds).where(eq(calendarFeeds.platform, platform))).map((f) => f.id);
-  if (!feedIds.length) return;
-  const blockIds = (await db.select({ id: externalBlocks.id }).from(externalBlocks).where(inArray(externalBlocks.feedId, feedIds))).map((b) => b.id);
-  if (!blockIds.length) return;
-  await db
-    .delete(closures)
-    .where(
-      and(
-        inArray(closures.roomScope, targetRooms(target)),
-        inArray(closures.date, nights),
-        inArray(closures.externalBlockId, blockIds),
-      ),
-    );
+  await runFeeds(stale);
 }
 
 // Az oldal renderelése után (after) indítja az elavult feedek frissítését – a
@@ -402,3 +376,27 @@ export async function releaseImportedNights(target: Target, checkIn: string, che
 export function scheduleStaleRefresh(): void {
   after(() => refreshStaleFeeds().catch((e) => console.error("iCal háttérfrissítés hiba:", e)));
 }
+
+// ─── A tulajdonos által rögzített portál-foglalás ───────────────────────────
+
+// Ha a tulajdonos egy portálon érkezett foglalást kézzel rögzít a CMS-ben (forrás =
+// az a portál), az ugyanabból a hirdetésből (egység × platform) importált lezárások
+// a foglalás napjain átadják a helyüket a foglalás lezárásainak – különben a saját
+// foglalását nem tudná rögzíteni. Más hirdetés blokkja valódi ütközés, az marad.
+export async function releaseImportedNights(target: Target, checkIn: string, checkOut: string, platform: FeedPlatform): Promise<void> {
+  const nights = nightsOf(checkIn, checkOut);
+  if (!nights.length) return;
+  const feedIds = (
+    await db
+      .select({ id: calendarFeeds.id })
+      .from(calendarFeeds)
+      .where(and(eq(calendarFeeds.platform, platform), inArray(calendarFeeds.unit, originUnits(target))))
+  ).map((f) => f.id);
+  if (!feedIds.length) return;
+  const blockIds = (await db.select({ id: externalBlocks.id }).from(externalBlocks).where(inArray(externalBlocks.feedId, feedIds))).map((b) => b.id);
+  if (!blockIds.length) return;
+  await db
+    .delete(closures)
+    .where(and(inArray(closures.roomScope, targetRooms(target)), inArray(closures.date, nights), inArray(closures.externalBlockId, blockIds)));
+}
+

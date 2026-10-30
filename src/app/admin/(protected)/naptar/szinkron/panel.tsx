@@ -36,6 +36,24 @@ const GUIDE: Record<UiPlatform, { label: string; exportHelp: React.ReactNode; im
   },
 };
 
+// Az egész ház szezonon kívül a portálon le lehet zárva. Ha a lezárt napok is
+// bejönnének, mindhárom szoba lezárulna – ezért a Booking egész házas exportjánál
+// csak a foglalások ("Booked dates only") jöhetnek át.
+const HOUSE_BOOKING_GUIDE = {
+  label: "Booking.com",
+  exportHelp: (
+    <>
+      Booking: Extranet → Árak és elérhetőség → Naptár → Naptárak szinkronizálása. <strong>Az egész ház hirdetésénél a „Booked dates only”
+      opciót válaszd</strong> – a szezonon kívüli lezárás így nem zárja le a szobákat.
+    </>
+  ),
+  importHelp: "A Booking egész házas export linkje – „Booked dates only” opcióval (a szezonon kívüli lezárás ne jöjjön át).",
+};
+
+function guideFor(unit: string, platform: UiPlatform) {
+  return unit === "egesz_haz" && platform === "booking" ? HOUSE_BOOKING_GUIDE : GUIDE[platform];
+}
+
 function Message({ state }: { state: FeedFormState }) {
   if (state.error) return <p className="mt-2 text-[13px] text-red-700">{state.error}</p>;
   if (state.ok) return <p className="mt-2 text-[13px] text-green-700">{state.ok}</p>;
@@ -62,16 +80,16 @@ function CopyLink({ url }: { url: string }) {
   );
 }
 
-function FeedForm({ unitId, platform, feed }: { unitId: number; platform: UiPlatform; feed: FeedView | null }) {
+function FeedForm({ unit, platform, feed }: { unit: string; platform: UiPlatform; feed: FeedView | null }) {
   const [state, action, pending] = useActionState(saveFeedAction, {});
   const [syncState, setSyncState] = useState<FeedFormState>({});
   const [syncing, startSync] = useTransition();
-  const g = GUIDE[platform];
+  const g = guideFor(unit, platform);
 
   return (
     <div>
       <form action={action} className="flex items-start gap-2">
-        <input type="hidden" name="unitId" value={unitId} />
+        <input type="hidden" name="unit" value={unit} />
         <input type="hidden" name="platform" value={platform} />
         <input name="importUrl" defaultValue={feed?.importUrl ?? ""} placeholder="https://…" className={input} aria-label={`${g.label} import link`} />
         <button type="submit" disabled={pending} className={btnPrimary}>
@@ -107,12 +125,12 @@ function FeedForm({ unitId, platform, feed }: { unitId: number; platform: UiPlat
 }
 
 export function UnitSyncCard({
-  unitId,
+  unit,
   unitName,
   exportLinks,
   feeds,
 }: {
-  unitId: number;
+  unit: string;
   unitName: string;
   exportLinks: Record<UiPlatform | "altalanos", string>;
   feeds: Record<UiPlatform, FeedView | null>;
@@ -128,9 +146,9 @@ export function UnitSyncCard({
       <div className="space-y-4">
         {(["booking", "szallas"] as const).map((p) => (
           <div key={p}>
-            <p className="mb-1 text-[13px] font-medium text-[var(--text)]">{GUIDE[p].label}</p>
+            <p className="mb-1 text-[13px] font-medium text-[var(--text)]">{guideFor(unit, p).label}</p>
             <CopyLink url={exportLinks[p]} />
-            <p className="mt-1 text-[12px] leading-relaxed text-[var(--text2)]">{GUIDE[p].exportHelp}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-[var(--text2)]">{guideFor(unit, p).exportHelp}</p>
           </div>
         ))}
         <details className="text-[13px]">
@@ -145,8 +163,8 @@ export function UnitSyncCard({
       <div className="space-y-5">
         {(["booking", "szallas"] as const).map((p) => (
           <div key={p}>
-            <p className="mb-1 text-[13px] font-medium text-[var(--text)]">{GUIDE[p].label}</p>
-            <FeedForm unitId={unitId} platform={p} feed={feeds[p]} />
+            <p className="mb-1 text-[13px] font-medium text-[var(--text)]">{guideFor(unit, p).label}</p>
+            <FeedForm unit={unit} platform={p} feed={feeds[p]} />
           </div>
         ))}
       </div>
@@ -158,7 +176,7 @@ export function UnitSyncCard({
           className={btn}
           onClick={() => {
             if (!confirm("Biztosan új export linket generálsz? A régi link azonnal érvénytelen lesz, és a portálokon le kell cserélni.")) return;
-            startRegen(async () => setRegenState(await regenerateTokenAction(unitId)));
+            startRegen(async () => setRegenState(await regenerateTokenAction(unit)));
           }}
         >
           {regenerating ? "Generálás…" : "Export link újragenerálása"}

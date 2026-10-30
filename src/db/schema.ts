@@ -23,8 +23,6 @@ export const rooms = pgTable("rooms", {
   amenities: text("amenities"),        // vesszővel elválasztott lista
   sortOrder: integer("sort_order").default(0),
   active: boolean("active").default(true),
-  // Titkos iCal-export link tokenje (≥ 32 karakter). Újragenerálva a régi link érvénytelen.
-  icalExportToken: text("ical_export_token").unique(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -279,16 +277,26 @@ export const closures = pgTable(
 );
 
 // ─── iCal-naptárszinkron (BlueNet CMS) ──────────────────────────────────────
-// Egységenként (szobánként) és platformonként egy import-feed. Az importált
-// foglalások az external_blocks-ba kerülnek (az igazságforrás), és a szabad
-// éjszakákra closures-sort is kapnak (external_block_id), így a foglalómotor, a
-// naptár és a weboldal változtatás nélkül zárolja őket.
+// Egység = a portálokon külön hirdetett szállás: a három szoba és az egész ház
+// ("szoba-1" | "szoba-2" | "superior" | "egesz_haz" – ugyanazok a szlugok, mint a
+// closures/bookings room_scope-ja). Egységenként és platformonként egy import-feed.
+// Az importált foglalások az external_blocks-ba kerülnek (az igazságforrás), és a
+// szabad éjszakákra closures-sort is kapnak (external_block_id) – az egész ház
+// blokkja mindhárom szobára –, így a foglalómotor, a naptár és a weboldal
+// változtatás nélkül zárolja őket.
+
+// Egységenként a titkos export-link tokenje (≥ 32 karakter). Újragenerálva a régi link érvénytelen.
+export const calendarUnits = pgTable("calendar_units", {
+  unit: text("unit").primaryKey(),
+  icalExportToken: text("ical_export_token").notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
 
 export const calendarFeeds = pgTable(
   "calendar_feeds",
   {
     id: serial("id").primaryKey(),
-    unitId: integer("unit_id").notNull().references(() => rooms.id, { onDelete: "cascade" }),
+    unit: text("unit").notNull(),
     platform: text("platform").notNull(), // "booking" | "szallas" | "airbnb" | "egyeb"
     importUrl: text("import_url"),
     active: boolean("active").notNull().default(true),
@@ -298,7 +306,7 @@ export const calendarFeeds = pgTable(
     failCount: integer("fail_count").notNull().default(0),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("calendar_feeds_unit_platform_uq").on(t.unitId, t.platform)],
+  (t) => [uniqueIndex("calendar_feeds_unit_platform_uq").on(t.unit, t.platform)],
 );
 
 export const externalBlocks = pgTable(
@@ -306,7 +314,7 @@ export const externalBlocks = pgTable(
   {
     id: serial("id").primaryKey(),
     feedId: integer("feed_id").notNull().references(() => calendarFeeds.id, { onDelete: "cascade" }),
-    unitId: integer("unit_id").notNull().references(() => rooms.id, { onDelete: "cascade" }),
+    unit: text("unit").notNull(),
     uid: text("uid").notNull(),
     startDate: date("start_date").notNull(),
     endDate: date("end_date").notNull(), // KIZÁRÓLAGOS (a távozás napja)
@@ -315,7 +323,7 @@ export const externalBlocks = pgTable(
   },
   (t) => [
     uniqueIndex("external_blocks_feed_uid_uq").on(t.feedId, t.uid),
-    index("external_blocks_unit_idx").on(t.unitId, t.startDate),
+    index("external_blocks_unit_idx").on(t.unit, t.startDate),
   ],
 );
 
