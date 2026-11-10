@@ -2,6 +2,7 @@
 import { db } from "@/db";
 import { faq } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
+import { faqPageJsonLd, ldJson } from "@/lib/seo/schema";
 
 export const metadata: Metadata = {
   title: "GYIK | Viki Vendégház Szilvásvárad – Foglalási tudnivalók",
@@ -16,8 +17,12 @@ export default async function GyikPage() {
     .where(eq(faq.active, true))
     .orderBy(asc(faq.sortOrder), asc(faq.id));
 
+  // FAQPage: pontosan a látható kérdések és válaszok (ugyanaz a lekérdezés).
+  const faqLd = items.length ? faqPageJsonLd(items) : null;
+
   return (
     <div className="pt-16 bg-[var(--bg)] min-h-screen">
+      {faqLd && <script id="faq-schema" type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(faqLd) }} />}
       <section className="bg-[var(--nav-bg)] py-20 px-6">
         <div className="mx-auto max-w-4xl">
           <p className="text-xs uppercase tracking-widest text-[var(--accent2)] mb-4">GYIK</p>

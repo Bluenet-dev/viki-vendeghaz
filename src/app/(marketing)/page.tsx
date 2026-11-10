@@ -6,8 +6,9 @@ import { rooms, closures, wellnessServices, gallery } from "@/db/schema";
 import { asc, eq, gte, inArray } from "drizzle-orm";
 import { ROOM_CATEGORIES } from "@/lib/gallery-categories";
 import { addDays, todayBudapest } from "@/lib/booking/dates";
-import { lowestPrices } from "@/lib/booking/server";
-import type { Scope } from "@/lib/booking/constants";
+import { getSettings, lowestPrices } from "@/lib/booking/server";
+import { ROOM_SCOPES, type Scope } from "@/lib/booking/constants";
+import { ldJson, lodgingBusinessJsonLd } from "@/lib/seo/schema";
 import { BookingSearch } from "@/components/booking-search";
 
 const ROOM_DETAIL_URLS: Record<string, string> = {
@@ -20,10 +21,13 @@ import { scheduleStaleRefresh } from "@/lib/ical/server";
 
 export const dynamic = "force-dynamic";
 
+// A meta description és a LodgingBusiness séma leírása ugyanez.
+const HOME_DESCRIPTION =
+  "Szilvásváradon, a Szalajka-völgy kapujánál: 3 tágas szoba saját fürdőszobával, sóbarlang, finn szauna, infraszauna, dézsafürdő és kültéri medence. Max. 12 fő. Booking.com 9,5 · Szállás.hu 9,9. Foglaljon most!";
+
 export const metadata: Metadata = {
   title: "Viki Vendégház Szilvásvárad | Szállás sóbarlanggal, szaunával, medencével",
-  description:
-    "Szilvásváradon, a Szalajka-völgy kapujánál: 3 tágas szoba saját fürdőszobával, sóbarlang, finn szauna, infraszauna, dézsafürdő és kültéri medence. Max. 12 fő. Booking.com 9,5 · Szállás.hu 9,9. Foglaljon most!",
+  description: HOME_DESCRIPTION,
   openGraph: {
     title: "Viki Vendégház – Szilvásvárad",
     description:
@@ -77,15 +81,31 @@ export default async function Home() {
     if (!roomCovers[row.category]) roomCovers[row.category] = { url: row.url, alt: row.alt };
   }
 
-  const [lowest, allWellness] = await Promise.all([
+  const [lowest, allWellness, s] = await Promise.all([
     lowestPrices(),
     db.select().from(wellnessServices).orderBy(asc(wellnessServices.sortOrder)),
+    getSettings(),
   ]);
+
+  // LodgingBusiness: az adatok a settings táblából, a szobaszám a foglalómotor egységeiből.
+  // A nyitó elem videó, ezért a kép az „Egész ház” galéria első képe.
+  const lodgingLd = lodgingBusinessJsonLd({
+    propertyName: s.propertyName,
+    phone: s.phone,
+    email: s.email,
+    address: s.address,
+    checkInFrom: s.checkInFrom,
+    checkOutUntil: s.checkOutUntil,
+    numberOfRooms: ROOM_SCOPES.length,
+    description: HOME_DESCRIPTION,
+    image: "/galeria/egesz-haz/01.webp",
+  });
 
   const wholeHouseLowest = lowest.egesz_haz;
 
   return (
     <>
+      <script id="lodging-schema" type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(lodgingLd) }} />
       {/* ─── Hero ─── */}
       <section className="bg-[var(--nav-bg)] pt-28 pb-10 px-6">
         {/* Szöveg – középre igazítva */}

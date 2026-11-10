@@ -15,12 +15,14 @@ async function createFaq(formData: FormData) {
     active: true,
   });
   revalidatePath("/admin/gyik");
+  revalidatePath("/gyik");
 }
 
 async function deleteFaq(formData: FormData) {
   "use server";
   await db.delete(faq).where(eq(faq.id, Number(formData.get("id"))));
   revalidatePath("/admin/gyik");
+  revalidatePath("/gyik");
 }
 
 async function toggleFaq(formData: FormData) {
@@ -29,6 +31,7 @@ async function toggleFaq(formData: FormData) {
   const current = formData.get("active") === "true";
   await db.update(faq).set({ active: !current }).where(eq(faq.id, id));
   revalidatePath("/admin/gyik");
+  revalidatePath("/gyik");
 }
 
 export default async function AdminGyikPage() {

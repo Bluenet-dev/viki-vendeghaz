@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Copyright } from "@/components/copyright";
+import { SOCIAL } from "@/lib/seo/schema";
 
 const cols = [
   {
@@ -72,7 +73,7 @@ export function Footer() {
             </div>
             <div className="mt-5 flex gap-4">
               <a
-                href="https://facebook.com/vikivendeghaz"
+                href={SOCIAL.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[var(--nav-text)]/60 hover:text-[var(--accent2)] transition-colors"
@@ -83,7 +84,7 @@ export function Footer() {
                 </svg>
               </a>
               <a
-                href="https://instagram.com/vikivendeghaz"
+                href={SOCIAL.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[var(--nav-text)]/60 hover:text-[var(--accent2)] transition-colors"
@@ -94,7 +95,7 @@ export function Footer() {
                 </svg>
               </a>
               <a
-                href="https://tiktok.com/@vikivendeghaz"
+                href={SOCIAL.tiktok}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[var(--nav-text)]/60 hover:text-[var(--accent2)] transition-colors"
